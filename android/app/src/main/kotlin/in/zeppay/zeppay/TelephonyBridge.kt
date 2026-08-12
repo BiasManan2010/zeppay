@@ -1,6 +1,7 @@
-package `in`.zeppay.app
+package `in`.zeppay.zeppay
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -20,12 +21,12 @@ import java.util.Locale
 
 /**
  * Android-only offline UPI rails:
- * - Carrier detection via TelephonyManager
- * - Auto-dial *99# USSD or 123PAY IVR via ACTION_CALL
+ * - Carrier detection via TelephonyManager.getSimOperatorName()
+ * - Auto-dial *99# USSD or 123PAY IVR via Intent.ACTION_CALL
  * - Call-end detection via TelephonyCallback / PhoneStateListener
  */
 class TelephonyBridge(
-    private val activity: MainActivity,
+    private val activity: Activity,
     messenger: BinaryMessenger,
 ) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
@@ -108,9 +109,7 @@ class TelephonyBridge(
         val normalized = operator.lowercase(Locale.US)
         val isJio = normalized.contains("jio") || normalized.contains("reliance")
         val networkType = networkTypeName()
-        val is4gOnly = isJio || networkType.contains("LTE", ignoreCase = true) ||
-            networkType.contains("NR", ignoreCase = true)
-        val rail = if (isJio || !ussdLikelySupported(normalized, is4gOnly)) "ivr" else "ussd"
+        val rail = if (isJio) "ivr" else "ussd"
         return mapOf(
             "operator" to operator,
             "isJio" to isJio,
@@ -120,12 +119,6 @@ class TelephonyBridge(
             "ussdSupported" to (rail == "ussd"),
             "platform" to "android",
         )
-    }
-
-    private fun ussdLikelySupported(operator: String, is4gOnly: Boolean): Boolean {
-        if (operator.contains("jio") || operator.contains("reliance")) return false
-        if (is4gOnly && operator.contains("jio")) return false
-        return true
     }
 
     @Suppress("DEPRECATION")
