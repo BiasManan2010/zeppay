@@ -1,0 +1,8 @@
+{
+  "name": "zeppay-verify-proxy",
+  "private": true,
+  "dependencies": {
+    "express": "^4.21.2",
+    "twilio": "^5.4.5"
+  }
+}
