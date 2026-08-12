@@ -1,4 +1,4 @@
-package `in`.zeppay.app
+package `in`.zeppay.zeppay
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
