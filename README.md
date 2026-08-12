@@ -10,6 +10,15 @@ Cross-platform Flutter UPI app: one QR scan + biometric confirmation, then Andro
 - Android Kotlin platform channel for carrier detection, `ACTION_CALL`, and call-end
 - iOS: offline rails are **not available**; the UI says so and falls back to `upi://` intent
 
+## Android demo APK
+
+GitHub Actions builds a signed-with-debug-keys release APK on every push to `main`.
+
+- **Actions artifact:** [github.com/BiasManan2010/zeppay/actions](https://github.com/BiasManan2010/zeppay/actions) → latest run → `zeppay-apk`
+- **Release download:** [github.com/BiasManan2010/zeppay/releases](https://github.com/BiasManan2010/zeppay/releases)
+
+Install on a phone: download `app-release.apk` → allow unknown sources → open the file. Dev OTP is **123456**. Offline `*99#` / 123PAY needs a real SIM.
+
 ## First run
 
 Flutter SDK on this machine: `C:\Users\dpsa0\flutter\bin`
