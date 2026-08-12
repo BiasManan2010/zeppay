@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/app_store.dart';
@@ -134,7 +133,7 @@ class _HomeTab extends ConsumerWidget {
           const SizedBox(height: 6),
           net.when(
             data: (info) => Text(
-              Platform.isIOS
+              isIosDevice
                   ? 'iOS · online UPI fallback'
                   : '${info.operator.isEmpty ? 'Carrier' : info.operator} · ${info.isJio ? '123PAY' : '*99#'}',
               style: Theme.of(context).textTheme.labelSmall,
@@ -143,7 +142,7 @@ class _HomeTab extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
           ),
           const SizedBox(height: 22),
-          if (!Platform.isAndroid)
+          if (!isAndroidDevice)
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 16),

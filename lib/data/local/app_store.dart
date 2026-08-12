@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
@@ -11,7 +10,7 @@ final appStoreProvider = NotifierProvider<AppStore, AppState>(AppStore.new);
 
 class AppStore extends Notifier<AppState> {
   static const _uuid = Uuid();
-  File? _file;
+  static const _key = 'zeppay_state';
 
   @override
   AppState build() {
@@ -20,17 +19,17 @@ class AppStore extends Notifier<AppState> {
   }
 
   Future<void> hydrate() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _file = File('${dir.path}/zeppay_state.json');
-    if (await _file!.exists()) {
-      final raw = jsonDecode(await _file!.readAsString()) as Map<String, dynamic>;
-      state = AppState.fromJson(raw);
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      state = AppState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {}
   }
 
   Future<void> _persist() async {
-    _file ??= File('${(await getApplicationDocumentsDirectory()).path}/zeppay_state.json');
-    await _file!.writeAsString(jsonEncode(state.toJson()));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(state.toJson()));
   }
 
   Future<void> login(String phone) async {
