@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import '../../core/platform.dart';
 
 class NetworkInfo {
   const NetworkInfo({
@@ -45,19 +46,19 @@ class TelephonyService {
   static const _events = EventChannel('in.zeppay/call_state');
 
   Stream<Map<dynamic, dynamic>> callStates() {
-    if (!Platform.isAndroid) return const Stream.empty();
+    if (!isAndroidDevice) return const Stream.empty();
     return _events.receiveBroadcastStream().map((e) => Map<dynamic, dynamic>.from(e as Map));
   }
 
   Future<NetworkInfo> networkInfo() async {
-    if (!Platform.isAndroid) {
-      return const NetworkInfo(
-        operator: 'ios',
+    if (!isAndroidDevice) {
+      return NetworkInfo(
+        operator: kIsWeb ? 'web' : 'ios',
         isJio: false,
         networkType: 'n/a',
         recommendedRail: 'upiIntent',
         ussdSupported: false,
-        platform: 'ios',
+        platform: kIsWeb ? 'web' : 'ios',
       );
     }
     try {
@@ -71,24 +72,24 @@ class TelephonyService {
   }
 
   Future<void> requestPermissions() async {
-    if (!Platform.isAndroid) return;
+    if (!isAndroidDevice) return;
     await _methods.invokeMethod('requestPermissions');
   }
 
   Future<bool> hasCallPermission() async {
-    if (!Platform.isAndroid) return false;
+    if (!isAndroidDevice) return false;
     return await _methods.invokeMethod<bool>('hasCallPermission') ?? false;
   }
 
   Future<void> dial(String number) async {
-    if (!Platform.isAndroid) {
+    if (!isAndroidDevice) {
       throw UnsupportedError('Offline rails are Android-only');
     }
     await _methods.invokeMethod('dial', {'number': number});
   }
 
   Future<void> waitForCallEnd({Duration timeout = const Duration(minutes: 5)}) async {
-    if (!Platform.isAndroid) return;
+    if (!isAndroidDevice) return;
     await callStates().firstWhere((e) => e['ended'] == true).timeout(timeout);
   }
 }

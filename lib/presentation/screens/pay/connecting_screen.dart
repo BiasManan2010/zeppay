@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/models/models.dart';
@@ -42,7 +41,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       ref.read(lastRailProvider.notifier).state = rail;
       final dial = RailEngine.dialFor(rail, draft);
 
-      if (!Platform.isAndroid) {
+      if (!isAndroidDevice) {
         setState(() => _label = 'Opening UPI (iOS fallback)');
         await Future<void>.delayed(const Duration(milliseconds: 600));
         final uri = Uri.parse(RailEngine.upiUri(draft));
@@ -82,7 +81,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                 Text(_label, style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
-                  Platform.isIOS
+                  isIosDevice
                       ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
                       : 'Enter your UPI PIN when the dialer asks. We pull you back the instant the call ends.',
                   textAlign: TextAlign.center,

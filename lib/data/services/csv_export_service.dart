@@ -1,16 +1,13 @@
-import 'dart:io';
-
 import 'package:csv/csv.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../models/models.dart';
 
 class CsvExportService {
-  Future<File> exportGroup({
+  String exportGroup({
     required SplitGroup group,
     required List<Expense> expenses,
     required List<Settlement> settlements,
-  }) async {
+  }) {
     final rows = <List<dynamic>>[
       ['Type', 'Date', 'Title', 'Amount', 'Currency', 'Payers', 'Note'],
       ...expenses.map(
@@ -36,9 +33,6 @@ class CsvExportService {
         ],
       ),
     ];
-    final csv = const ListToCsvConverter().convert(rows);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${group.name.replaceAll(' ', '_')}_ledger.csv');
-    return file.writeAsString(csv);
+    return const ListToCsvConverter().convert(rows);
   }
 }

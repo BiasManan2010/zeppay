@@ -37,14 +37,14 @@ class GroupDetailScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Export CSV',
             onPressed: () async {
-              final file = await CsvExportService().exportGroup(
+              final csv = CsvExportService().exportGroup(
                 group: group,
                 expenses: expenses,
                 settlements: settlements,
               );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Saved ${file.path}')),
+                  SnackBar(content: Text('CSV ready (${csv.split('\n').length} rows)')),
                 );
               }
             },
