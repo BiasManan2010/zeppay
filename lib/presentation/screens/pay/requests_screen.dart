@@ -65,18 +65,20 @@ class RequestsScreen extends ConsumerWidget {
                                 label: 'PAY',
                                 expand: false,
                                 onTap: () {
-                                  ref
-                                      .read(paymentDraftProvider.notifier)
-                                      .state = PaymentDraft(
-                                    vpa: r.fromPhone.contains('@')
-                                        ? r.fromPhone
-                                        : '${r.fromPhone}@upi',
+                                  startPayment(
+                                    ref,
+                                    vpa: r.toVpa.contains('@')
+                                        ? r.toVpa
+                                        : (r.fromPhone.contains('@')
+                                            ? r.fromPhone
+                                            : '${r.fromPhone}@upi'),
                                     amountPaise: r.amountPaise,
                                     payeeName: r.fromName,
                                     note: r.note,
                                     source: 'request',
+                                    requestId: r.id,
                                   );
-                                  context.push('/face');
+                                  context.push('/pay/amount');
                                 },
                               ),
                             ],

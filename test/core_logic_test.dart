@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
+import 'package:zeppay/data/local/app_store.dart';
 import 'package:zeppay/data/models/models.dart';
+import 'package:zeppay/data/services/csv_export_service.dart';
 import 'package:zeppay/data/services/ocr_service.dart';
 import 'package:zeppay/data/services/rail_engine.dart';
 import 'package:zeppay/data/services/telephony_service.dart';
@@ -66,7 +68,9 @@ void main() {
   });
 
   test('OCR line parser extracts amounts', () {
-    final items = OcrService.parseLines('Masala dosa  ₹120.00\nFilter coffee 40');
+    final items = OcrService.parseLines(
+      'Masala dosa  ₹120.00\nFilter coffee 40',
+    );
     expect(items.length, 2);
     expect(items.first.label.toLowerCase(), contains('dosa'));
   });
@@ -81,5 +85,52 @@ void main() {
       platform: 'android',
     );
     expect(RailEngine.select(info), PaymentRail.ivr);
+  });
+
+  test('123PAY dial string includes amount DTMF', () {
+    const draft = PaymentDraft(
+      vpa: 'tea@okicici',
+      amountPaise: 15000,
+      payeeName: 'Tea',
+    );
+    expect(RailEngine.ivrString(draft), contains('150'));
+    expect(RailEngine.ivrScript(draft).toLowerCase(), contains('tea@okicici'));
+  });
+
+  test('balance enquiry uses NPCI *99*3#', () {
+    expect(RailEngine.balanceUssd, '*99*3#');
+  });
+
+  test('CSV ledger names members instead of ids', () {
+    const group = SplitGroup(
+      id: 'g',
+      name: 'Goa',
+      members: [
+        GroupMember(id: 'me', name: 'You'),
+        GroupMember(id: 'riya', name: 'Riya'),
+      ],
+    );
+    final csv = CsvExportService().exportGroup(
+      group: group,
+      expenses: [
+        Expense(
+          id: '1',
+          groupId: 'g',
+          title: 'Taxi',
+          amountPaise: 50000,
+          createdAt: DateTime(2026, 1, 1),
+          payerIds: const ['me'],
+          shares: const [],
+        ),
+      ],
+      settlements: const [],
+    );
+    expect(csv, contains('Taxi'));
+    expect(csv, contains('You'));
+    expect(csv, isNot(contains('me|')));
+  });
+
+  test('local payment refs are ZP-prefixed', () {
+    expect(AppStore.payRef(), startsWith('ZP'));
   });
 }

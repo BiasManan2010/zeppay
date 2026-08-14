@@ -29,7 +29,10 @@ class AutopayScreen extends ConsumerWidget {
               itemCount: mandates.length,
               itemBuilder: (context, i) {
                 final m = mandates[i];
-                return SurfaceCard(
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                  onTap: () => _edit(context, ref, m),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -48,21 +51,31 @@ class AutopayScreen extends ConsumerWidget {
                         '${m.frequency.name} · limit ₹${(m.limitPaise / 100).toStringAsFixed(0)} · next ${DateFormat('d MMM').format(m.nextRun)}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-                            vpa: m.vpa,
-                            amountPaise: m.amountPaise,
-                            payeeName: m.payee,
-                            note: 'Autopay',
-                            source: 'autopay',
-                          );
-                          context.push('/face');
-                        },
-                        child: const Text('Run now'),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              startPayment(
+                                ref,
+                                vpa: m.vpa,
+                                amountPaise: m.amountPaise,
+                                payeeName: m.payee,
+                                note: 'Autopay',
+                                source: 'autopay',
+                              );
+                              context.push('/pay/amount');
+                            },
+                            child: const Text('Run now'),
+                          ),
+                          TextButton(
+                            onPressed: () => ref.read(appStoreProvider.notifier).deleteMandate(m.id),
+                            child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                ),
                 );
               },
             ),

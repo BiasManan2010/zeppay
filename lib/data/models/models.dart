@@ -52,26 +52,26 @@ class UserProfile {
   }
 
   Map<String, dynamic> toJson() => {
-        'phone': phone,
-        'name': name,
-        'upiId': upiId,
-        'bankName': bankName,
-        'accountLast4': accountLast4,
-        'balancePaise': balancePaise,
-        'biometricEnrolled': biometricEnrolled,
-        'onboarded': onboarded,
-      };
+    'phone': phone,
+    'name': name,
+    'upiId': upiId,
+    'bankName': bankName,
+    'accountLast4': accountLast4,
+    'balancePaise': balancePaise,
+    'biometricEnrolled': biometricEnrolled,
+    'onboarded': onboarded,
+  };
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
-        phone: j['phone'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        upiId: j['upiId'] as String? ?? '',
-        bankName: j['bankName'] as String? ?? '',
-        accountLast4: j['accountLast4'] as String? ?? '',
-        balancePaise: j['balancePaise'] as int? ?? 0,
-        biometricEnrolled: j['biometricEnrolled'] as bool? ?? false,
-        onboarded: j['onboarded'] as bool? ?? false,
-      );
+    phone: j['phone'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    upiId: j['upiId'] as String? ?? '',
+    bankName: j['bankName'] as String? ?? '',
+    accountLast4: j['accountLast4'] as String? ?? '',
+    balancePaise: j['balancePaise'] as int? ?? 0,
+    biometricEnrolled: j['biometricEnrolled'] as bool? ?? false,
+    onboarded: j['onboarded'] as bool? ?? false,
+  );
 }
 
 class PaymentDraft {
@@ -82,6 +82,10 @@ class PaymentDraft {
     this.note = '',
     this.source = 'scan',
     this.currency = 'INR',
+    this.requestId,
+    this.settleGroupId,
+    this.settleFromId,
+    this.settleToId,
   });
 
   final String vpa;
@@ -90,8 +94,30 @@ class PaymentDraft {
   final String note;
   final String source;
   final String currency;
+  final String? requestId;
+  final String? settleGroupId;
+  final String? settleFromId;
+  final String? settleToId;
 
   double get amountRupees => amountPaise / 100.0;
+
+  PaymentDraft copyWith({
+    int? amountPaise,
+    String? note,
+    String? payeeName,
+    String? vpa,
+  }) => PaymentDraft(
+    vpa: vpa ?? this.vpa,
+    amountPaise: amountPaise ?? this.amountPaise,
+    payeeName: payeeName ?? this.payeeName,
+    note: note ?? this.note,
+    source: source,
+    currency: currency,
+    requestId: requestId,
+    settleGroupId: settleGroupId,
+    settleFromId: settleFromId,
+    settleToId: settleToId,
+  );
 }
 
 class TxRecord {
@@ -106,6 +132,7 @@ class TxRecord {
     this.rail = PaymentRail.ussd,
     this.offline = true,
     this.currency = 'INR',
+    this.refCode = '',
   });
 
   final String id;
@@ -118,32 +145,79 @@ class TxRecord {
   final PaymentRail rail;
   final bool offline;
   final String currency;
+  final String refCode;
+
+  TxRecord copyWith({TxStatus? status, String? refCode}) => TxRecord(
+    id: id,
+    vpa: vpa,
+    payeeName: payeeName,
+    amountPaise: amountPaise,
+    status: status ?? this.status,
+    createdAt: createdAt,
+    note: note,
+    rail: rail,
+    offline: offline,
+    currency: currency,
+    refCode: refCode ?? this.refCode,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'vpa': vpa,
-        'payeeName': payeeName,
-        'amountPaise': amountPaise,
-        'status': status.name,
-        'createdAt': createdAt.toIso8601String(),
-        'note': note,
-        'rail': rail.name,
-        'offline': offline,
-        'currency': currency,
-      };
+    'id': id,
+    'vpa': vpa,
+    'payeeName': payeeName,
+    'amountPaise': amountPaise,
+    'status': status.name,
+    'createdAt': createdAt.toIso8601String(),
+    'note': note,
+    'rail': rail.name,
+    'offline': offline,
+    'currency': currency,
+    'refCode': refCode,
+  };
 
   factory TxRecord.fromJson(Map<String, dynamic> j) => TxRecord(
-        id: j['id'] as String,
-        vpa: j['vpa'] as String? ?? '',
-        payeeName: j['payeeName'] as String? ?? '',
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        status: TxStatus.values.byName(j['status'] as String? ?? 'pending'),
-        createdAt: DateTime.parse(j['createdAt'] as String),
-        note: j['note'] as String? ?? '',
-        rail: PaymentRail.values.byName(j['rail'] as String? ?? 'ussd'),
-        offline: j['offline'] as bool? ?? true,
-        currency: j['currency'] as String? ?? 'INR',
-      );
+    id: j['id'] as String,
+    vpa: j['vpa'] as String? ?? '',
+    payeeName: j['payeeName'] as String? ?? '',
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    status: TxStatus.values.byName(j['status'] as String? ?? 'pending'),
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    note: j['note'] as String? ?? '',
+    rail: PaymentRail.values.byName(j['rail'] as String? ?? 'ussd'),
+    offline: j['offline'] as bool? ?? true,
+    currency: j['currency'] as String? ?? 'INR',
+    refCode: j['refCode'] as String? ?? '',
+  );
+}
+
+class SavedPayee {
+  const SavedPayee({
+    required this.vpa,
+    this.name = '',
+    this.favorite = false,
+  });
+
+  final String vpa;
+  final String name;
+  final bool favorite;
+
+  SavedPayee copyWith({String? name, bool? favorite}) => SavedPayee(
+    vpa: vpa,
+    name: name ?? this.name,
+    favorite: favorite ?? this.favorite,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'vpa': vpa,
+    'name': name,
+    'favorite': favorite,
+  };
+
+  factory SavedPayee.fromJson(Map<String, dynamic> j) => SavedPayee(
+    vpa: j['vpa'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    favorite: j['favorite'] as bool? ?? false,
+  );
 }
 
 class PayRequest {
@@ -170,40 +244,40 @@ class PayRequest {
   final DateTime createdAt;
 
   PayRequest copyWith({RequestStatus? status}) => PayRequest(
-        id: id,
-        fromPhone: fromPhone,
-        fromName: fromName,
-        toPhone: toPhone,
-        toVpa: toVpa,
-        amountPaise: amountPaise,
-        note: note,
-        status: status ?? this.status,
-        createdAt: createdAt,
-      );
+    id: id,
+    fromPhone: fromPhone,
+    fromName: fromName,
+    toPhone: toPhone,
+    toVpa: toVpa,
+    amountPaise: amountPaise,
+    note: note,
+    status: status ?? this.status,
+    createdAt: createdAt,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'fromPhone': fromPhone,
-        'fromName': fromName,
-        'toPhone': toPhone,
-        'toVpa': toVpa,
-        'amountPaise': amountPaise,
-        'note': note,
-        'status': status.name,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'fromPhone': fromPhone,
+    'fromName': fromName,
+    'toPhone': toPhone,
+    'toVpa': toVpa,
+    'amountPaise': amountPaise,
+    'note': note,
+    'status': status.name,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory PayRequest.fromJson(Map<String, dynamic> j) => PayRequest(
-        id: j['id'] as String,
-        fromPhone: j['fromPhone'] as String? ?? '',
-        fromName: j['fromName'] as String? ?? '',
-        toPhone: j['toPhone'] as String? ?? '',
-        toVpa: j['toVpa'] as String? ?? '',
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        note: j['note'] as String? ?? '',
-        status: RequestStatus.values.byName(j['status'] as String? ?? 'pending'),
-        createdAt: DateTime.parse(j['createdAt'] as String),
-      );
+    id: j['id'] as String,
+    fromPhone: j['fromPhone'] as String? ?? '',
+    fromName: j['fromName'] as String? ?? '',
+    toPhone: j['toPhone'] as String? ?? '',
+    toVpa: j['toVpa'] as String? ?? '',
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    note: j['note'] as String? ?? '',
+    status: RequestStatus.values.byName(j['status'] as String? ?? 'pending'),
+    createdAt: DateTime.parse(j['createdAt'] as String),
+  );
 }
 
 class AutopayMandate {
@@ -235,42 +309,46 @@ class AutopayMandate {
     int? amountPaise,
     int? limitPaise,
     AutopayFrequency? frequency,
-  }) =>
-      AutopayMandate(
-        id: id,
-        payee: payee,
-        vpa: vpa,
-        amountPaise: amountPaise ?? this.amountPaise,
-        frequency: frequency ?? this.frequency,
-        nextRun: nextRun ?? this.nextRun,
-        limitPaise: limitPaise ?? this.limitPaise,
-        active: active ?? this.active,
-        note: note,
-      );
+    String? payee,
+    String? vpa,
+    String? note,
+  }) => AutopayMandate(
+    id: id,
+    payee: payee ?? this.payee,
+    vpa: vpa ?? this.vpa,
+    amountPaise: amountPaise ?? this.amountPaise,
+    frequency: frequency ?? this.frequency,
+    nextRun: nextRun ?? this.nextRun,
+    limitPaise: limitPaise ?? this.limitPaise,
+    active: active ?? this.active,
+    note: note ?? this.note,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'payee': payee,
-        'vpa': vpa,
-        'amountPaise': amountPaise,
-        'frequency': frequency.name,
-        'nextRun': nextRun.toIso8601String(),
-        'limitPaise': limitPaise,
-        'active': active,
-        'note': note,
-      };
+    'id': id,
+    'payee': payee,
+    'vpa': vpa,
+    'amountPaise': amountPaise,
+    'frequency': frequency.name,
+    'nextRun': nextRun.toIso8601String(),
+    'limitPaise': limitPaise,
+    'active': active,
+    'note': note,
+  };
 
   factory AutopayMandate.fromJson(Map<String, dynamic> j) => AutopayMandate(
-        id: j['id'] as String,
-        payee: j['payee'] as String? ?? '',
-        vpa: j['vpa'] as String? ?? '',
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        frequency: AutopayFrequency.values.byName(j['frequency'] as String? ?? 'monthly'),
-        nextRun: DateTime.parse(j['nextRun'] as String),
-        limitPaise: j['limitPaise'] as int? ?? 0,
-        active: j['active'] as bool? ?? true,
-        note: j['note'] as String? ?? '',
-      );
+    id: j['id'] as String,
+    payee: j['payee'] as String? ?? '',
+    vpa: j['vpa'] as String? ?? '',
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    frequency: AutopayFrequency.values.byName(
+      j['frequency'] as String? ?? 'monthly',
+    ),
+    nextRun: DateTime.parse(j['nextRun'] as String),
+    limitPaise: j['limitPaise'] as int? ?? 0,
+    active: j['active'] as bool? ?? true,
+    note: j['note'] as String? ?? '',
+  );
 }
 
 class GroupMember {
@@ -291,22 +369,37 @@ class GroupMember {
   final double defaultShare;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'phone': phone,
-        'email': email,
-        'upiId': upiId,
-        'defaultShare': defaultShare,
-      };
+    'id': id,
+    'name': name,
+    'phone': phone,
+    'email': email,
+    'upiId': upiId,
+    'defaultShare': defaultShare,
+  };
+
+  GroupMember copyWith({
+    String? name,
+    String? phone,
+    String? email,
+    String? upiId,
+    double? defaultShare,
+  }) => GroupMember(
+    id: id,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    email: email ?? this.email,
+    upiId: upiId ?? this.upiId,
+    defaultShare: defaultShare ?? this.defaultShare,
+  );
 
   factory GroupMember.fromJson(Map<String, dynamic> j) => GroupMember(
-        id: j['id'] as String,
-        name: j['name'] as String? ?? '',
-        phone: j['phone'] as String? ?? '',
-        email: j['email'] as String? ?? '',
-        upiId: j['upiId'] as String? ?? '',
-        defaultShare: (j['defaultShare'] as num?)?.toDouble() ?? 1,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String? ?? '',
+    phone: j['phone'] as String? ?? '',
+    email: j['email'] as String? ?? '',
+    upiId: j['upiId'] as String? ?? '',
+    defaultShare: (j['defaultShare'] as num?)?.toDouble() ?? 1,
+  );
 }
 
 class LineItem {
@@ -321,16 +414,16 @@ class LineItem {
   final List<String> assigneeIds;
 
   Map<String, dynamic> toJson() => {
-        'label': label,
-        'amountPaise': amountPaise,
-        'assigneeIds': assigneeIds,
-      };
+    'label': label,
+    'amountPaise': amountPaise,
+    'assigneeIds': assigneeIds,
+  };
 
   factory LineItem.fromJson(Map<String, dynamic> j) => LineItem(
-        label: j['label'] as String? ?? '',
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        assigneeIds: (j['assigneeIds'] as List?)?.cast<String>() ?? const [],
-      );
+    label: j['label'] as String? ?? '',
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    assigneeIds: (j['assigneeIds'] as List?)?.cast<String>() ?? const [],
+  );
 }
 
 class ExpenseShare {
@@ -338,11 +431,14 @@ class ExpenseShare {
   final String memberId;
   final int amountPaise;
 
-  Map<String, dynamic> toJson() => {'memberId': memberId, 'amountPaise': amountPaise};
+  Map<String, dynamic> toJson() => {
+    'memberId': memberId,
+    'amountPaise': amountPaise,
+  };
   factory ExpenseShare.fromJson(Map<String, dynamic> j) => ExpenseShare(
-        memberId: j['memberId'] as String,
-        amountPaise: j['amountPaise'] as int? ?? 0,
-      );
+    memberId: j['memberId'] as String,
+    amountPaise: j['amountPaise'] as int? ?? 0,
+  );
 }
 
 class Expense {
@@ -383,46 +479,46 @@ class Expense {
   final int tipPaise;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'groupId': groupId,
-        'title': title,
-        'amountPaise': amountPaise,
-        'createdAt': createdAt.toIso8601String(),
-        'payerIds': payerIds,
-        'shares': shares.map((e) => e.toJson()).toList(),
-        'mode': mode.name,
-        'currency': currency,
-        'fxRate': fxRate,
-        'category': category,
-        'note': note,
-        'receiptPath': receiptPath,
-        'items': items.map((e) => e.toJson()).toList(),
-        'taxPaise': taxPaise,
-        'tipPaise': tipPaise,
-      };
+    'id': id,
+    'groupId': groupId,
+    'title': title,
+    'amountPaise': amountPaise,
+    'createdAt': createdAt.toIso8601String(),
+    'payerIds': payerIds,
+    'shares': shares.map((e) => e.toJson()).toList(),
+    'mode': mode.name,
+    'currency': currency,
+    'fxRate': fxRate,
+    'category': category,
+    'note': note,
+    'receiptPath': receiptPath,
+    'items': items.map((e) => e.toJson()).toList(),
+    'taxPaise': taxPaise,
+    'tipPaise': tipPaise,
+  };
 
   factory Expense.fromJson(Map<String, dynamic> j) => Expense(
-        id: j['id'] as String,
-        groupId: j['groupId'] as String,
-        title: j['title'] as String? ?? '',
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        createdAt: DateTime.parse(j['createdAt'] as String),
-        payerIds: (j['payerIds'] as List?)?.cast<String>() ?? const [],
-        shares: (j['shares'] as List? ?? [])
-            .map((e) => ExpenseShare.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        mode: SplitMode.values.byName(j['mode'] as String? ?? 'equal'),
-        currency: j['currency'] as String? ?? 'INR',
-        fxRate: (j['fxRate'] as num?)?.toDouble() ?? 1,
-        category: j['category'] as String? ?? 'general',
-        note: j['note'] as String? ?? '',
-        receiptPath: j['receiptPath'] as String?,
-        items: (j['items'] as List? ?? [])
-            .map((e) => LineItem.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        taxPaise: j['taxPaise'] as int? ?? 0,
-        tipPaise: j['tipPaise'] as int? ?? 0,
-      );
+    id: j['id'] as String,
+    groupId: j['groupId'] as String,
+    title: j['title'] as String? ?? '',
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    payerIds: (j['payerIds'] as List?)?.cast<String>() ?? const [],
+    shares: (j['shares'] as List? ?? [])
+        .map((e) => ExpenseShare.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    mode: SplitMode.values.byName(j['mode'] as String? ?? 'equal'),
+    currency: j['currency'] as String? ?? 'INR',
+    fxRate: (j['fxRate'] as num?)?.toDouble() ?? 1,
+    category: j['category'] as String? ?? 'general',
+    note: j['note'] as String? ?? '',
+    receiptPath: j['receiptPath'] as String?,
+    items: (j['items'] as List? ?? [])
+        .map((e) => LineItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    taxPaise: j['taxPaise'] as int? ?? 0,
+    tipPaise: j['tipPaise'] as int? ?? 0,
+  );
 }
 
 class Settlement {
@@ -447,26 +543,26 @@ class Settlement {
   final String note;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'groupId': groupId,
-        'fromId': fromId,
-        'toId': toId,
-        'amountPaise': amountPaise,
-        'createdAt': createdAt.toIso8601String(),
-        'method': method,
-        'note': note,
-      };
+    'id': id,
+    'groupId': groupId,
+    'fromId': fromId,
+    'toId': toId,
+    'amountPaise': amountPaise,
+    'createdAt': createdAt.toIso8601String(),
+    'method': method,
+    'note': note,
+  };
 
   factory Settlement.fromJson(Map<String, dynamic> j) => Settlement(
-        id: j['id'] as String,
-        groupId: j['groupId'] as String,
-        fromId: j['fromId'] as String,
-        toId: j['toId'] as String,
-        amountPaise: j['amountPaise'] as int? ?? 0,
-        createdAt: DateTime.parse(j['createdAt'] as String),
-        method: j['method'] as String? ?? 'in_app',
-        note: j['note'] as String? ?? '',
-      );
+    id: j['id'] as String,
+    groupId: j['groupId'] as String,
+    fromId: j['fromId'] as String,
+    toId: j['toId'] as String,
+    amountPaise: j['amountPaise'] as int? ?? 0,
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    method: j['method'] as String? ?? 'in_app',
+    note: j['note'] as String? ?? '',
+  );
 }
 
 class SplitGroup {
@@ -485,25 +581,39 @@ class SplitGroup {
   final Map<String, double> defaultShares;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'kind': kind,
-        'members': members.map((e) => e.toJson()).toList(),
-        'defaultShares': defaultShares,
-      };
+    'id': id,
+    'name': name,
+    'kind': kind,
+    'members': members.map((e) => e.toJson()).toList(),
+    'defaultShares': defaultShares,
+  };
+
+  SplitGroup copyWith({
+    String? name,
+    String? kind,
+    List<GroupMember>? members,
+    Map<String, double>? defaultShares,
+  }) => SplitGroup(
+    id: id,
+    name: name ?? this.name,
+    kind: kind ?? this.kind,
+    members: members ?? this.members,
+    defaultShares: defaultShares ?? this.defaultShares,
+  );
 
   factory SplitGroup.fromJson(Map<String, dynamic> j) => SplitGroup(
-        id: j['id'] as String,
-        name: j['name'] as String? ?? '',
-        kind: j['kind'] as String? ?? 'trip',
-        members: (j['members'] as List? ?? [])
-            .map((e) => GroupMember.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        defaultShares: (j['defaultShares'] as Map?)?.map(
-              (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
-            ) ??
-            const {},
-      );
+    id: j['id'] as String,
+    name: j['name'] as String? ?? '',
+    kind: j['kind'] as String? ?? 'trip',
+    members: (j['members'] as List? ?? [])
+        .map((e) => GroupMember.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    defaultShares:
+        (j['defaultShares'] as Map?)?.map(
+          (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+        ) ??
+        const {},
+  );
 }
 
 class AppNotification {
@@ -522,20 +632,28 @@ class AppNotification {
   final bool read;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'body': body,
-        'createdAt': createdAt.toIso8601String(),
-        'read': read,
-      };
+    'id': id,
+    'title': title,
+    'body': body,
+    'createdAt': createdAt.toIso8601String(),
+    'read': read,
+  };
+
+  AppNotification copyWith({bool? read}) => AppNotification(
+    id: id,
+    title: title,
+    body: body,
+    createdAt: createdAt,
+    read: read ?? this.read,
+  );
 
   factory AppNotification.fromJson(Map<String, dynamic> j) => AppNotification(
-        id: j['id'] as String,
-        title: j['title'] as String? ?? '',
-        body: j['body'] as String? ?? '',
-        createdAt: DateTime.parse(j['createdAt'] as String),
-        read: j['read'] as bool? ?? false,
-      );
+    id: j['id'] as String,
+    title: j['title'] as String? ?? '',
+    body: j['body'] as String? ?? '',
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    read: j['read'] as bool? ?? false,
+  );
 }
 
 class AppState {
@@ -549,6 +667,7 @@ class AppState {
     this.expenses = const [],
     this.settlements = const [],
     this.notifications = const [],
+    this.payees = const [],
   });
 
   final String? sessionPhone;
@@ -560,6 +679,7 @@ class AppState {
   final List<Expense> expenses;
   final List<Settlement> settlements;
   final List<AppNotification> notifications;
+  final List<SavedPayee> payees;
 
   AppState copyWith({
     String? sessionPhone,
@@ -571,6 +691,7 @@ class AppState {
     List<Expense>? expenses,
     List<Settlement>? settlements,
     List<AppNotification>? notifications,
+    List<SavedPayee>? payees,
     bool clearSession = false,
   }) {
     return AppState(
@@ -583,46 +704,55 @@ class AppState {
       expenses: expenses ?? this.expenses,
       settlements: settlements ?? this.settlements,
       notifications: notifications ?? this.notifications,
+      payees: payees ?? this.payees,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'sessionPhone': sessionPhone,
-        'profile': profile?.toJson(),
-        'transactions': transactions.map((e) => e.toJson()).toList(),
-        'requests': requests.map((e) => e.toJson()).toList(),
-        'mandates': mandates.map((e) => e.toJson()).toList(),
-        'groups': groups.map((e) => e.toJson()).toList(),
-        'expenses': expenses.map((e) => e.toJson()).toList(),
-        'settlements': settlements.map((e) => e.toJson()).toList(),
-        'notifications': notifications.map((e) => e.toJson()).toList(),
-      };
+    'sessionPhone': sessionPhone,
+    'profile': profile?.toJson(),
+    'transactions': transactions.map((e) => e.toJson()).toList(),
+    'requests': requests.map((e) => e.toJson()).toList(),
+    'mandates': mandates.map((e) => e.toJson()).toList(),
+    'groups': groups.map((e) => e.toJson()).toList(),
+    'expenses': expenses.map((e) => e.toJson()).toList(),
+    'settlements': settlements.map((e) => e.toJson()).toList(),
+    'notifications': notifications.map((e) => e.toJson()).toList(),
+    'payees': payees.map((e) => e.toJson()).toList(),
+  };
 
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
-        sessionPhone: j['sessionPhone'] as String?,
-        profile: j['profile'] == null
-            ? null
-            : UserProfile.fromJson(Map<String, dynamic>.from(j['profile'] as Map)),
-        transactions: (j['transactions'] as List? ?? [])
-            .map((e) => TxRecord.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        requests: (j['requests'] as List? ?? [])
-            .map((e) => PayRequest.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        mandates: (j['mandates'] as List? ?? [])
-            .map((e) => AutopayMandate.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        groups: (j['groups'] as List? ?? [])
-            .map((e) => SplitGroup.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        expenses: (j['expenses'] as List? ?? [])
-            .map((e) => Expense.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        settlements: (j['settlements'] as List? ?? [])
-            .map((e) => Settlement.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        notifications: (j['notifications'] as List? ?? [])
-            .map((e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    sessionPhone: j['sessionPhone'] as String?,
+    profile: j['profile'] == null
+        ? null
+        : UserProfile.fromJson(Map<String, dynamic>.from(j['profile'] as Map)),
+    transactions: (j['transactions'] as List? ?? [])
+        .map((e) => TxRecord.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    requests: (j['requests'] as List? ?? [])
+        .map((e) => PayRequest.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    mandates: (j['mandates'] as List? ?? [])
+        .map(
+          (e) => AutopayMandate.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+    groups: (j['groups'] as List? ?? [])
+        .map((e) => SplitGroup.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    expenses: (j['expenses'] as List? ?? [])
+        .map((e) => Expense.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    settlements: (j['settlements'] as List? ?? [])
+        .map((e) => Settlement.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    notifications: (j['notifications'] as List? ?? [])
+        .map(
+          (e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+    payees: (j['payees'] as List? ?? [])
+        .map((e) => SavedPayee.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+  );
 }

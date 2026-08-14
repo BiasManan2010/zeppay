@@ -13,6 +13,36 @@ final telephonyServiceProvider = Provider((_) => TelephonyService());
 final paymentDraftProvider = StateProvider<PaymentDraft?>((_) => null);
 final pendingPhoneProvider = StateProvider<String>((_) => '');
 final lastRailProvider = StateProvider<PaymentRail?>((_) => null);
+final pendingTxIdProvider = StateProvider<String?>((_) => null);
+
+final otpLiveProvider = FutureProvider((ref) {
+  return ref.watch(otpServiceProvider).isLive();
+});
+
+void startPayment(
+  WidgetRef ref, {
+  required String vpa,
+  required int amountPaise,
+  String payeeName = '',
+  String note = '',
+  String source = 'pay',
+  String? requestId,
+  String? settleGroupId,
+  String? settleFromId,
+  String? settleToId,
+}) {
+  ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
+    vpa: vpa,
+    amountPaise: amountPaise,
+    payeeName: payeeName,
+    note: note,
+    source: source,
+    requestId: requestId,
+    settleGroupId: settleGroupId,
+    settleFromId: settleFromId,
+    settleToId: settleToId,
+  );
+}
 
 final networkInfoProvider = FutureProvider((ref) {
   return ref.watch(telephonyServiceProvider).networkInfo();
