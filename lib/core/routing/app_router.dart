@@ -51,7 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (authed &&
           onboarded &&
-          (loc == '/login' || loc == '/otp' || loc == '/welcome')) {
+          (loc == '/login' ||
+              loc == '/otp' ||
+              loc == '/welcome' ||
+              loc == '/onboarding')) {
         return '/home';
       }
       return null;

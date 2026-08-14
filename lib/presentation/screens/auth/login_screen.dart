@@ -26,12 +26,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _send() async {
-    final raw = _phone.text.replaceAll(RegExp(r'\D'), '');
-    if (raw.length < 10) {
+    var raw = _phone.text.replaceAll(RegExp(r'\D'), '');
+    if (raw.startsWith('91') && raw.length >= 12) {
+      raw = raw.substring(raw.length - 10);
+    }
+    if (raw.length != 10) {
       setState(() => _error = 'Enter a valid 10-digit mobile number');
       return;
     }
-    final phone = raw.length == 10 ? '+91$raw' : '+$raw';
+    final phone = '+91$raw';
     setState(() {
       _busy = true;
       _error = null;
@@ -41,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(pendingPhoneProvider.notifier).state = phone;
       if (mounted) context.go('/otp');
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = '$e'.replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -76,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'OTP in. Face lock next. Payments work even when the tower is all you have.',
+              'OTP is sent to the number you type — each person uses their own phone. Twilio trial only delivers to Verified Caller IDs until you upgrade.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(height: 1.4),

@@ -13,9 +13,12 @@ class ContactsAccess {
   }
 
   static Future<List<Contact>> load({bool requestIfNeeded = true}) async {
-    if (requestIfNeeded && !await request()) return const [];
+    if (requestIfNeeded) {
+      if (!await request()) return const [];
+    } else if (!await granted()) {
+      return const [];
+    }
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 150));
       return await FlutterContacts.getContacts(
         withProperties: true,
         withPhoto: false,
