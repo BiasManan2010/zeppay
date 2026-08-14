@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 
@@ -63,10 +62,15 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pay friends')),
+      appBar: AppBar(title: const Text('Send Money')),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
         children: [
+          Text(
+            'To mobile, UPI ID, or a bank account — same offline rails as scan.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 18),
           TextField(
             controller: _vpa,
             decoration: const InputDecoration(
@@ -83,24 +87,9 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
           const SizedBox(height: 12),
           TextField(controller: _note, decoration: const InputDecoration(labelText: 'NOTE')),
           const SizedBox(height: 24),
-          HapticScale(
-            onTap: _pay,
-            child: Container(
-              height: 56,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.hero,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text('PAY',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          HapticScale(
-            onTap: () => context.push('/scan'),
-            child: const Center(child: Text('Or scan their QR')),
-          ),
+          GlowButton(label: 'PAY', onTap: _pay),
+          const SizedBox(height: 16),
+          GlowButton(label: 'SCAN THEIR QR', onTap: () => context.push('/scan')),
         ],
       ),
     );
