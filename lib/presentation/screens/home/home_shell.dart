@@ -9,6 +9,7 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/providers.dart';
 import '../pay/money_pages.dart';
 import '../split/split_home_screen.dart';
 import 'profile_screen.dart';
@@ -267,6 +268,8 @@ class _HomeTab extends ConsumerWidget {
               tag: 'scan-hero',
               child: ScanHeroCard(onTap: () => context.push('/scan')),
             ),
+            const SizedBox(height: 18),
+            const _PeopleRow(),
             const SizedBox(height: 22),
             SectionHeader(title: 'Send Money', onAction: () => onOpenTab(1)),
             ActionTileRow(
@@ -287,9 +290,9 @@ class _HomeTab extends ConsumerWidget {
                   onTap: () => context.push('/pay/contacts'),
                 ),
                 ActionTile(
-                  icon: Icons.account_balance_rounded,
-                  label: 'To Bank A/c',
-                  onTap: () => context.push('/pay/bank'),
+                  icon: Icons.call_received_rounded,
+                  label: 'Receive',
+                  onTap: () => context.push('/receive'),
                 ),
               ],
             ),
@@ -480,6 +483,98 @@ class _TxTile extends StatelessWidget {
         tx.amountPaise,
         style: Theme.of(context).textTheme.titleMedium,
       ),
+    );
+  }
+}
+
+class _PeopleRow extends ConsumerWidget {
+  const _PeopleRow();
+
+  List<SavedPayee> _people(AppState app) {
+    if (app.payees.isNotEmpty) {
+      final fav = app.payees.where((p) => p.favorite);
+      final rest = app.payees.where((p) => !p.favorite);
+      return [...fav, ...rest].take(12).toList();
+    }
+    final seen = <String>{};
+    final out = <SavedPayee>[];
+    for (final tx in app.transactions) {
+      if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
+      out.add(
+        SavedPayee(
+          vpa: tx.vpa,
+          name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
+        ),
+      );
+      if (out.length >= 12) break;
+    }
+    return out;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = _people(ref.watch(appStoreProvider));
+    if (people.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'People',
+          onAction: () => context.push('/pay/contacts'),
+        ),
+        SizedBox(
+          height: 92,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: people.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final p = people[i];
+              final letter = (p.name.isNotEmpty ? p.name : p.vpa)
+                  .characters
+                  .first
+                  .toUpperCase();
+              return InkWell(
+                onTap: () {
+                  startPayment(
+                    ref,
+                    vpa: p.vpa,
+                    amountPaise: 0,
+                    payeeName: p.name,
+                    source: 'people',
+                  );
+                  context.push('/pay/amount');
+                },
+                child: SizedBox(
+                  width: 68,
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.hero.withValues(alpha: 0.18),
+                        child: Text(
+                          letter,
+                          style: const TextStyle(
+                            color: AppColors.hero,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        p.name.split(' ').first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

@@ -31,7 +31,7 @@ void _goPay(
     source: source,
     note: note,
   );
-  context.push('/face');
+  context.push('/pay/amount');
 }
 
 int? _paise(String raw) {
@@ -88,6 +88,12 @@ class SendHubScreen extends StatelessWidget {
               title: 'Scan a QR',
               subtitle: 'Camera — works with zero data',
               onTap: () => context.push('/scan'),
+            ),
+            _HubTile(
+              icon: Icons.call_received_rounded,
+              title: 'Receive money',
+              subtitle: 'Your UPI QR and ID',
+              onTap: () => context.push('/receive'),
             ),
           ],
         ),
@@ -171,12 +177,9 @@ class _PayMobileScreenState extends ConsumerState<PayMobileScreen> {
         label: 'CONTINUE',
         onTap: () {
           final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
-          final amt = _paise(_amount.text);
-          if (digits.length != 10 || amt == null) {
+          if (digits.length != 10) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Need a 10-digit number and an amount'),
-              ),
+              const SnackBar(content: Text('Need a 10-digit number')),
             );
             return;
           }
@@ -184,7 +187,7 @@ class _PayMobileScreenState extends ConsumerState<PayMobileScreen> {
             context,
             ref,
             vpa: '$digits@upi',
-            amountPaise: amt,
+            amountPaise: _paise(_amount.text) ?? 0,
             name: digits,
             source: 'mobile',
           );
@@ -245,11 +248,10 @@ class _PayUpiScreenState extends ConsumerState<PayUpiScreen> {
         label: 'CONTINUE',
         onTap: () {
           final vpa = _vpa.text.trim().toLowerCase();
-          final amt = _paise(_amount.text);
-          if (!vpa.contains('@') || amt == null) {
+          if (!vpa.contains('@')) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Need a VPA like you@okaxis and an amount'),
+                content: Text('Need a VPA like you@okaxis'),
               ),
             );
             return;
@@ -258,7 +260,7 @@ class _PayUpiScreenState extends ConsumerState<PayUpiScreen> {
             context,
             ref,
             vpa: vpa,
-            amountPaise: amt,
+            amountPaise: _paise(_amount.text) ?? 0,
             name: vpa.split('@').first,
             source: 'upi',
             note: _note.text.trim(),
@@ -397,64 +399,20 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
                         contentPadding: EdgeInsets.zero,
                         title: Text(c.displayName),
                         subtitle: Text('+91 $last10'),
-                        onTap: () => _amount(context, c.displayName, last10),
+                        onTap: () => _goPay(
+                          context,
+                          ref,
+                          vpa: '$last10@upi',
+                          amountPaise: 0,
+                          name: c.displayName,
+                          source: 'contact',
+                        ),
                       );
                     },
                   ),
                 ),
               ],
             ),
-    );
-  }
-
-  Future<void> _amount(BuildContext context, String name, String phone) async {
-    final amt = TextEditingController();
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Pay $name', style: Theme.of(ctx).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            TextField(
-              controller: amt,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'AMOUNT (₹)'),
-            ),
-            const SizedBox(height: 16),
-            GlowButton(
-              label: 'PAY $name',
-              onTap: () {
-                final p = _paise(amt.text);
-                if (p == null) return;
-                Navigator.pop(ctx);
-                _goPay(
-                  context,
-                  ref,
-                  vpa: '$phone@upi',
-                  amountPaise: p,
-                  name: name,
-                  source: 'contact',
-                );
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -493,16 +451,10 @@ class _PayBankScreenState extends ConsumerState<PayBankScreen> {
           final ifsc = _ifsc.text.trim().toUpperCase();
           final acc = _acc.text.trim();
           final name = _name.text.trim();
-          final amt = _paise(_amount.text);
-          if (ifsc.length < 11 ||
-              acc.length < 6 ||
-              name.isEmpty ||
-              amt == null) {
+          if (ifsc.length < 11 || acc.length < 6 || name.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                  'Name, 11-character IFSC, account, and amount are required',
-                ),
+                content: Text('Name, 11-character IFSC, and account are required'),
               ),
             );
             return;
@@ -511,7 +463,7 @@ class _PayBankScreenState extends ConsumerState<PayBankScreen> {
             context,
             ref,
             vpa: '${acc.toLowerCase()}@$ifsc'.replaceAll(' ', ''),
-            amountPaise: amt,
+            amountPaise: _paise(_amount.text) ?? 0,
             name: name,
             source: 'bank',
           );
@@ -589,6 +541,23 @@ class BalanceScreen extends ConsumerWidget {
           GlowButton(
             label: 'CHECK VIA *99#',
             onTap: () => dialBalanceEnquiry(context, ref),
+          ),
+          const SizedBox(height: 10),
+          GlowButton(
+            label: 'MINI STATEMENT',
+            onTap: () async {
+              try {
+                final tel = ref.read(telephonyServiceProvider);
+                await tel.requestPermissions();
+                await tel.dial('*99#');
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$e')),
+                  );
+                }
+              }
+            },
           ),
         ],
       ),

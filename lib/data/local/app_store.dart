@@ -114,8 +114,41 @@ class AppStore extends Notifier<AppState> {
       }
     }
     state = state.copyWith(transactions: next, profile: profile);
+    if (tx.status == TxStatus.success) {
+      await rememberPayee(
+        SavedPayee(
+          vpa: tx.vpa,
+          name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
+        ),
+      );
+      return tx;
+    }
     await _persist();
     return tx;
+  }
+
+  Future<void> rememberPayee(SavedPayee payee) async {
+    final existing = state.payees.where((p) => p.vpa == payee.vpa).firstOrNull;
+    final next = SavedPayee(
+      vpa: payee.vpa,
+      name: payee.name.isNotEmpty ? payee.name : (existing?.name ?? payee.vpa),
+      favorite: existing?.favorite ?? payee.favorite,
+    );
+    state = state.copyWith(
+      payees: [next, ...state.payees.where((p) => p.vpa != payee.vpa)],
+    );
+    await _persist();
+  }
+
+  Future<void> toggleFavorite(String vpa, {String name = ''}) async {
+    final existing = state.payees.where((p) => p.vpa == vpa).firstOrNull;
+    if (existing == null) {
+      await rememberPayee(
+        SavedPayee(vpa: vpa, name: name, favorite: true),
+      );
+      return;
+    }
+    await rememberPayee(existing.copyWith(favorite: !existing.favorite));
   }
 
   Future<void> resolveTransaction(String id, TxStatus status) async {
@@ -211,4 +244,11 @@ class AppStore extends Notifier<AppState> {
   }
 
   static String id() => _uuid.v4();
+
+  static String payRef() {
+    final t = DateTime.now().microsecondsSinceEpoch
+        .toRadixString(36)
+        .toUpperCase();
+    return 'ZP${t.length > 10 ? t.substring(t.length - 10) : t}';
+  }
 }

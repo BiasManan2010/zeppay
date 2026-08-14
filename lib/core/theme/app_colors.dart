@@ -19,6 +19,7 @@ abstract final class AppColors {
   static const Color textDim = Color(0xFF6B7385);
   static const Color danger = Color(0xFFC45C4A);
   static const Color warning = Color(0xFFC4A35A);
+  static const Color success = Color(0xFF22C55E);
   static const Color white = Color(0xFFFFFFFF);
 
   static const RadialGradient heroGlow = RadialGradient(

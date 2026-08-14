@@ -157,7 +157,7 @@ class GroupDetailScreen extends ConsumerWidget {
                           settleFromId: e.from,
                           settleToId: e.to,
                         );
-                        context.push('/face');
+                        context.push('/pay/amount');
                       },
                       child: const Text('Settle'),
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
+import 'package:zeppay/data/local/app_store.dart';
 import 'package:zeppay/data/models/models.dart';
 import 'package:zeppay/data/services/csv_export_service.dart';
 import 'package:zeppay/data/services/ocr_service.dart';
@@ -127,5 +128,9 @@ void main() {
     expect(csv, contains('Taxi'));
     expect(csv, contains('You'));
     expect(csv, isNot(contains('me|')));
+  });
+
+  test('local payment refs are ZP-prefixed', () {
+    expect(AppStore.payRef(), startsWith('ZP'));
   });
 }

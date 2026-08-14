@@ -100,6 +100,24 @@ class PaymentDraft {
   final String? settleToId;
 
   double get amountRupees => amountPaise / 100.0;
+
+  PaymentDraft copyWith({
+    int? amountPaise,
+    String? note,
+    String? payeeName,
+    String? vpa,
+  }) => PaymentDraft(
+    vpa: vpa ?? this.vpa,
+    amountPaise: amountPaise ?? this.amountPaise,
+    payeeName: payeeName ?? this.payeeName,
+    note: note ?? this.note,
+    source: source,
+    currency: currency,
+    requestId: requestId,
+    settleGroupId: settleGroupId,
+    settleFromId: settleFromId,
+    settleToId: settleToId,
+  );
 }
 
 class TxRecord {
@@ -114,6 +132,7 @@ class TxRecord {
     this.rail = PaymentRail.ussd,
     this.offline = true,
     this.currency = 'INR',
+    this.refCode = '',
   });
 
   final String id;
@@ -126,8 +145,9 @@ class TxRecord {
   final PaymentRail rail;
   final bool offline;
   final String currency;
+  final String refCode;
 
-  TxRecord copyWith({TxStatus? status}) => TxRecord(
+  TxRecord copyWith({TxStatus? status, String? refCode}) => TxRecord(
     id: id,
     vpa: vpa,
     payeeName: payeeName,
@@ -138,6 +158,7 @@ class TxRecord {
     rail: rail,
     offline: offline,
     currency: currency,
+    refCode: refCode ?? this.refCode,
   );
 
   Map<String, dynamic> toJson() => {
@@ -151,6 +172,7 @@ class TxRecord {
     'rail': rail.name,
     'offline': offline,
     'currency': currency,
+    'refCode': refCode,
   };
 
   factory TxRecord.fromJson(Map<String, dynamic> j) => TxRecord(
@@ -164,6 +186,37 @@ class TxRecord {
     rail: PaymentRail.values.byName(j['rail'] as String? ?? 'ussd'),
     offline: j['offline'] as bool? ?? true,
     currency: j['currency'] as String? ?? 'INR',
+    refCode: j['refCode'] as String? ?? '',
+  );
+}
+
+class SavedPayee {
+  const SavedPayee({
+    required this.vpa,
+    this.name = '',
+    this.favorite = false,
+  });
+
+  final String vpa;
+  final String name;
+  final bool favorite;
+
+  SavedPayee copyWith({String? name, bool? favorite}) => SavedPayee(
+    vpa: vpa,
+    name: name ?? this.name,
+    favorite: favorite ?? this.favorite,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'vpa': vpa,
+    'name': name,
+    'favorite': favorite,
+  };
+
+  factory SavedPayee.fromJson(Map<String, dynamic> j) => SavedPayee(
+    vpa: j['vpa'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    favorite: j['favorite'] as bool? ?? false,
   );
 }
 
@@ -614,6 +667,7 @@ class AppState {
     this.expenses = const [],
     this.settlements = const [],
     this.notifications = const [],
+    this.payees = const [],
   });
 
   final String? sessionPhone;
@@ -625,6 +679,7 @@ class AppState {
   final List<Expense> expenses;
   final List<Settlement> settlements;
   final List<AppNotification> notifications;
+  final List<SavedPayee> payees;
 
   AppState copyWith({
     String? sessionPhone,
@@ -636,6 +691,7 @@ class AppState {
     List<Expense>? expenses,
     List<Settlement>? settlements,
     List<AppNotification>? notifications,
+    List<SavedPayee>? payees,
     bool clearSession = false,
   }) {
     return AppState(
@@ -648,6 +704,7 @@ class AppState {
       expenses: expenses ?? this.expenses,
       settlements: settlements ?? this.settlements,
       notifications: notifications ?? this.notifications,
+      payees: payees ?? this.payees,
     );
   }
 
@@ -661,6 +718,7 @@ class AppState {
     'expenses': expenses.map((e) => e.toJson()).toList(),
     'settlements': settlements.map((e) => e.toJson()).toList(),
     'notifications': notifications.map((e) => e.toJson()).toList(),
+    'payees': payees.map((e) => e.toJson()).toList(),
   };
 
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
@@ -692,6 +750,9 @@ class AppState {
         .map(
           (e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map)),
         )
+        .toList(),
+    payees: (j['payees'] as List? ?? [])
+        .map((e) => SavedPayee.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
   );
 }
