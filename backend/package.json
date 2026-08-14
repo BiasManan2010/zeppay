@@ -1,6 +1,13 @@
 {
-  "name": "zeppay-verify-proxy",
+  "name": "zeppay-otp-proxy",
   "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "express": "^4.21.2",
     "twilio": "^5.4.5"
