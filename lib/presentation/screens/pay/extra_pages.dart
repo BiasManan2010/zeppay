@@ -14,6 +14,7 @@ import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/rail_engine.dart';
+import '../../../data/services/receipt_share.dart';
 import '../home/home_shell.dart';
 
 class HelpScreen extends StatelessWidget {
@@ -218,8 +219,36 @@ class TxDetailScreen extends ConsumerWidget {
                 Text(
                   '${tx.rail.name} · ${tx.offline ? 'offline' : 'online'} · ${DateFormat('d MMM y, h:mm a').format(tx.createdAt)}',
                 ),
+                if (tx.refCode.isNotEmpty) Text('Zep Pay ID  ${tx.refCode}'),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          GlowButton(
+            label: 'SHARE RECEIPT',
+            onTap: () => ReceiptShare.share(tx),
+          ),
+          const SizedBox(height: 10),
+          GlowButton(
+            label: 'PAY AGAIN',
+            onTap: () {
+              startPayment(
+                ref,
+                vpa: tx.vpa,
+                amountPaise: tx.amountPaise,
+                payeeName: tx.payeeName,
+                note: tx.note,
+                source: 'again',
+              );
+              context.push('/pay/amount');
+            },
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: () => ref
+                .read(appStoreProvider.notifier)
+                .toggleFavorite(tx.vpa, name: tx.payeeName),
+            child: const Text('Toggle favourite'),
           ),
         ],
       ),

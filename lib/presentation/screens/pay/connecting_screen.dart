@@ -54,6 +54,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
         note: draft.note,
         rail: rail,
         offline: rail != PaymentRail.upiIntent,
+        refCode: AppStore.payRef(),
       );
       await ref.read(appStoreProvider.notifier).logTransaction(tx);
       ref.read(pendingTxIdProvider.notifier).state = tx.id;

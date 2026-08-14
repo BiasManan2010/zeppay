@@ -59,7 +59,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       return;
     }
     ref.read(paymentDraftProvider.notifier).state = next;
-    if (mounted) context.push('/face');
+    if (mounted) context.push('/pay/amount');
   }
 
   @override

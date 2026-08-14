@@ -53,6 +53,18 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             SurfaceCard(
+              onTap: () => context.push('/receive'),
+              child: _row(
+                context,
+                Icons.qr_code_2_rounded,
+                'My QR / UPI ID',
+                profile?.upiId.isNotEmpty == true
+                    ? profile!.upiId
+                    : 'Set a UPI ID to receive',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
               onTap: () => context.push('/balance'),
               child: _row(
                 context,

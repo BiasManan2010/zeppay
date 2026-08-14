@@ -63,7 +63,7 @@ class AutopayScreen extends ConsumerWidget {
                                 note: 'Autopay',
                                 source: 'autopay',
                               );
-                              context.push('/face');
+                              context.push('/pay/amount');
                             },
                             child: const Text('Run now'),
                           ),

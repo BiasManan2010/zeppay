@@ -46,10 +46,10 @@ class OutcomeScreen extends ConsumerWidget {
     if (!context.mounted) return;
     if (status == TxStatus.success) {
       context.go('/confirm');
+    } else if (status == TxStatus.pending) {
+      context.go('/pending');
     } else {
-      ref.read(paymentDraftProvider.notifier).state = null;
-      ref.read(pendingTxIdProvider.notifier).state = null;
-      context.go('/home');
+      context.go('/failed');
     }
   }
 

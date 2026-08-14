@@ -78,7 +78,7 @@ class RequestsScreen extends ConsumerWidget {
                                     source: 'request',
                                     requestId: r.id,
                                   );
-                                  context.push('/face');
+                                  context.push('/pay/amount');
                                 },
                               ),
                             ],

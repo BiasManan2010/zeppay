@@ -8,6 +8,7 @@ import '../../presentation/screens/auth/onboarding_screen.dart';
 import '../../presentation/screens/auth/otp_screen.dart';
 import '../../presentation/screens/auth/welcome_screen.dart';
 import '../../presentation/screens/home/home_shell.dart';
+import '../../presentation/screens/pay/amount_screen.dart';
 import '../../presentation/screens/pay/autopay_screen.dart';
 import '../../presentation/screens/pay/confirm_screen.dart';
 import '../../presentation/screens/pay/connecting_screen.dart';
@@ -16,6 +17,7 @@ import '../../presentation/screens/pay/history_screen.dart';
 import '../../presentation/screens/pay/money_pages.dart';
 import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
+import '../../presentation/screens/pay/receive_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
@@ -75,6 +77,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/outcome', builder: (_, __) => const OutcomeScreen()),
       GoRoute(path: '/confirm', builder: (_, __) => const ConfirmScreen()),
+      GoRoute(path: '/failed', builder: (_, __) => const FailedScreen()),
+      GoRoute(path: '/pending', builder: (_, __) => const PendingScreen()),
+      GoRoute(path: '/pay/amount', builder: (_, __) => const AmountScreen()),
+      GoRoute(path: '/receive', builder: (_, __) => const ReceiveScreen()),
       GoRoute(path: '/pay/mobile', builder: (_, __) => const PayMobileScreen()),
       GoRoute(path: '/pay/upi', builder: (_, __) => const PayUpiScreen()),
       GoRoute(
