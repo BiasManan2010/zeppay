@@ -48,7 +48,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 }
 
 class _DockedNav extends StatelessWidget {
-  const _DockedNav({required this.tab, required this.onTab, required this.onScan});
+  const _DockedNav(
+      {required this.tab, required this.onTab, required this.onScan});
 
   final int tab;
   final ValueChanged<int> onTab;
@@ -65,13 +66,19 @@ class _DockedNav extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: AppColors.navBar,
-                border: Border(top: BorderSide(color: AppColors.surfaceBorder.withValues(alpha: 0.8))),
+                border: Border(
+                    top: BorderSide(
+                        color: AppColors.surfaceBorder.withValues(alpha: 0.8))),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 24, offset: const Offset(0, -8)),
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      blurRadius: 24,
+                      offset: const Offset(0, -8)),
                 ],
               ),
               child: Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+                padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom),
                 child: Row(
                   children: [
                     _NavItem(
@@ -117,7 +124,11 @@ class _DockedNav extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  const _NavItem(
+      {required this.icon,
+      required this.label,
+      required this.selected,
+      required this.onTap});
   final IconData icon;
   final String label;
   final bool selected;
@@ -133,7 +144,9 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: selected ? AppColors.hero : AppColors.textDim, size: 24),
+              Icon(icon,
+                  color: selected ? AppColors.hero : AppColors.textDim,
+                  size: 24),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -160,7 +173,8 @@ class _HomeTab extends ConsumerWidget {
     final app = ref.watch(appStoreProvider);
     final profile = app.profile;
     final first = (profile?.name ?? '').trim().split(' ').first;
-    final greeting = first.isEmpty || first.toLowerCase() == 'you' ? 'there' : first;
+    final greeting =
+        first.isEmpty || first.toLowerCase() == 'you' ? 'there' : first;
     final me = app.sessionPhone ?? '';
     final pending = app.requests
         .where((r) => r.status == RequestStatus.pending && r.toPhone == me)
@@ -190,11 +204,17 @@ class _HomeTab extends ConsumerWidget {
                     children: [
                       Text(
                         'Hello, $greeting 👋',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontSize: 20),
                       ),
                       Text(
                         'Welcome back!',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontSize: 13),
                       ),
                     ],
                   ),
@@ -220,11 +240,15 @@ class _HomeTab extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceHigh,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.45)),
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.45)),
                 ),
                 child: Text(
                   'Offline *99# / 123PAY is Android-only. On iOS, Zep Pay opens the online UPI intent instead of silently failing.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: AppColors.warning),
                 ),
               ),
             Hero(
@@ -258,7 +282,8 @@ class _HomeTab extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 22),
-            SectionHeader(title: 'Split & Settle', onAction: () => onOpenTab(2)),
+            SectionHeader(
+                title: 'Split & Settle', onAction: () => onOpenTab(2)),
             ActionTileRow(
               tiles: [
                 ActionTile(
@@ -301,7 +326,8 @@ class _HomeTab extends ConsumerWidget {
             HapticScale(
               onTap: () => _offlineSheet(context, net),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(22),
@@ -316,7 +342,8 @@ class _HomeTab extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: AppColors.hero.withValues(alpha: 0.14),
                       ),
-                      child: const Icon(Icons.cell_tower_rounded, color: AppColors.hero),
+                      child: const Icon(Icons.cell_tower_rounded,
+                          color: AppColors.hero),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -324,14 +351,18 @@ class _HomeTab extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.hero.withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               'Offline Only',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: AppColors.hero,
                                     letterSpacing: 0,
                                     fontWeight: FontWeight.w700,
@@ -339,15 +370,20 @@ class _HomeTab extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text('Offline Payment', style: Theme.of(context).textTheme.titleMedium),
+                          Text('Offline Payment',
+                              style: Theme.of(context).textTheme.titleMedium),
                           Text(
                             'Use *99# / 123PAY when data drops.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(fontSize: 12),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: AppColors.textDim),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.textDim),
                   ],
                 ),
               ),
@@ -383,7 +419,8 @@ class _HomeTab extends ConsumerWidget {
             Text('Recent', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (app.transactions.isEmpty)
-              Text('No payments yet. Scan to start.', style: Theme.of(context).textTheme.bodyMedium)
+              Text('No payments yet. Scan to start.',
+                  style: Theme.of(context).textTheme.bodyMedium)
             else
               ...app.transactions.take(4).map((tx) => _TxTile(tx: tx)),
           ],
@@ -408,7 +445,8 @@ class _HomeTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -417,12 +455,16 @@ class _HomeTab extends ConsumerWidget {
           children: [
             Text('Linked account', style: Theme.of(ctx).textTheme.labelLarge),
             const SizedBox(height: 8),
-            Text(profile?.bankName ?? '—', style: Theme.of(ctx).textTheme.headlineMedium),
-            Text('UPI  ${profile?.upiId ?? ''}', style: Theme.of(ctx).textTheme.bodyMedium),
+            Text(profile?.bankName ?? '—',
+                style: Theme.of(ctx).textTheme.headlineMedium),
+            Text('UPI  ${profile?.upiId ?? ''}',
+                style: Theme.of(ctx).textTheme.bodyMedium),
             const SizedBox(height: 16),
-            MoneyText(profile?.balancePaise ?? 0, style: Theme.of(ctx).textTheme.displayMedium),
+            MoneyText(profile?.balancePaise ?? 0,
+                style: Theme.of(ctx).textTheme.displayMedium),
             const SizedBox(height: 8),
-            Text('**** ${profile?.accountLast4 ?? '••••'}', style: Theme.of(ctx).textTheme.bodyMedium),
+            Text('**** ${profile?.accountLast4 ?? '••••'}',
+                style: Theme.of(ctx).textTheme.bodyMedium),
           ],
         ),
       ),
@@ -443,21 +485,27 @@ class _HomeTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Offline Payment', style: Theme.of(ctx).textTheme.headlineMedium),
+            Text('Offline Payment',
+                style: Theme.of(ctx).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
               'Zep Pay routes through *99# (USSD) when your carrier supports it, and UPI 123PAY IVR for Jio and 4G-only SIMs. You only confirm with biometrics and enter your UPI PIN.',
               style: Theme.of(ctx).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
-            Text('This device · $rail', style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: AppColors.hero)),
+            Text('This device · $rail',
+                style: Theme.of(ctx)
+                    .textTheme
+                    .labelLarge
+                    ?.copyWith(color: AppColors.hero)),
           ],
         ),
       ),
@@ -476,7 +524,10 @@ class TxStatusDot extends StatelessWidget {
       TxStatus.pending => AppColors.warning,
       TxStatus.failed => AppColors.danger,
     };
-    return Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    return Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle));
   }
 }
 
@@ -491,7 +542,8 @@ class _TxTile extends StatelessWidget {
       leading: TxStatusDot(tx.status),
       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
       subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.createdAt)),
-      trailing: MoneyText(tx.amountPaise, style: Theme.of(context).textTheme.titleMedium),
+      trailing: MoneyText(tx.amountPaise,
+          style: Theme.of(context).textTheme.titleMedium),
     );
   }
 }

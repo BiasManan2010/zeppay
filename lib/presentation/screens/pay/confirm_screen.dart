@@ -74,7 +74,9 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                 style: Theme.of(context).textTheme.displayMedium,
               ),
               Text(
-                draft?.payeeName.isNotEmpty == true ? draft!.payeeName : (draft?.vpa ?? ''),
+                draft?.payeeName.isNotEmpty == true
+                    ? draft!.payeeName
+                    : (draft?.vpa ?? ''),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const Spacer(),

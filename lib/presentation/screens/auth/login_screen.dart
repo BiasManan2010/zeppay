@@ -70,7 +70,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
                   labelText: 'MOBILE NUMBER',
                   hintText: '98765 43210',
@@ -82,7 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(_error!, style: const TextStyle(color: AppColors.danger)),
               ],
               const SizedBox(height: 18),
-              GlowButton(label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
+              GlowButton(
+                  label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
               const SizedBox(height: 12),
               Text(
                 'Dev OTP is 123456 until Twilio is wired.',

@@ -32,10 +32,15 @@ class ProfileScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(profile?.name.isNotEmpty == true ? profile!.name : 'You',
+                        Text(
+                            profile?.name.isNotEmpty == true
+                                ? profile!.name
+                                : 'You',
                             style: Theme.of(context).textTheme.titleLarge),
-                        Text(profile?.upiId ?? '', style: Theme.of(context).textTheme.bodyMedium),
-                        Text(profile?.phone ?? '', style: Theme.of(context).textTheme.labelSmall),
+                        Text(profile?.upiId ?? '',
+                            style: Theme.of(context).textTheme.bodyMedium),
+                        Text(profile?.phone ?? '',
+                            style: Theme.of(context).textTheme.labelSmall),
                       ],
                     ),
                   ),
@@ -45,22 +50,26 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 14),
             SurfaceCard(
               onTap: () => _balance(context, profile),
-              child: _row(context, Icons.account_balance_wallet_outlined, 'Linked bank', profile?.bankName ?? '—'),
+              child: _row(context, Icons.account_balance_wallet_outlined,
+                  'Linked bank', profile?.bankName ?? '—'),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/history'),
-              child: _row(context, Icons.history_rounded, 'Transaction history', 'All rails, all statuses'),
+              child: _row(context, Icons.history_rounded, 'Transaction history',
+                  'All rails, all statuses'),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/requests'),
-              child: _row(context, Icons.inbox_rounded, 'Pending requests', 'Accept or pay'),
+              child: _row(context, Icons.inbox_rounded, 'Pending requests',
+                  'Accept or pay'),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/autopay'),
-              child: _row(context, Icons.event_repeat_rounded, 'Autopay', 'Mandates and limits'),
+              child: _row(context, Icons.event_repeat_rounded, 'Autopay',
+                  'Mandates and limits'),
             ),
             const SizedBox(height: 24),
             GlowButton(
@@ -73,7 +82,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _row(BuildContext context, IconData icon, String title, String subtitle) {
+  Widget _row(
+      BuildContext context, IconData icon, String title, String subtitle) {
     return Row(
       children: [
         Container(
@@ -104,7 +114,8 @@ class ProfileScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -113,12 +124,16 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Text('Linked account', style: Theme.of(ctx).textTheme.labelLarge),
             const SizedBox(height: 8),
-            Text(profile?.bankName ?? '—', style: Theme.of(ctx).textTheme.headlineMedium),
-            Text('UPI  ${profile?.upiId ?? ''}', style: Theme.of(ctx).textTheme.bodyMedium),
+            Text(profile?.bankName ?? '—',
+                style: Theme.of(ctx).textTheme.headlineMedium),
+            Text('UPI  ${profile?.upiId ?? ''}',
+                style: Theme.of(ctx).textTheme.bodyMedium),
             const SizedBox(height: 16),
-            MoneyText(profile?.balancePaise ?? 0, style: Theme.of(ctx).textTheme.displayMedium),
+            MoneyText(profile?.balancePaise ?? 0,
+                style: Theme.of(ctx).textTheme.displayMedium),
             const SizedBox(height: 8),
-            Text('**** ${profile?.accountLast4 ?? '••••'}', style: Theme.of(ctx).textTheme.bodyMedium),
+            Text('**** ${profile?.accountLast4 ?? '••••'}',
+                style: Theme.of(ctx).textTheme.bodyMedium),
           ],
         ),
       ),

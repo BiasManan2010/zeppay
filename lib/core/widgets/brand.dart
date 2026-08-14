@@ -7,7 +7,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_colors.dart';
 
 class HapticScale extends StatefulWidget {
-  const HapticScale({super.key, required this.child, this.onTap, this.enabled = true});
+  const HapticScale(
+      {super.key, required this.child, this.onTap, this.enabled = true});
 
   final Widget child;
   final VoidCallback? onTap;
@@ -42,7 +43,8 @@ class _HapticScaleState extends State<HapticScale> {
 }
 
 class DottedRing extends StatelessWidget {
-  const DottedRing({super.key, this.size = 72, this.progress = 0.35, this.spinning = true});
+  const DottedRing(
+      {super.key, this.size = 72, this.progress = 0.35, this.spinning = true});
 
   final double size;
   final double progress;
@@ -79,17 +81,21 @@ class _RingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, math.pi * 1.55, false, glow);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, math.pi * 1.55, false, solid);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2,
+        math.pi * 1.55, false, glow);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2,
+        math.pi * 1.55, false, solid);
     const dashes = 3;
     for (var i = 0; i < dashes; i++) {
       final start = math.pi * 1.05 + i * 0.22;
-      canvas.drawArc(Rect.fromCircle(center: c, radius: r), start, 0.12, false, solid);
+      canvas.drawArc(
+          Rect.fromCircle(center: c, radius: r), start, 0.12, false, solid);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class SignalArcs extends StatelessWidget {
@@ -146,7 +152,10 @@ class BoltCheck extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(painter: _BoltPainter(complete: complete)),
-    ).animate().scale(begin: const Offset(0.6, 0.6), duration: 420.ms, curve: Curves.easeOutBack);
+    ).animate().scale(
+        begin: const Offset(0.6, 0.6),
+        duration: 420.ms,
+        curve: Curves.easeOutBack);
   }
 }
 
@@ -182,7 +191,8 @@ class _BoltPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _BoltPainter oldDelegate) => oldDelegate.complete != complete;
+  bool shouldRepaint(covariant _BoltPainter oldDelegate) =>
+      oldDelegate.complete != complete;
 }
 
 class FaceGlow extends StatelessWidget {
@@ -232,7 +242,10 @@ class ScanBrackets extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(painter: _BracketPainter())
         .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scale(begin: const Offset(0.96, 0.96), end: const Offset(1.04, 1.04), duration: 900.ms);
+        .scale(
+            begin: const Offset(0.96, 0.96),
+            end: const Offset(1.04, 1.04),
+            duration: 900.ms);
   }
 }
 
@@ -275,7 +288,8 @@ class SurfaceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.stroke.withValues(alpha: 0.7)),
         boxShadow: const [
-          BoxShadow(color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
+          BoxShadow(
+              color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
         ],
       ),
       child: child,
