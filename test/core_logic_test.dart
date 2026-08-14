@@ -150,4 +150,16 @@ void main() {
   test('local payment refs are ZP-prefixed', () {
     expect(AppStore.payRef(), startsWith('ZP'));
   });
+
+  test('tx json keeps spending category', () {
+    final tx = TxRecord(
+      id: '1',
+      vpa: 'a@upi',
+      amountPaise: 100,
+      status: TxStatus.pending,
+      createdAt: DateTime(2026, 1, 1),
+      category: 'food',
+    );
+    expect(TxRecord.fromJson(tx.toJson()).category, 'food');
+  });
 }

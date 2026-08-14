@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/motion/app_motion.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../data/models/spend_kinds.dart';
 import '../../../data/services/providers.dart';
 
 class AmountScreen extends ConsumerStatefulWidget {
@@ -18,6 +18,7 @@ class AmountScreen extends ConsumerStatefulWidget {
 
 class _AmountScreenState extends ConsumerState<AmountScreen> {
   var _raw = '';
+  var _category = 'other';
   final _note = TextEditingController();
 
   @override
@@ -31,6 +32,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
           : rupees.toStringAsFixed(2);
     }
     _note.text = draft?.note ?? '';
+    _category = draft?.category ?? 'other';
   }
 
   @override
@@ -72,7 +74,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text('Paying $who', style: Theme.of(context).textTheme.titleMedium),
             Text(draft.vpa, style: Theme.of(context).textTheme.bodyMedium),
             const Spacer(),
@@ -81,7 +83,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                 _raw.isEmpty ? '₹0' : '₹$_raw',
                 key: ValueKey(_raw),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontSize: 56,
+                  fontSize: 52,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -98,20 +100,41 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                   )
                   .toList(),
             ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+                child: Text(
+                  'SPENDING ON',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 42,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: SpendKinds.all.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final k = SpendKinds.all[i];
+                  final on = _category == k.id;
+                  return ChoiceChip(
+                    selected: on,
+                    avatar: Icon(k.icon, size: 16),
+                    label: Text(k.label),
+                    onSelected: (_) => setState(() => _category = k.id),
+                  );
+                },
+              ),
+            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
               child: TextField(
                 controller: _note,
                 decoration: const InputDecoration(labelText: 'NOTE (OPTIONAL)'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Next you enter your UPI PIN on the bank / *99# screen. Daily limits are set by your bank.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textDim, fontSize: 12),
               ),
             ),
             const Spacer(),
@@ -119,7 +142,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 3,
-              childAspectRatio: 1.7,
+              childAspectRatio: 1.85,
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: keys
                   .map(
@@ -146,6 +169,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                             .copyWith(
                               amountPaise: _paise,
                               note: _note.text.trim(),
+                              category: _category,
                             );
                         context.push('/connecting');
                       },
