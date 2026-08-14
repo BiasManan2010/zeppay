@@ -543,3 +543,142 @@ class WavePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, this.size = 140, this.wordmark = false});
+
+  final double size;
+  final bool wordmark;
+
+  static const markAsset = 'assets/branding/zeppay_mark.png';
+  static const lockupAsset = 'assets/branding/zeppay_logo.png';
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      wordmark ? lockupAsset : markAsset,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => Icon(
+        Icons.bolt_rounded,
+        size: size * 0.55,
+        color: AppColors.hero,
+      ),
+    );
+  }
+}
+
+class AuthBackdrop extends StatelessWidget {
+  const AuthBackdrop({super.key, required this.child, this.safe = true});
+
+  final Widget child;
+  final bool safe;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = safe ? SafeArea(child: child) : child;
+    return Scaffold(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.55),
+                  radius: 1.15,
+                  colors: [AppColors.homeWash, AppColors.base],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -80,
+            left: -40,
+            child: IgnorePointer(
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.hero.withValues(alpha: 0.16),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 80,
+            right: -60,
+            child: IgnorePointer(
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.heroDeep.withValues(alpha: 0.22),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(child: body),
+        ],
+      ),
+    );
+  }
+}
+
+class GlassPanel extends StatelessWidget {
+  const GlassPanel({super.key, required this.child, this.padding});
+
+  final Widget child;
+  final EdgeInsets? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.hero.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.hero.withValues(alpha: 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class StepPills extends StatelessWidget {
+  const StepPills({super.key, required this.count, required this.index});
+
+  final int count;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              height: 4,
+              decoration: BoxDecoration(
+                color: i <= index ? AppColors.hero : AppColors.surfaceBorder,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

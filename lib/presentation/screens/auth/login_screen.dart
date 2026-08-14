@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/services/providers.dart';
 
@@ -50,51 +49,85 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const BoltCheck(size: 72),
-              const SizedBox(height: 28),
-              Text('Pay even when\nthe internet dies.',
-                  style: Theme.of(context).textTheme.displayMedium),
-              const SizedBox(height: 10),
-              Text(
-                'Phone number in. One OTP. Then you scan and go.',
-                style: Theme.of(context).textTheme.bodyMedium,
+    return AuthBackdrop(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: BrandMark(size: 128)),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'ZEPPAY',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.white,
+                      letterSpacing: 7,
+                      fontWeight: FontWeight.w800,
+                    ),
               ),
-              const Spacer(),
-              TextField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(
-                  labelText: 'MOBILE NUMBER',
-                  hintText: '98765 43210',
-                  prefixText: '+91  ',
-                ),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              'Your number.\nThen you scan.',
+              style: Theme.of(context)
+                  .textTheme
+                  .displayMedium
+                  ?.copyWith(height: 1.12),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'OTP in. Face lock next. Payments work even when the tower is all you have.',
+              style:
+                  Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const Spacer(),
+            GlassPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'MOBILE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.hero,
+                          letterSpacing: 1.6,
+                        ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '98765 43210',
+                      prefixText: '+91  ',
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(_error!,
+                        style: const TextStyle(color: AppColors.danger)),
+                  ],
+                ],
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 10),
-                Text(_error!, style: const TextStyle(color: AppColors.danger)),
-              ],
-              const SizedBox(height: 18),
-              GlowButton(
-                  label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
-              const SizedBox(height: 12),
-              Text(
+            ),
+            const SizedBox(height: 16),
+            GlowButton(
+                label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
                 'Dev OTP is 123456 until Twilio is wired.',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
-            ],
-          ).animate().fadeIn(duration: 400.ms),
-        ),
+            ),
+          ],
+        ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.04, end: 0),
       ),
     );
   }
