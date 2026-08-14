@@ -91,18 +91,27 @@ async function rememberUser(phone) {
   }
 }
 
-app.get('/health', async (_req, res) => {
+async function healthBody() {
   let users = null;
   try {
     users = await db.userCount();
   } catch (_) {}
-  res.json({
+  return {
     ok: true,
+    service: 'zeppay-otp',
     twilio: live,
     mode: useVerify ? 'verify' : useSms ? 'messaging' : 'dev',
     supabase: db.enabled(),
     users,
-  });
+  };
+}
+
+app.get('/', async (_req, res) => {
+  res.json(await healthBody());
+});
+
+app.get('/health', async (_req, res) => {
+  res.json(await healthBody());
 });
 
 app.get('/stats/users', async (_req, res) => {
