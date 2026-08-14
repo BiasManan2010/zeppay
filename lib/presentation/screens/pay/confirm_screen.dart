@@ -7,8 +7,6 @@ import 'package:lottie/lottie.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
-import '../../../data/local/app_store.dart';
-import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/sound_cue_service.dart';
 
@@ -29,22 +27,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
   }
 
   Future<void> _log() async {
-    final draft = ref.read(paymentDraftProvider);
-    final rail = ref.read(lastRailProvider) ?? PaymentRail.ussd;
-    if (draft != null) {
-      await ref.read(appStoreProvider.notifier).logTransaction(
-            TxRecord(
-              id: AppStore.id(),
-              vpa: draft.vpa,
-              amountPaise: draft.amountPaise,
-              status: TxStatus.success,
-              createdAt: DateTime.now(),
-              payeeName: draft.payeeName,
-              note: draft.note,
-              rail: rail,
-              offline: rail != PaymentRail.upiIntent,
-            ),
-          );
+    if (ref.read(paymentDraftProvider) != null) {
       await SoundCueService().success();
     }
     if (mounted) setState(() => _done = true);

@@ -22,7 +22,16 @@ Future<void> main() async {
   await for (final req in server) {
     try {
       final path = req.uri.path;
-      if (req.method == 'POST' && path == '/verify/start') {
+      if (req.method == 'OPTIONS') {
+        req.response.headers
+          ..set('Access-Control-Allow-Origin', '*')
+          ..set('Access-Control-Allow-Headers', 'Content-Type')
+          ..set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+        req.response.statusCode = 204;
+        await req.response.close();
+      } else if (req.method == 'GET' && path == '/health') {
+        _json(req, {'ok': true, 'twilio': sid.isNotEmpty});
+      } else if (req.method == 'POST' && path == '/verify/start') {
         final body = jsonDecode(await utf8.decodeStream(req)) as Map<String, dynamic>;
         final phone = body['phone'] as String? ?? '';
         if (sid.isEmpty) {
@@ -83,7 +92,10 @@ Future<void> main() async {
 }
 
 void _json(HttpRequest req, Object body) {
-  req.response.headers.contentType = ContentType.json;
+  req.response.headers
+    ..set('Access-Control-Allow-Origin', '*')
+    ..set('Access-Control-Allow-Headers', 'Content-Type')
+    ..contentType = ContentType.json;
   req.response.write(jsonEncode(body));
   req.response.close();
 }

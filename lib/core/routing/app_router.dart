@@ -13,12 +13,14 @@ import '../../presentation/screens/pay/confirm_screen.dart';
 import '../../presentation/screens/pay/connecting_screen.dart';
 import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
-import '../../presentation/screens/pay/pay_friends_screen.dart';
+import '../../presentation/screens/pay/money_pages.dart';
+import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
 import '../../presentation/screens/split/group_detail_screen.dart';
 import '../../presentation/screens/split/split_home_screen.dart';
+import '../../presentation/screens/split/split_pages.dart';
 import '../../presentation/screens/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -33,10 +35,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final authed = app.sessionPhone != null;
       final onboarded = app.profile?.onboarded == true;
-      final authFlow = loc == '/login' ||
+      final authFlow =
+          loc == '/login' ||
           loc == '/otp' ||
           loc == '/splash' ||
-          loc == '/welcome';
+          loc == '/welcome' ||
+          loc == '/verify-setup';
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
@@ -54,19 +58,44 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/otp', builder: (_, __) => const OtpScreen()),
       GoRoute(
-          path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
+        path: '/verify-setup',
+        builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
       GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
       GoRoute(path: '/scan', builder: (_, __) => const ScanScreen()),
       GoRoute(path: '/face', builder: (_, __) => const FaceConfirmScreen()),
       GoRoute(
-          path: '/connecting', builder: (_, __) => const ConnectingScreen()),
+        path: '/connecting',
+        builder: (_, __) => const ConnectingScreen(),
+      ),
+      GoRoute(path: '/outcome', builder: (_, __) => const OutcomeScreen()),
       GoRoute(path: '/confirm', builder: (_, __) => const ConfirmScreen()),
+      GoRoute(path: '/pay/mobile', builder: (_, __) => const PayMobileScreen()),
+      GoRoute(path: '/pay/upi', builder: (_, __) => const PayUpiScreen()),
       GoRoute(
-          path: '/pay-friends', builder: (_, __) => const PayFriendsScreen()),
+        path: '/pay/contacts',
+        builder: (_, __) => const PayContactsScreen(),
+      ),
+      GoRoute(path: '/pay/bank', builder: (_, __) => const PayBankScreen()),
       GoRoute(path: '/history', builder: (_, __) => const HistoryScreen()),
       GoRoute(path: '/requests', builder: (_, __) => const RequestsScreen()),
       GoRoute(path: '/autopay', builder: (_, __) => const AutopayScreen()),
+      GoRoute(path: '/balance', builder: (_, __) => const BalanceScreen()),
+      GoRoute(path: '/offline', builder: (_, __) => const OfflineRailsScreen()),
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
+      GoRoute(path: '/inbox', builder: (_, __) => const InboxScreen()),
       GoRoute(path: '/split', builder: (_, __) => const SplitHomeScreen()),
+      GoRoute(path: '/split-bill', builder: (_, __) => const SplitBillScreen()),
+      GoRoute(path: '/settle', builder: (_, __) => const SettleHubScreen()),
+      GoRoute(
+        path: '/split-activity',
+        builder: (_, __) => const SplitActivityScreen(),
+      ),
       GoRoute(
         path: '/split/:id',
         builder: (_, s) => GroupDetailScreen(groupId: s.pathParameters['id']!),

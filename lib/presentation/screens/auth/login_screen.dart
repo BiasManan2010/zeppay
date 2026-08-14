@@ -61,25 +61,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Text(
                 'ZEPPAY',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.white,
-                      letterSpacing: 7,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: AppColors.white,
+                  letterSpacing: 7,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(height: 28),
             Text(
               'Your number.\nThen you scan.',
-              style: Theme.of(context)
-                  .textTheme
-                  .displayMedium
-                  ?.copyWith(height: 1.12),
+              style: Theme.of(
+                context,
+              ).textTheme.displayMedium?.copyWith(height: 1.12),
             ),
             const SizedBox(height: 10),
             Text(
               'OTP in. Face lock next. Payments work even when the tower is all you have.',
-              style:
-                  Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
             const Spacer(),
             GlassPanel(
@@ -89,9 +89,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'MOBILE',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.hero,
-                          letterSpacing: 1.6,
-                        ),
+                      color: AppColors.hero,
+                      letterSpacing: 1.6,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -110,21 +110,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 10),
-                    Text(_error!,
-                        style: const TextStyle(color: AppColors.danger)),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: AppColors.danger),
+                    ),
                   ],
                 ],
               ),
             ),
             const SizedBox(height: 16),
             GlowButton(
-                label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
+              label: 'SEND OTP',
+              onTap: _busy ? null : _send,
+              busy: _busy,
+            ),
             const SizedBox(height: 12),
             Center(
-              child: Text(
-                'Dev OTP is 123456 until Twilio is wired.',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
+              child: ref
+                  .watch(otpLiveProvider)
+                  .when(
+                    data: (live) => Text(
+                      live
+                          ? 'We’ll text a Twilio Verify code to this number.'
+                          : 'No Verify URL yet — use 123456, or tap Twilio setup.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/verify-setup'),
+              child: const Text('Twilio setup'),
             ),
           ],
         ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.04, end: 0),
