@@ -4,6 +4,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/contacts_access.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/telephony_service.dart';
 import 'extra_pages.dart';
@@ -63,6 +65,12 @@ class SendHubScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _HubTile(
+              icon: Icons.qr_code_2_rounded,
+              title: 'Scan a QR',
+              subtitle: 'Scan, enter amount, then UPI PIN',
+              onTap: () => context.push('/scan'),
+            ),
+            _HubTile(
               icon: Icons.phone_iphone_rounded,
               title: 'Mobile number',
               subtitle: 'Pay anyone with a 10-digit number',
@@ -85,12 +93,6 @@ class SendHubScreen extends StatelessWidget {
               title: 'Bank account',
               subtitle: 'IFSC + account number',
               onTap: () => context.push('/pay/bank'),
-            ),
-            _HubTile(
-              icon: Icons.qr_code_2_rounded,
-              title: 'Scan a QR',
-              subtitle: 'Camera — works with zero data',
-              onTap: () => context.push('/scan'),
             ),
             _HubTile(
               icon: Icons.call_received_rounded,
@@ -332,17 +334,24 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      if (!await FlutterContacts.requestPermission()) {
+      if (!await ContactsAccess.request()) {
         setState(() {
           _loading = false;
-          _error = 'Contacts permission is required for this page.';
+          _error =
+              'Contacts permission is off. Allow it, then tap Try again.';
         });
         return;
       }
-      final all = await FlutterContacts.getContacts(withProperties: true);
+      final all = await ContactsAccess.load();
+      if (!mounted) return;
+      ref.invalidate(phoneContactsProvider);
       setState(() {
-        _people = all.where((c) => c.phones.isNotEmpty).toList();
+        _people = all;
         _loading = false;
       });
     } catch (e) {
@@ -368,9 +377,24 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
             )
           : _error != null
           ? Center(
-              child: Text(
-                _error!,
-                style: const TextStyle(color: AppColors.danger),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.danger),
+                    ),
+                    const SizedBox(height: 16),
+                    GlowButton(label: 'TRY AGAIN', onTap: _load),
+                    TextButton(
+                      onPressed: () => openAppSettings(),
+                      child: const Text('OPEN SETTINGS'),
+                    ),
+                  ],
+                ),
               ),
             )
           : Column(
@@ -386,30 +410,41 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
+                  child: filtered.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No contacts found on this phone.',
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final c = filtered[i];
-                      final phone = c.phones.first.number.replaceAll(
-                        RegExp(r'\D'),
-                        '',
-                      );
-                      final last10 = phone.length >= 10
-                          ? phone.substring(phone.length - 10)
-                          : phone;
+                      final raw = c.phones.isEmpty
+                          ? ''
+                          : c.phones.first.number;
+                      final last10 = ContactsAccess.last10(raw);
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(c.displayName),
-                        subtitle: Text('+91 $last10'),
-                        onTap: () => _goPay(
-                          context,
-                          ref,
-                          vpa: '$last10@upi',
-                          amountPaise: 0,
-                          name: c.displayName,
-                          source: 'contact',
+                        title: Text(
+                          c.displayName.isEmpty ? last10 : c.displayName,
                         ),
+                        subtitle: Text(
+                          last10.isEmpty ? 'No phone number' : '+91 $last10',
+                        ),
+                        enabled: last10.length >= 10,
+                        onTap: last10.length < 10
+                            ? null
+                            : () => _goPay(
+                                context,
+                                ref,
+                                vpa: '$last10@upi',
+                                amountPaise: 0,
+                                name: c.displayName,
+                                source: 'contact',
+                              ),
                       );
                     },
                   ),
@@ -686,7 +721,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             controller: _url,
             decoration: const InputDecoration(
               labelText: 'OTP PROXY URL',
-              hintText: 'https://your-proxy.example.com',
+              hintText: 'https://zeppay.onrender.com',
             ),
           ),
           const SizedBox(height: 12),

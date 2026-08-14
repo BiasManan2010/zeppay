@@ -35,7 +35,7 @@ jobs:
       - name: Build release APK
         env:
           TWILIO_VERIFY_URL: ${{ secrets.TWILIO_VERIFY_URL }}
-        run: flutter build apk --release --no-shrink --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL}
+        run: flutter build apk --release --no-shrink --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL:-https://zeppay.onrender.com}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

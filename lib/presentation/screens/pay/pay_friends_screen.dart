@@ -57,7 +57,7 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
       note: _note.text.trim(),
       source: 'friends',
     );
-    context.push('/face');
+    context.push('/pay/amount');
   }
 
   @override
