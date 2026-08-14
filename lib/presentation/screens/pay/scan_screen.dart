@@ -6,10 +6,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
+import 'scan_lock_overlay.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -18,13 +18,40 @@ class ScanScreen extends ConsumerStatefulWidget {
   ConsumerState<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends ConsumerState<ScanScreen> {
-  final _controller = MobileScannerController(detectionSpeed: DetectionSpeed.noDuplicates);
+class _ScanScreenState extends ConsumerState<ScanScreen>
+    with SingleTickerProviderStateMixin {
+  final _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
+  late final AnimationController _pulse;
   var _locked = false;
-  var _amount = '';
+  var _ready = false;
+  var _denied = false;
+  var _torch = false;
+  PaymentDraft? _hit;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+    _prepCamera();
+  }
+
+  Future<void> _prepCamera() async {
+    final status = await Permission.camera.request();
+    if (!mounted) return;
+    setState(() {
+      _denied = !status.isGranted;
+      _ready = status.isGranted;
+    });
+  }
 
   @override
   void dispose() {
+    _pulse.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -38,43 +65,54 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     if (draft == null) return;
     _locked = true;
     HapticFeedback.mediumImpact();
-    var next = draft;
-    if (next.amountPaise == 0 && _amount.isNotEmpty) {
-      final rupees = double.tryParse(_amount) ?? 0;
-      next = PaymentDraft(
-        vpa: next.vpa,
-        amountPaise: (rupees * 100).round(),
-        payeeName: next.payeeName,
-        note: next.note,
-        source: 'scan',
-      );
-    }
-    if (next.amountPaise <= 0) {
-      if (mounted) {
-        setState(() => _locked = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('QR has no amount — enter rupees below, then scan again')),
-        );
-      }
-      return;
-    }
-    ref.read(paymentDraftProvider.notifier).state = next;
-    if (mounted) context.push('/pay/amount');
+    setState(() => _hit = draft);
+    _pulse
+      ..stop()
+      ..duration = const Duration(milliseconds: 520)
+      ..forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    ref.read(paymentDraftProvider.notifier).state = draft;
+    await context.push('/pay/amount');
+    if (!mounted) return;
+    _locked = false;
+    _hit = null;
+    _pulse
+      ..duration = const Duration(milliseconds: 1400)
+      ..repeat();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.base,
-      body: FutureBuilder(
-        future: Permission.camera.request(),
-        builder: (context, snap) {
+      body: AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, _) {
           return Stack(
             children: [
-              MobileScanner(controller: _controller, onDetect: _onDetect),
-              Container(color: Colors.black.withValues(alpha: 0.45)),
-              const Center(
-                child: SizedBox(width: 260, height: 260, child: ScanBrackets()),
+              if (_ready)
+                MobileScanner(controller: _controller, onDetect: _onDetect)
+              else
+                const ColoredBox(color: AppColors.base),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    radius: 1.05,
+                    colors: [
+                      Colors.transparent,
+                      AppColors.base.withValues(alpha: _locked ? 0.55 : 0.38),
+                    ],
+                  ),
+                ),
+                child: const SizedBox.expand(),
+              ),
+              Center(
+                child: PaytmScanFrame(
+                  locked: _locked,
+                  t: _pulse.value,
+                ),
               ),
               SafeArea(
                 child: Padding(
@@ -88,26 +126,52 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                             icon: const Icon(Icons.close, color: AppColors.white),
                           ),
                           const Spacer(),
-                          Text('SCAN QR',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
-                                  ?.copyWith(color: AppColors.white)),
+                          Text(
+                            _locked ? 'LOCKED' : 'SCAN QR',
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(color: AppColors.white),
+                          ),
                           const Spacer(),
-                          const SizedBox(width: 48),
+                          IconButton(
+                            onPressed: () async {
+                              await _controller.toggleTorch();
+                              setState(() => _torch = !_torch);
+                            },
+                            icon: Icon(
+                              _torch
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
+                              color: AppColors.white,
+                            ),
+                          ),
                         ],
                       ),
                       const Spacer(),
-                      TextField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onChanged: (v) => _amount = v,
-                        style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w700),
-                        decoration: InputDecoration(
-                          hintText: 'Amount if QR has none',
-                          filled: true,
-                          fillColor: AppColors.base.withValues(alpha: 0.7),
+                      if (_hit != null)
+                        MerchantLockCard(
+                          name: _hit!.payeeName,
+                          vpa: _hit!.vpa,
+                        )
+                      else
+                        Text(
+                          _denied
+                              ? 'Camera permission is off. Enable it to scan.'
+                              : 'Hold steady. We’ll lock the QR, then you enter amount.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.white),
                         ),
-                      ),
+                      if (_denied) ...[
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: openAppSettings,
+                          child: const Text('OPEN SETTINGS'),
+                        ),
+                        TextButton(
+                          onPressed: _prepCamera,
+                          child: const Text('TRY AGAIN'),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

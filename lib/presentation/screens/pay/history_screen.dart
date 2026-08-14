@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/models/spend_kinds.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -27,6 +28,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           t.vpa.toLowerCase().contains(q) ||
           t.payeeName.toLowerCase().contains(q) ||
           t.note.toLowerCase().contains(q) ||
+          t.category.toLowerCase().contains(q) ||
           t.amountPaise.toString().contains(q);
       final st = _filter == null || t.status == _filter;
       return hit && st;
@@ -72,7 +74,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       onTap: () => context.push('/history/${tx.id}'),
                       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
                       subtitle: Text(
-                        '${tx.status.name} · ${tx.rail.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',
+                        '${SpendKinds.byId(tx.category).label} · ${tx.status.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',
                       ),
                       trailing: MoneyText(tx.amountPaise,
                           style: Theme.of(context).textTheme.titleMedium),

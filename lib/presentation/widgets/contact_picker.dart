@@ -5,9 +5,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/chrome.dart';
 import '../../data/local/app_store.dart';
 import '../../data/models/models.dart';
+import '../../data/services/contacts_access.dart';
 
 Future<List<GroupMember>> pickGroupMembers(BuildContext context) async {
-  if (!await FlutterContacts.requestPermission()) {
+  if (!await ContactsAccess.request()) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Contacts permission is required')),
@@ -15,9 +16,16 @@ Future<List<GroupMember>> pickGroupMembers(BuildContext context) async {
     }
     return const [];
   }
-  final all = await FlutterContacts.getContacts(withProperties: true);
-  final people = all.where((c) => c.phones.isNotEmpty).toList();
+  final people = (await ContactsAccess.load())
+      .where((c) => c.phones.isNotEmpty)
+      .toList();
   if (!context.mounted) return const [];
+  if (people.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No contacts with phone numbers')),
+    );
+    return const [];
+  }
   final picked = await showModalBottomSheet<List<GroupMember>>(
     context: context,
     isScrollControlled: true,
@@ -87,13 +95,9 @@ class _PickerSheetState extends State<_PickerSheet> {
                 final members = widget.people
                     .where((c) => _selected.contains(c.id))
                     .map((c) {
-                      final digits = c.phones.first.number.replaceAll(
-                        RegExp(r'\D'),
-                        '',
+                      final last10 = ContactsAccess.last10(
+                        c.phones.first.number,
                       );
-                      final last10 = digits.length >= 10
-                          ? digits.substring(digits.length - 10)
-                          : digits;
                       return GroupMember(
                         id: c.id.isEmpty ? AppStore.id() : c.id,
                         name: c.displayName,

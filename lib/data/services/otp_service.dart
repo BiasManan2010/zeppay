@@ -9,13 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// URL resolution order:
 /// 1. Saved Settings URL (`twilio_verify_url`)
 /// 2. `--dart-define=TWILIO_VERIFY_URL=https://host`
+/// 3. Live Render proxy `https://zeppay.onrender.com`
 ///
-/// If neither is set, debug/dev OTP `123456` is accepted.
+/// If the URL is cleared, debug OTP `123456` is accepted.
 class OtpService {
   OtpService({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const compiledUrl = String.fromEnvironment('TWILIO_VERIFY_URL');
+  static const compiledUrl = String.fromEnvironment(
+    'TWILIO_VERIFY_URL',
+    defaultValue: 'https://zeppay.onrender.com',
+  );
   static const prefsKey = 'twilio_verify_url';
 
   Future<String> resolveUrl() async {
