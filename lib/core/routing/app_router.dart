@@ -6,6 +6,7 @@ import '../../data/local/app_store.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/auth/onboarding_screen.dart';
 import '../../presentation/screens/auth/otp_screen.dart';
+import '../../presentation/screens/auth/welcome_screen.dart';
 import '../../presentation/screens/home/home_shell.dart';
 import '../../presentation/screens/pay/autopay_screen.dart';
 import '../../presentation/screens/pay/confirm_screen.dart';
@@ -32,25 +33,36 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final authed = app.sessionPhone != null;
       final onboarded = app.profile?.onboarded == true;
-      final authFlow = loc == '/login' || loc == '/otp' || loc == '/splash';
+      final authFlow = loc == '/login' ||
+          loc == '/otp' ||
+          loc == '/splash' ||
+          loc == '/welcome';
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
       }
-      if (authed && onboarded && (loc == '/login' || loc == '/otp')) return '/home';
+      if (authed &&
+          onboarded &&
+          (loc == '/login' || loc == '/otp' || loc == '/welcome')) {
+        return '/home';
+      }
       return null;
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/otp', builder: (_, __) => const OtpScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
+      GoRoute(
+          path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
       GoRoute(path: '/scan', builder: (_, __) => const ScanScreen()),
       GoRoute(path: '/face', builder: (_, __) => const FaceConfirmScreen()),
-      GoRoute(path: '/connecting', builder: (_, __) => const ConnectingScreen()),
+      GoRoute(
+          path: '/connecting', builder: (_, __) => const ConnectingScreen()),
       GoRoute(path: '/confirm', builder: (_, __) => const ConfirmScreen()),
-      GoRoute(path: '/pay-friends', builder: (_, __) => const PayFriendsScreen()),
+      GoRoute(
+          path: '/pay-friends', builder: (_, __) => const PayFriendsScreen()),
       GoRoute(path: '/history', builder: (_, __) => const HistoryScreen()),
       GoRoute(path: '/requests', builder: (_, __) => const RequestsScreen()),
       GoRoute(path: '/autopay', builder: (_, __) => const AutopayScreen()),
