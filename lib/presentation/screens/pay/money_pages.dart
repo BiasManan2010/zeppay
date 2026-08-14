@@ -1,0 +1,834 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
+import '../../../data/local/app_store.dart';
+import '../../../data/models/models.dart';
+import '../../../data/services/providers.dart';
+import '../../../data/services/telephony_service.dart';
+import 'extra_pages.dart';
+
+void _goPay(
+  BuildContext context,
+  WidgetRef ref, {
+  required String vpa,
+  required int amountPaise,
+  required String name,
+  required String source,
+  String note = '',
+}) {
+  startPayment(
+    ref,
+    vpa: vpa,
+    amountPaise: amountPaise,
+    payeeName: name,
+    source: source,
+    note: note,
+  );
+  context.push('/pay/amount');
+}
+
+int? _paise(String raw) {
+  final n = double.tryParse(raw.trim());
+  if (n == null || n <= 0) return null;
+  return (n * 100).round();
+}
+
+class SendHubScreen extends StatelessWidget {
+  const SendHubScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
+          children: [
+            Text('Send', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Pick how the rupees should move.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 18),
+            _HubTile(
+              icon: Icons.phone_iphone_rounded,
+              title: 'Mobile number',
+              subtitle: 'Pay anyone with a 10-digit number',
+              onTap: () => context.push('/pay/mobile'),
+            ),
+            _HubTile(
+              icon: Icons.alternate_email_rounded,
+              title: 'UPI ID',
+              subtitle: 'name@okaxis, name@ybl, and the rest',
+              onTap: () => context.push('/pay/upi'),
+            ),
+            _HubTile(
+              icon: Icons.contacts_rounded,
+              title: 'Phone contacts',
+              subtitle: 'Pick a person, then enter amount',
+              onTap: () => context.push('/pay/contacts'),
+            ),
+            _HubTile(
+              icon: Icons.account_balance_rounded,
+              title: 'Bank account',
+              subtitle: 'IFSC + account number',
+              onTap: () => context.push('/pay/bank'),
+            ),
+            _HubTile(
+              icon: Icons.qr_code_2_rounded,
+              title: 'Scan a QR',
+              subtitle: 'Camera — works with zero data',
+              onTap: () => context.push('/scan'),
+            ),
+            _HubTile(
+              icon: Icons.call_received_rounded,
+              title: 'Receive money',
+              subtitle: 'Your UPI QR and ID',
+              onTap: () => context.push('/receive'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HubTile extends StatelessWidget {
+  const _HubTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SurfaceCard(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.hero.withValues(alpha: 0.12),
+              ),
+              child: Icon(icon, color: AppColors.hero),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textDim),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PayMobileScreen extends ConsumerStatefulWidget {
+  const PayMobileScreen({super.key});
+
+  @override
+  ConsumerState<PayMobileScreen> createState() => _PayMobileScreenState();
+}
+
+class _PayMobileScreenState extends ConsumerState<PayMobileScreen> {
+  final _phone = TextEditingController();
+  final _amount = TextEditingController();
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _amount.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ZepPage(
+      title: 'Pay to mobile',
+      subtitle:
+          'We append @upi if they have not shared a VPA. Same offline rails as scan.',
+      footer: GlowButton(
+        label: 'CONTINUE',
+        onTap: () {
+          final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
+          if (digits.length != 10) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Need a 10-digit number')),
+            );
+            return;
+          }
+          _goPay(
+            context,
+            ref,
+            vpa: '$digits@upi',
+            amountPaise: _paise(_amount.text) ?? 0,
+            name: digits,
+            source: 'mobile',
+          );
+        },
+      ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          TextField(
+            controller: _phone,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            decoration: const InputDecoration(
+              labelText: 'MOBILE',
+              prefixText: '+91  ',
+              counterText: '',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'AMOUNT (₹)'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PayUpiScreen extends ConsumerStatefulWidget {
+  const PayUpiScreen({super.key});
+
+  @override
+  ConsumerState<PayUpiScreen> createState() => _PayUpiScreenState();
+}
+
+class _PayUpiScreenState extends ConsumerState<PayUpiScreen> {
+  final _vpa = TextEditingController();
+  final _amount = TextEditingController();
+  final _note = TextEditingController();
+  static const handles = ['@okaxis', '@ybl', '@paytm', '@okicici', '@oksbi'];
+
+  @override
+  void dispose() {
+    _vpa.dispose();
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ZepPage(
+      title: 'Pay to UPI ID',
+      subtitle: 'Exact VPA. Nothing is typed on the USSD keypad later.',
+      footer: GlowButton(
+        label: 'CONTINUE',
+        onTap: () {
+          final vpa = _vpa.text.trim().toLowerCase();
+          if (!vpa.contains('@')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Need a VPA like you@okaxis'),
+              ),
+            );
+            return;
+          }
+          _goPay(
+            context,
+            ref,
+            vpa: vpa,
+            amountPaise: _paise(_amount.text) ?? 0,
+            name: vpa.split('@').first,
+            source: 'upi',
+            note: _note.text.trim(),
+          );
+        },
+      ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          TextField(
+            controller: _vpa,
+            decoration: const InputDecoration(
+              labelText: 'UPI ID',
+              hintText: 'friend@okaxis',
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: handles
+                .map(
+                  (h) => ActionChip(
+                    label: Text(h),
+                    onPressed: () {
+                      final name = _vpa.text.split('@').first;
+                      _vpa.text = '$name$h';
+                    },
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'AMOUNT (₹)'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _note,
+            decoration: const InputDecoration(labelText: 'NOTE'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PayContactsScreen extends ConsumerStatefulWidget {
+  const PayContactsScreen({super.key});
+
+  @override
+  ConsumerState<PayContactsScreen> createState() => _PayContactsScreenState();
+}
+
+class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
+  List<Contact> _people = [];
+  var _loading = true;
+  String? _error;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      if (!await FlutterContacts.requestPermission()) {
+        setState(() {
+          _loading = false;
+          _error = 'Contacts permission is required for this page.';
+        });
+        return;
+      }
+      final all = await FlutterContacts.getContacts(withProperties: true);
+      setState(() {
+        _people = all.where((c) => c.phones.isNotEmpty).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _people.where((c) {
+      if (_query.isEmpty) return true;
+      return c.displayName.toLowerCase().contains(_query.toLowerCase());
+    }).toList();
+    return ZepPage(
+      title: 'Pay a contact',
+      subtitle: 'Device address book. Tap someone, then enter rupees.',
+      child: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.hero),
+            )
+          : _error != null
+          ? Center(
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
+            )
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: TextField(
+                    onChanged: (v) => setState(() => _query = v),
+                    decoration: const InputDecoration(
+                      hintText: 'Search name',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, i) {
+                      final c = filtered[i];
+                      final phone = c.phones.first.number.replaceAll(
+                        RegExp(r'\D'),
+                        '',
+                      );
+                      final last10 = phone.length >= 10
+                          ? phone.substring(phone.length - 10)
+                          : phone;
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(c.displayName),
+                        subtitle: Text('+91 $last10'),
+                        onTap: () => _goPay(
+                          context,
+                          ref,
+                          vpa: '$last10@upi',
+                          amountPaise: 0,
+                          name: c.displayName,
+                          source: 'contact',
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class PayBankScreen extends ConsumerStatefulWidget {
+  const PayBankScreen({super.key});
+
+  @override
+  ConsumerState<PayBankScreen> createState() => _PayBankScreenState();
+}
+
+class _PayBankScreenState extends ConsumerState<PayBankScreen> {
+  final _name = TextEditingController();
+  final _acc = TextEditingController();
+  final _ifsc = TextEditingController();
+  final _amount = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _acc.dispose();
+    _ifsc.dispose();
+    _amount.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ZepPage(
+      title: 'Pay to bank account',
+      subtitle:
+          'IFSC + account. We route it as a UPI collect to the beneficiary name you type.',
+      footer: GlowButton(
+        label: 'CONTINUE',
+        onTap: () {
+          final ifsc = _ifsc.text.trim().toUpperCase();
+          final acc = _acc.text.trim();
+          final name = _name.text.trim();
+          if (ifsc.length < 11 || acc.length < 6 || name.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Name, 11-character IFSC, and account are required'),
+              ),
+            );
+            return;
+          }
+          _goPay(
+            context,
+            ref,
+            vpa: '${acc.toLowerCase()}@$ifsc'.replaceAll(' ', ''),
+            amountPaise: _paise(_amount.text) ?? 0,
+            name: name,
+            source: 'bank',
+          );
+        },
+      ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'BENEFICIARY NAME'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _acc,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'ACCOUNT NUMBER'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ifsc,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(labelText: 'IFSC'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'AMOUNT (₹)'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BalanceScreen extends ConsumerWidget {
+  const BalanceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(appStoreProvider).profile;
+    return ZepPage(
+      title: 'Linked balance',
+      subtitle:
+          'Shown from the account you typed at onboarding. Live UPI balance enquiry is a bank-app screen — we do not fake a refresh.',
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          GlassPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  p?.bankName ?? 'Bank',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                MoneyText(
+                  p?.balancePaise ?? 0,
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
+                Text(
+                  'UPI  ${p?.upiId ?? '—'}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Text(
+                  '**** ${p?.accountLast4 ?? '••••'}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlowButton(
+            label: 'CHECK VIA *99#',
+            onTap: () => dialBalanceEnquiry(context, ref),
+          ),
+          const SizedBox(height: 10),
+          GlowButton(
+            label: 'MINI STATEMENT',
+            onTap: () async {
+              try {
+                final tel = ref.read(telephonyServiceProvider);
+                await tel.requestPermissions();
+                await tel.dial('*99#');
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$e')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OfflineRailsScreen extends ConsumerWidget {
+  const OfflineRailsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final net = ref.watch(networkInfoProvider);
+    return ZepPage(
+      title: 'Offline rails',
+      subtitle:
+          '*99# where the carrier still speaks USSD. 123PAY IVR on Jio and 4G-only SIMs.',
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          net.when(
+            data: (NetworkInfo info) => GlassPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    info.operator.isEmpty ? 'Carrier unknown' : info.operator,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  Text('Network  ${info.networkType}'),
+                  Text(
+                    'USSD  ${info.ussdSupported ? 'supported' : 'not supported'}',
+                  ),
+                  Text(
+                    'Rail  ${info.recommendedRail.toUpperCase()}',
+                    style: const TextStyle(color: AppColors.hero),
+                  ),
+                ],
+              ),
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Scan any UPI QR. We build the dial string. You only enter UPI PIN in the dialer, then tell us if it landed.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final _url = TextEditingController();
+  final _name = TextEditingController();
+  String _status = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _name.text = ref.read(appStoreProvider).profile?.name ?? '';
+    ref.read(otpServiceProvider).resolveUrl().then((v) {
+      if (mounted) _url.text = v;
+    });
+  }
+
+  @override
+  void dispose() {
+    _url.dispose();
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ZepPage(
+      title: 'Settings',
+      subtitle:
+          'Your name, then the Twilio Verify proxy. Never paste an Auth Token.',
+      footer: GlowButton(
+        label: 'SAVE & PING',
+        onTap: () async {
+          final p = ref.read(appStoreProvider).profile;
+          if (p != null && _name.text.trim().isNotEmpty) {
+            await ref
+                .read(appStoreProvider.notifier)
+                .updateProfile(p.copyWith(name: _name.text.trim()));
+          }
+          await ref.read(otpServiceProvider).saveUrl(_url.text);
+          final ok = await ref.read(otpServiceProvider).ping();
+          ref.invalidate(otpLiveProvider);
+          setState(
+            () => _status = ok
+                ? 'Saved. Twilio proxy reachable.'
+                : (_url.text.trim().isEmpty
+                      ? 'Saved. Dev OTP 123456 until a URL is set.'
+                      : 'Saved, but /health did not respond.'),
+          );
+        },
+      ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _url,
+            decoration: const InputDecoration(
+              labelText: 'VERIFY URL',
+              hintText: 'https://your-proxy.example.com',
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_status.isNotEmpty)
+            Text(_status, style: const TextStyle(color: AppColors.hero)),
+          const SizedBox(height: 20),
+          Text(
+            'Run backend/server.js with TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SID. Point this URL at that host. Release APKs can bake the same URL via TWILIO_VERIFY_URL.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AnalyticsScreen extends ConsumerWidget {
+  const AnalyticsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final txs = ref
+        .watch(appStoreProvider)
+        .transactions
+        .where((t) => t.status == TxStatus.success)
+        .toList();
+    final byDay = <String, double>{};
+    for (final t in txs) {
+      final k = DateFormat('d MMM').format(t.createdAt);
+      byDay[k] = (byDay[k] ?? 0) + t.amountPaise / 100;
+    }
+    final spots = byDay.entries
+        .toList()
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.value))
+        .toList();
+    return ZepPage(
+      title: 'Spending',
+      subtitle: 'Successful payments only, from this device.',
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            GlowButton(
+              label: 'BY CATEGORY',
+              onTap: () => context.push('/categories'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: spots.length < 2
+                  ? const Text('Pay a couple of times to see a chart.')
+                  : LineChart(
+                      LineChartData(
+                        gridData: const FlGridData(show: false),
+                        titlesData: const FlTitlesData(show: false),
+                        borderData: FlBorderData(show: false),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            color: AppColors.hero,
+                            barWidth: 3,
+                            dotData: const FlDotData(show: false),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class InboxScreen extends ConsumerStatefulWidget {
+  const InboxScreen({super.key});
+
+  @override
+  ConsumerState<InboxScreen> createState() => _InboxScreenState();
+}
+
+class _InboxScreenState extends ConsumerState<InboxScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appStoreProvider.notifier).markNotificationsRead();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = ref.watch(appStoreProvider).notifications;
+    return ZepPage(
+      title: 'Inbox',
+      child: notes.isEmpty
+          ? const Center(child: Text('No alerts yet'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: notes.length,
+              itemBuilder: (context, i) {
+                final n = notes[i];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                    onTap: () {
+                      final t = n.title.toLowerCase();
+                      if (t.contains('autopay')) {
+                        context.push('/autopay');
+                      } else if (t.contains('split')) {
+                        context.push('/split-activity');
+                      } else {
+                        context.push('/requests');
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          n.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          n.body,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          DateFormat('d MMM, h:mm a').format(n.createdAt),
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class VerifySetupScreen extends ConsumerStatefulWidget {
+  const VerifySetupScreen({super.key});
+
+  @override
+  ConsumerState<VerifySetupScreen> createState() => _VerifySetupScreenState();
+}
+
+class _VerifySetupScreenState extends ConsumerState<VerifySetupScreen> {
+  @override
+  Widget build(BuildContext context) => const SettingsScreen();
+}

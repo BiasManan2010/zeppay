@@ -10,8 +10,7 @@ import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
-import '../../../data/services/telephony_service.dart';
-import '../pay/pay_friends_screen.dart';
+import '../pay/money_pages.dart';
 import '../split/split_home_screen.dart';
 import 'profile_screen.dart';
 
@@ -31,7 +30,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final pages = [
       _HomeTab(onOpenTab: _go),
-      const PayFriendsScreen(),
+      const SendHubScreen(),
       const SplitHomeScreen(),
       const ProfileScreen(),
     ];
@@ -48,8 +47,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 }
 
 class _DockedNav extends StatelessWidget {
-  const _DockedNav(
-      {required this.tab, required this.onTab, required this.onScan});
+  const _DockedNav({
+    required this.tab,
+    required this.onTab,
+    required this.onScan,
+  });
 
   final int tab;
   final ValueChanged<int> onTab;
@@ -67,18 +69,22 @@ class _DockedNav extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.navBar,
                 border: Border(
-                    top: BorderSide(
-                        color: AppColors.surfaceBorder.withValues(alpha: 0.8))),
+                  top: BorderSide(
+                    color: AppColors.surfaceBorder.withValues(alpha: 0.8),
+                  ),
+                ),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      blurRadius: 24,
-                      offset: const Offset(0, -8)),
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    offset: const Offset(0, -8),
+                  ),
                 ],
               ),
               child: Padding(
                 padding: EdgeInsets.only(
-                    bottom: MediaQuery.paddingOf(context).bottom),
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
                 child: Row(
                   children: [
                     _NavItem(
@@ -124,11 +130,12 @@ class _DockedNav extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem(
-      {required this.icon,
-      required this.label,
-      required this.selected,
-      required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final bool selected;
@@ -144,17 +151,19 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  color: selected ? AppColors.hero : AppColors.textDim,
-                  size: 24),
+              Icon(
+                icon,
+                color: selected ? AppColors.hero : AppColors.textDim,
+                size: 24,
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? AppColors.hero : AppColors.textDim,
-                      letterSpacing: 0.2,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                    ),
+                  color: selected ? AppColors.hero : AppColors.textDim,
+                  letterSpacing: 0.2,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -173,13 +182,13 @@ class _HomeTab extends ConsumerWidget {
     final app = ref.watch(appStoreProvider);
     final profile = app.profile;
     final first = (profile?.name ?? '').trim().split(' ').first;
-    final greeting =
-        first.isEmpty || first.toLowerCase() == 'you' ? 'there' : first;
+    final greeting = first.isEmpty || first.toLowerCase() == 'you'
+        ? 'there'
+        : first;
     final me = app.sessionPhone ?? '';
     final pending = app.requests
         .where((r) => r.status == RequestStatus.pending && r.toPhone == me)
         .length;
-    final net = ref.watch(networkInfoProvider);
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -196,7 +205,7 @@ class _HomeTab extends ConsumerWidget {
           children: [
             Row(
               children: [
-                ProfileAvatar(name: profile?.name ?? 'Z', size: 46),
+                const BrandMark(size: 44),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -204,17 +213,16 @@ class _HomeTab extends ConsumerWidget {
                     children: [
                       Text(
                         'Hello, $greeting 👋',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontSize: 20),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(fontSize: 20),
                       ),
-                      Text(
-                        'Welcome back!',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(fontSize: 13),
+                      MoneyText(
+                        profile?.balancePaise ?? 0,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.hero,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -222,12 +230,17 @@ class _HomeTab extends ConsumerWidget {
                 RoundIconButton(
                   icon: Icons.notifications_none_rounded,
                   badge: pending > 0,
-                  onTap: () => context.push('/requests'),
+                  onTap: () => context.push('/inbox'),
+                ),
+                const SizedBox(width: 8),
+                RoundIconButton(
+                  icon: Icons.search_rounded,
+                  onTap: () => context.push('/search'),
                 ),
                 const SizedBox(width: 8),
                 RoundIconButton(
                   icon: Icons.help_outline_rounded,
-                  onTap: () => _help(context, net),
+                  onTap: () => context.push('/help'),
                 ),
               ],
             ),
@@ -241,93 +254,85 @@ class _HomeTab extends ConsumerWidget {
                   color: AppColors.surfaceHigh,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.45)),
+                    color: AppColors.warning.withValues(alpha: 0.45),
+                  ),
                 ),
                 child: Text(
                   'Offline *99# / 123PAY is Android-only. On iOS, Zep Pay opens the online UPI intent instead of silently failing.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: AppColors.warning),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
                 ),
               ),
             Hero(
               tag: 'scan-hero',
               child: ScanHeroCard(onTap: () => context.push('/scan')),
             ),
+            const SizedBox(height: 18),
+            const _PeopleRow(),
             const SizedBox(height: 22),
             SectionHeader(title: 'Send Money', onAction: () => onOpenTab(1)),
             ActionTileRow(
               tiles: [
                 ActionTile(
-                  icon: Icons.person_outline_rounded,
-                  label: 'To Mobile /\nUPI ID',
-                  onTap: () => context.push('/pay-friends'),
+                  icon: Icons.phone_iphone_rounded,
+                  label: 'To Mobile',
+                  onTap: () => context.push('/pay/mobile'),
+                ),
+                ActionTile(
+                  icon: Icons.alternate_email_rounded,
+                  label: 'To UPI ID',
+                  onTap: () => context.push('/pay/upi'),
                 ),
                 ActionTile(
                   icon: Icons.contacts_rounded,
                   label: 'To Contacts',
-                  onTap: () => context.push('/pay-friends'),
+                  onTap: () => context.push('/pay/contacts'),
                 ),
                 ActionTile(
-                  icon: Icons.qr_code_2_rounded,
-                  label: 'Scan & Pay',
-                  onTap: () => context.push('/scan'),
-                ),
-                ActionTile(
-                  icon: Icons.account_balance_rounded,
-                  label: 'To Bank A/c',
-                  onTap: () => _self(context, ref),
+                  icon: Icons.call_received_rounded,
+                  label: 'Receive',
+                  onTap: () => context.push('/receive'),
                 ),
               ],
             ),
             const SizedBox(height: 22),
             SectionHeader(
-                title: 'Split & Settle', onAction: () => onOpenTab(2)),
+              title: 'Split & Settle',
+              onAction: () => onOpenTab(2),
+            ),
             ActionTileRow(
               tiles: [
                 ActionTile(
                   icon: Icons.group_add_rounded,
                   label: 'Split Bill',
-                  onTap: () {
-                    final groups = ref.read(appStoreProvider).groups;
-                    if (groups.isNotEmpty) {
-                      context.push('/split/${groups.first.id}/add');
-                    } else {
-                      onOpenTab(2);
-                    }
-                  },
+                  onTap: () => context.push('/split-bill'),
                 ),
                 ActionTile(
                   icon: Icons.pie_chart_outline_rounded,
                   label: 'My Groups',
-                  onTap: () => onOpenTab(2),
+                  onTap: () => context.push('/split'),
                 ),
                 ActionTile(
                   icon: Icons.swap_horiz_rounded,
                   label: 'Settle Up',
-                  onTap: () {
-                    final groups = ref.read(appStoreProvider).groups;
-                    if (groups.isNotEmpty) {
-                      context.push('/split/${groups.first.id}');
-                    } else {
-                      onOpenTab(2);
-                    }
-                  },
+                  onTap: () => context.push('/settle'),
                 ),
                 ActionTile(
                   icon: Icons.assignment_outlined,
                   label: 'Activity',
-                  onTap: () => context.push('/history'),
+                  onTap: () => context.push('/split-activity'),
                 ),
               ],
             ),
             const SizedBox(height: 22),
             HapticScale(
-              onTap: () => _offlineSheet(context, net),
+              onTap: () => context.push('/offline'),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(22),
@@ -342,8 +347,10 @@ class _HomeTab extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: AppColors.hero.withValues(alpha: 0.14),
                       ),
-                      child: const Icon(Icons.cell_tower_rounded,
-                          color: AppColors.hero),
+                      child: const Icon(
+                        Icons.cell_tower_rounded,
+                        color: AppColors.hero,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -352,16 +359,16 @@ class _HomeTab extends ConsumerWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.hero.withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               'Offline Only',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     color: AppColors.hero,
                                     letterSpacing: 0,
@@ -370,20 +377,23 @@ class _HomeTab extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text('Offline Payment',
-                              style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            'Offline Payment',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                           Text(
                             'Use *99# / 123PAY when data drops.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(fontSize: 12),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: AppColors.textDim),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textDim,
+                    ),
                   ],
                 ),
               ),
@@ -395,7 +405,7 @@ class _HomeTab extends ConsumerWidget {
                 ActionTile(
                   icon: Icons.account_balance_wallet_outlined,
                   label: 'Check Balance',
-                  onTap: () => _balanceSheet(context, profile),
+                  onTap: () => context.push('/balance'),
                 ),
                 ActionTile(
                   icon: Icons.history_rounded,
@@ -411,7 +421,7 @@ class _HomeTab extends ConsumerWidget {
                 ActionTile(
                   icon: Icons.settings_outlined,
                   label: 'Settings',
-                  onTap: () => onOpenTab(3),
+                  onTap: () => context.push('/settings'),
                 ),
               ],
             ),
@@ -419,93 +429,17 @@ class _HomeTab extends ConsumerWidget {
             Text('Recent', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (app.transactions.isEmpty)
-              Text('No payments yet. Scan to start.',
-                  style: Theme.of(context).textTheme.bodyMedium)
+              Text(
+                'No payments yet. Scan to start.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              )
             else
-              ...app.transactions.take(4).map((tx) => _TxTile(tx: tx)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _self(BuildContext context, WidgetRef ref) {
-    final me = ref.read(appStoreProvider).profile;
-    if (me == null) return;
-    ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-      vpa: me.upiId,
-      amountPaise: 0,
-      payeeName: 'Self',
-      source: 'self',
-    );
-    context.push('/pay-friends');
-  }
-
-  void _balanceSheet(BuildContext context, UserProfile? profile) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Linked account', style: Theme.of(ctx).textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Text(profile?.bankName ?? '—',
-                style: Theme.of(ctx).textTheme.headlineMedium),
-            Text('UPI  ${profile?.upiId ?? ''}',
-                style: Theme.of(ctx).textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            MoneyText(profile?.balancePaise ?? 0,
-                style: Theme.of(ctx).textTheme.displayMedium),
-            const SizedBox(height: 8),
-            Text('**** ${profile?.accountLast4 ?? '••••'}',
-                style: Theme.of(ctx).textTheme.bodyMedium),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _help(BuildContext context, AsyncValue<NetworkInfo> net) {
-    _offlineSheet(context, net);
-  }
-
-  void _offlineSheet(BuildContext context, AsyncValue<NetworkInfo> net) {
-    final rail = net.maybeWhen(
-      data: (info) => isIosDevice
-          ? 'iOS · online UPI fallback'
-          : '${info.operator.isEmpty ? 'Carrier' : info.operator} · ${info.isJio ? '123PAY' : '*99#'}',
-      orElse: () => '*99# / 123PAY',
-    );
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Offline Payment',
-                style: Theme.of(ctx).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Zep Pay routes through *99# (USSD) when your carrier supports it, and UPI 123PAY IVR for Jio and 4G-only SIMs. You only confirm with biometrics and enter your UPI PIN.',
-              style: Theme.of(ctx).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Text('This device · $rail',
-                style: Theme.of(ctx)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(color: AppColors.hero)),
+              ...app.transactions.take(4).map(
+                    (tx) => _TxTile(
+                      tx: tx,
+                      onTap: () => context.push('/history/${tx.id}'),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -525,25 +459,122 @@ class TxStatusDot extends StatelessWidget {
       TxStatus.failed => AppColors.danger,
     };
     return Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
   }
 }
 
 class _TxTile extends StatelessWidget {
-  const _TxTile({required this.tx});
+  const _TxTile({required this.tx, this.onTap});
   final TxRecord tx;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      onTap: onTap,
       leading: TxStatusDot(tx.status),
       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
       subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.createdAt)),
-      trailing: MoneyText(tx.amountPaise,
-          style: Theme.of(context).textTheme.titleMedium),
+      trailing: MoneyText(
+        tx.amountPaise,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+}
+
+class _PeopleRow extends ConsumerWidget {
+  const _PeopleRow();
+
+  List<SavedPayee> _people(AppState app) {
+    if (app.payees.isNotEmpty) {
+      final fav = app.payees.where((p) => p.favorite);
+      final rest = app.payees.where((p) => !p.favorite);
+      return [...fav, ...rest].take(12).toList();
+    }
+    final seen = <String>{};
+    final out = <SavedPayee>[];
+    for (final tx in app.transactions) {
+      if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
+      out.add(
+        SavedPayee(
+          vpa: tx.vpa,
+          name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
+        ),
+      );
+      if (out.length >= 12) break;
+    }
+    return out;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = _people(ref.watch(appStoreProvider));
+    if (people.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'People',
+          onAction: () => context.push('/pay/contacts'),
+        ),
+        SizedBox(
+          height: 92,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: people.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final p = people[i];
+              final letter = (p.name.isNotEmpty ? p.name : p.vpa)
+                  .characters
+                  .first
+                  .toUpperCase();
+              return InkWell(
+                onTap: () {
+                  startPayment(
+                    ref,
+                    vpa: p.vpa,
+                    amountPaise: 0,
+                    payeeName: p.name,
+                    source: 'people',
+                  );
+                  context.push('/pay/amount');
+                },
+                child: SizedBox(
+                  width: 68,
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.hero.withValues(alpha: 0.18),
+                        child: Text(
+                          letter,
+                          style: const TextStyle(
+                            color: AppColors.hero,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        p.name.split(' ').first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

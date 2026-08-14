@@ -33,7 +33,9 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release --no-shrink
+        env:
+          TWILIO_VERIFY_URL: ${{ secrets.TWILIO_VERIFY_URL }}
+        run: flutter build apk --release --no-shrink --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -54,6 +56,6 @@ jobs:
             1. Download `app-release.apk`
             2. Enable Install unknown apps for Chrome/Files
             3. Open the APK and install
-            4. Login OTP in dev mode: **123456**
+            4. If Twilio Verify is configured, use the SMS code. Otherwise OTP is **123456**
           files: build/app/outputs/flutter-apk/app-release.apk
           make_latest: true

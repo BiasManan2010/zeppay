@@ -6,7 +6,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
-import '../../../data/models/models.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -33,14 +32,19 @@ class ProfileScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            profile?.name.isNotEmpty == true
-                                ? profile!.name
-                                : 'You',
-                            style: Theme.of(context).textTheme.titleLarge),
-                        Text(profile?.upiId ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium),
-                        Text(profile?.phone ?? '',
-                            style: Theme.of(context).textTheme.labelSmall),
+                          profile?.name.isNotEmpty == true
+                              ? profile!.name
+                              : 'You',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Text(
+                          profile?.upiId ?? '',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          profile?.phone ?? '',
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
                       ],
                     ),
                   ),
@@ -49,27 +53,114 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             SurfaceCard(
-              onTap: () => _balance(context, profile),
-              child: _row(context, Icons.account_balance_wallet_outlined,
-                  'Linked bank', profile?.bankName ?? '—'),
+              onTap: () => context.push('/receive'),
+              child: _row(
+                context,
+                Icons.qr_code_2_rounded,
+                'My QR / UPI ID',
+                profile?.upiId.isNotEmpty == true
+                    ? profile!.upiId
+                    : 'Set a UPI ID to receive',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/balance'),
+              child: _row(
+                context,
+                Icons.account_balance_wallet_outlined,
+                'Linked bank',
+                profile?.bankName ?? '—',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/analytics'),
+              child: _row(
+                context,
+                Icons.insights_rounded,
+                'Spending',
+                'Charts from this device',
+              ),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/history'),
-              child: _row(context, Icons.history_rounded, 'Transaction history',
-                  'All rails, all statuses'),
+              child: _row(
+                context,
+                Icons.history_rounded,
+                'Transaction history',
+                'All rails, all statuses',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/inbox'),
+              child: _row(
+                context,
+                Icons.notifications_none_rounded,
+                'Inbox',
+                'Autopay and split alerts',
+              ),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/requests'),
-              child: _row(context, Icons.inbox_rounded, 'Pending requests',
-                  'Accept or pay'),
+              child: _row(
+                context,
+                Icons.inbox_rounded,
+                'Pending requests',
+                'Accept or pay',
+              ),
             ),
             const SizedBox(height: 10),
             SurfaceCard(
               onTap: () => context.push('/autopay'),
-              child: _row(context, Icons.event_repeat_rounded, 'Autopay',
-                  'Mandates and limits'),
+              child: _row(
+                context,
+                Icons.event_repeat_rounded,
+                'Autopay',
+                'Mandates and limits',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/settings'),
+              child: _row(
+                context,
+                Icons.settings_outlined,
+                'Settings',
+                'Twilio Verify URL',
+              ),
+            ),
+            SurfaceCard(
+              onTap: () => context.push('/search'),
+              child: _row(
+                context,
+                Icons.search_rounded,
+                'Search',
+                'Payments and split bills',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/categories'),
+              child: _row(
+                context,
+                Icons.pie_chart_outline_rounded,
+                'Categories',
+                'Split spend by type',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/help'),
+              child: _row(
+                context,
+                Icons.help_outline_rounded,
+                'How it works',
+                '*99# / 123PAY walkthrough',
+              ),
             ),
             const SizedBox(height: 24),
             GlowButton(
@@ -83,7 +174,11 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _row(
-      BuildContext context, IconData icon, String title, String subtitle) {
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+  ) {
     return Row(
       children: [
         Container(
@@ -107,36 +202,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const Icon(Icons.chevron_right_rounded, color: AppColors.textDim),
       ],
-    );
-  }
-
-  void _balance(BuildContext context, UserProfile? profile) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Linked account', style: Theme.of(ctx).textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Text(profile?.bankName ?? '—',
-                style: Theme.of(ctx).textTheme.headlineMedium),
-            Text('UPI  ${profile?.upiId ?? ''}',
-                style: Theme.of(ctx).textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            MoneyText(profile?.balancePaise ?? 0,
-                style: Theme.of(ctx).textTheme.displayMedium),
-            const SizedBox(height: 8),
-            Text('**** ${profile?.accountLast4 ?? '••••'}',
-                style: Theme.of(ctx).textTheme.bodyMedium),
-          ],
-        ),
-      ),
     );
   }
 }
