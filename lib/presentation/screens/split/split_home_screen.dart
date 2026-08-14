@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +7,7 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../widgets/contact_picker.dart';
 
 class SplitHomeScreen extends ConsumerWidget {
   const SplitHomeScreen({super.key});
@@ -101,6 +101,7 @@ class SplitHomeScreen extends ConsumerWidget {
                 label: 'CREATE GROUP',
                 onTap: () async {
                   final me = ref.read(appStoreProvider).profile;
+                  final extra = await pickGroupMembers(context);
                   final members = [
                     GroupMember(
                       id: 'me',
@@ -108,24 +109,25 @@ class SplitHomeScreen extends ConsumerWidget {
                       phone: me?.phone ?? '',
                       upiId: me?.upiId ?? '',
                     ),
+                    ...extra.where((m) => m.phone != (me?.phone ?? '')),
                   ];
-                  if (await FlutterContacts.requestPermission()) {
-                    final contacts =
-                        await FlutterContacts.getContacts(withProperties: true);
-                    for (final c in contacts.take(8)) {
-                      if (c.phones.isEmpty) continue;
-                      members.add(GroupMember(
-                        id: c.id,
-                        name: c.displayName,
-                        phone: c.phones.first.number,
-                      ));
+                  if (kind == 'pair' && members.length < 2) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('1-on-1 needs one other person'),
+                        ),
+                      );
                     }
+                    return;
                   }
                   await ref.read(appStoreProvider.notifier).upsertGroup(
                         SplitGroup(
                           id: AppStore.id(),
                           name: name.text.trim().isEmpty
-                              ? 'New group'
+                              ? (kind == 'pair' && members.length > 1
+                                  ? members[1].name
+                                  : 'New group')
                               : name.text.trim(),
                           kind: kind,
                           members: members,

@@ -233,8 +233,13 @@ class _HomeTab extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 RoundIconButton(
+                  icon: Icons.search_rounded,
+                  onTap: () => context.push('/search'),
+                ),
+                const SizedBox(width: 8),
+                RoundIconButton(
                   icon: Icons.help_outline_rounded,
-                  onTap: () => context.push('/offline'),
+                  onTap: () => context.push('/help'),
                 ),
               ],
             ),
@@ -426,7 +431,12 @@ class _HomeTab extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               )
             else
-              ...app.transactions.take(4).map((tx) => _TxTile(tx: tx)),
+              ...app.transactions.take(4).map(
+                    (tx) => _TxTile(
+                      tx: tx,
+                      onTap: () => context.push('/history/${tx.id}'),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -454,13 +464,15 @@ class TxStatusDot extends StatelessWidget {
 }
 
 class _TxTile extends StatelessWidget {
-  const _TxTile({required this.tx});
+  const _TxTile({required this.tx, this.onTap});
   final TxRecord tx;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      onTap: onTap,
       leading: TxStatusDot(tx.status),
       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
       subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.createdAt)),

@@ -12,6 +12,7 @@ import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/telephony_service.dart';
+import 'extra_pages.dart';
 
 void _goPay(
   BuildContext context,
@@ -20,6 +21,7 @@ void _goPay(
   required int amountPaise,
   required String name,
   required String source,
+  String note = '',
 }) {
   startPayment(
     ref,
@@ -27,6 +29,7 @@ void _goPay(
     amountPaise: amountPaise,
     payeeName: name,
     source: source,
+    note: note,
   );
   context.push('/face');
 }
@@ -258,6 +261,7 @@ class _PayUpiScreenState extends ConsumerState<PayUpiScreen> {
             amountPaise: amt,
             name: vpa.split('@').first,
             source: 'upi',
+            note: _note.text.trim(),
           );
         },
       ),
@@ -581,6 +585,11 @@ class BalanceScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          GlowButton(
+            label: 'CHECK VIA *99#',
+            onTap: () => dialBalanceEnquiry(context, ref),
+          ),
         ],
       ),
     );
@@ -642,11 +651,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _url = TextEditingController();
+  final _name = TextEditingController();
   String _status = '';
 
   @override
   void initState() {
     super.initState();
+    _name.text = ref.read(appStoreProvider).profile?.name ?? '';
     ref.read(otpServiceProvider).resolveUrl().then((v) {
       if (mounted) _url.text = v;
     });
@@ -655,6 +666,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _url.dispose();
+    _name.dispose();
     super.dispose();
   }
 
@@ -663,16 +675,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return ZepPage(
       title: 'Settings',
       subtitle:
-          'Twilio Verify proxy URL. Never paste an Auth Token in the app.',
+          'Your name, then the Twilio Verify proxy. Never paste an Auth Token.',
       footer: GlowButton(
         label: 'SAVE & PING',
         onTap: () async {
+          final p = ref.read(appStoreProvider).profile;
+          if (p != null && _name.text.trim().isNotEmpty) {
+            await ref
+                .read(appStoreProvider.notifier)
+                .updateProfile(p.copyWith(name: _name.text.trim()));
+          }
           await ref.read(otpServiceProvider).saveUrl(_url.text);
           final ok = await ref.read(otpServiceProvider).ping();
           ref.invalidate(otpLiveProvider);
           setState(
             () => _status = ok
-                ? 'Twilio proxy reachable.'
+                ? 'Saved. Twilio proxy reachable.'
                 : (_url.text.trim().isEmpty
                       ? 'Saved. Dev OTP 123456 until a URL is set.'
                       : 'Saved, but /health did not respond.'),
@@ -682,6 +700,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _url,
             decoration: const InputDecoration(
@@ -729,34 +752,58 @@ class AnalyticsScreen extends ConsumerWidget {
       subtitle: 'Successful payments only, from this device.',
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: spots.length < 2
-            ? const Text('Pay a couple of times to see a chart.')
-            : LineChart(
-                LineChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: AppColors.hero,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: false),
+        child: Column(
+          children: [
+            GlowButton(
+              label: 'BY CATEGORY',
+              onTap: () => context.push('/categories'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: spots.length < 2
+                  ? const Text('Pay a couple of times to see a chart.')
+                  : LineChart(
+                      LineChartData(
+                        gridData: const FlGridData(show: false),
+                        titlesData: const FlTitlesData(show: false),
+                        borderData: FlBorderData(show: false),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            color: AppColors.hero,
+                            barWidth: 3,
+                            dotData: const FlDotData(show: false),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class InboxScreen extends ConsumerWidget {
+class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InboxScreen> createState() => _InboxScreenState();
+}
+
+class _InboxScreenState extends ConsumerState<InboxScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appStoreProvider.notifier).markNotificationsRead();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notes = ref.watch(appStoreProvider).notifications;
     return ZepPage(
       title: 'Inbox',
@@ -770,6 +817,16 @@ class InboxScreen extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: SurfaceCard(
+                    onTap: () {
+                      final t = n.title.toLowerCase();
+                      if (t.contains('autopay')) {
+                        context.push('/autopay');
+                      } else if (t.contains('split')) {
+                        context.push('/split-activity');
+                      } else {
+                        context.push('/requests');
+                      }
+                    },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

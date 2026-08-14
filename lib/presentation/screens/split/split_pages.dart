@@ -140,19 +140,22 @@ class SettleHubScreen extends ConsumerWidget {
                   Expanded(child: Text('$from owes $to')),
                   MoneyText(e.amount),
                   TextButton(
-                    onPressed: () {
-                      startPayment(
-                        ref,
-                        vpa: payee?.upiId.isNotEmpty == true
-                            ? payee!.upiId
-                            : '${payee?.phone}@upi',
-                        amountPaise: e.amount,
-                        payeeName: to,
-                        note: 'Settle ${g.name}',
-                        source: 'settle',
-                      );
-                      context.push('/face');
-                    },
+                      onPressed: () {
+                        startPayment(
+                          ref,
+                          vpa: payee?.upiId.isNotEmpty == true
+                              ? payee!.upiId
+                              : '${payee?.phone}@upi',
+                          amountPaise: e.amount,
+                          payeeName: to,
+                          note: 'Settle ${g.name}',
+                          source: 'settle',
+                          settleGroupId: g.id,
+                          settleFromId: e.from,
+                          settleToId: e.to,
+                        );
+                        context.push('/face');
+                      },
                     child: const Text('Settle'),
                   ),
                 ],

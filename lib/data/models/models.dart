@@ -82,6 +82,10 @@ class PaymentDraft {
     this.note = '',
     this.source = 'scan',
     this.currency = 'INR',
+    this.requestId,
+    this.settleGroupId,
+    this.settleFromId,
+    this.settleToId,
   });
 
   final String vpa;
@@ -90,6 +94,10 @@ class PaymentDraft {
   final String note;
   final String source;
   final String currency;
+  final String? requestId;
+  final String? settleGroupId;
+  final String? settleFromId;
+  final String? settleToId;
 
   double get amountRupees => amountPaise / 100.0;
 }
@@ -248,16 +256,19 @@ class AutopayMandate {
     int? amountPaise,
     int? limitPaise,
     AutopayFrequency? frequency,
+    String? payee,
+    String? vpa,
+    String? note,
   }) => AutopayMandate(
     id: id,
-    payee: payee,
-    vpa: vpa,
+    payee: payee ?? this.payee,
+    vpa: vpa ?? this.vpa,
     amountPaise: amountPaise ?? this.amountPaise,
     frequency: frequency ?? this.frequency,
     nextRun: nextRun ?? this.nextRun,
     limitPaise: limitPaise ?? this.limitPaise,
     active: active ?? this.active,
-    note: note,
+    note: note ?? this.note,
   );
 
   Map<String, dynamic> toJson() => {
@@ -312,6 +323,21 @@ class GroupMember {
     'upiId': upiId,
     'defaultShare': defaultShare,
   };
+
+  GroupMember copyWith({
+    String? name,
+    String? phone,
+    String? email,
+    String? upiId,
+    double? defaultShare,
+  }) => GroupMember(
+    id: id,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    email: email ?? this.email,
+    upiId: upiId ?? this.upiId,
+    defaultShare: defaultShare ?? this.defaultShare,
+  );
 
   factory GroupMember.fromJson(Map<String, dynamic> j) => GroupMember(
     id: j['id'] as String,
@@ -509,6 +535,19 @@ class SplitGroup {
     'defaultShares': defaultShares,
   };
 
+  SplitGroup copyWith({
+    String? name,
+    String? kind,
+    List<GroupMember>? members,
+    Map<String, double>? defaultShares,
+  }) => SplitGroup(
+    id: id,
+    name: name ?? this.name,
+    kind: kind ?? this.kind,
+    members: members ?? this.members,
+    defaultShares: defaultShares ?? this.defaultShares,
+  );
+
   factory SplitGroup.fromJson(Map<String, dynamic> j) => SplitGroup(
     id: j['id'] as String,
     name: j['name'] as String? ?? '',
@@ -546,6 +585,14 @@ class AppNotification {
     'createdAt': createdAt.toIso8601String(),
     'read': read,
   };
+
+  AppNotification copyWith({bool? read}) => AppNotification(
+    id: id,
+    title: title,
+    body: body,
+    createdAt: createdAt,
+    read: read ?? this.read,
+  );
 
   factory AppNotification.fromJson(Map<String, dynamic> j) => AppNotification(
     id: j['id'] as String,

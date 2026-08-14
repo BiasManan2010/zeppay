@@ -21,6 +21,28 @@ class OutcomeScreen extends ConsumerWidget {
     if (id != null) {
       await ref.read(appStoreProvider.notifier).resolveTransaction(id, status);
     }
+    final draft = ref.read(paymentDraftProvider);
+    if (status == TxStatus.success && draft?.requestId != null) {
+      await ref
+          .read(appStoreProvider.notifier)
+          .updateRequest(draft!.requestId!, RequestStatus.paid);
+    }
+    if (status == TxStatus.success &&
+        draft?.settleGroupId != null &&
+        draft?.settleFromId != null &&
+        draft?.settleToId != null) {
+      await ref.read(appStoreProvider.notifier).addSettlement(
+            Settlement(
+              id: AppStore.id(),
+              groupId: draft!.settleGroupId!,
+              fromId: draft.settleFromId!,
+              toId: draft.settleToId!,
+              amountPaise: draft.amountPaise,
+              createdAt: DateTime.now(),
+              method: 'in_app',
+            ),
+          );
+    }
     if (!context.mounted) return;
     if (status == TxStatus.success) {
       context.go('/confirm');

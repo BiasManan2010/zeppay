@@ -148,9 +148,39 @@ class AppStore extends Notifier<AppState> {
     await _persist();
   }
 
+  Future<void> deleteMandate(String id) async {
+    state = state.copyWith(
+      mandates: state.mandates.where((e) => e.id != id).toList(),
+    );
+    await _persist();
+  }
+
   Future<void> upsertGroup(SplitGroup g) async {
     final rest = state.groups.where((e) => e.id != g.id).toList();
     state = state.copyWith(groups: [g, ...rest]);
+    await _persist();
+  }
+
+  Future<void> deleteGroup(String id) async {
+    state = state.copyWith(
+      groups: state.groups.where((e) => e.id != id).toList(),
+      expenses: state.expenses.where((e) => e.groupId != id).toList(),
+      settlements: state.settlements.where((e) => e.groupId != id).toList(),
+    );
+    await _persist();
+  }
+
+  Future<void> updateProfile(UserProfile profile) async {
+    state = state.copyWith(profile: profile);
+    await _persist();
+  }
+
+  Future<void> markNotificationsRead() async {
+    state = state.copyWith(
+      notifications: state.notifications
+          .map((n) => n.copyWith(read: true))
+          .toList(),
+    );
     await _persist();
   }
 

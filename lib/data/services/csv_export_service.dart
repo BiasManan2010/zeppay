@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
 
 import '../models/models.dart';
@@ -8,6 +9,8 @@ class CsvExportService {
     required List<Expense> expenses,
     required List<Settlement> settlements,
   }) {
+    String name(String id) =>
+        group.members.firstWhereOrNull((m) => m.id == id)?.name ?? id;
     final rows = <List<dynamic>>[
       ['Type', 'Date', 'Title', 'Amount', 'Currency', 'Payers', 'Note'],
       ...expenses.map(
@@ -17,7 +20,7 @@ class CsvExportService {
           e.title,
           (e.amountPaise / 100).toStringAsFixed(2),
           e.currency,
-          e.payerIds.join('|'),
+          e.payerIds.map(name).join('|'),
           e.note,
         ],
       ),
@@ -25,11 +28,11 @@ class CsvExportService {
         (s) => [
           'settlement',
           s.createdAt.toIso8601String(),
-          '${s.fromId} → ${s.toId}',
+          '${name(s.fromId)} → ${name(s.toId)}',
           (s.amountPaise / 100).toStringAsFixed(2),
           'INR',
           s.method,
-          '',
+          s.note,
         ],
       ),
     ];

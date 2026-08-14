@@ -6,6 +6,9 @@ class RailEngine {
   /// Jio / 123PAY national IVR. Bank-specific numbers can be swapped later.
   static const ivrNumber = '18008913333';
 
+  /// NPCI BHIM USSD balance enquiry (user still enters UPI PIN in the dialer).
+  static const balanceUssd = '*99*3#';
+
   static String encodeVpaForUssd(String vpa) {
     return vpa.replaceAll('.', '*').replaceAll('@', '*');
   }

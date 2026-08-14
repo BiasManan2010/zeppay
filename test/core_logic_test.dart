@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
 import 'package:zeppay/data/models/models.dart';
+import 'package:zeppay/data/services/csv_export_service.dart';
 import 'package:zeppay/data/services/ocr_service.dart';
 import 'package:zeppay/data/services/rail_engine.dart';
 import 'package:zeppay/data/services/telephony_service.dart';
@@ -93,5 +94,38 @@ void main() {
     );
     expect(RailEngine.ivrString(draft), contains('150'));
     expect(RailEngine.ivrScript(draft).toLowerCase(), contains('tea@okicici'));
+  });
+
+  test('balance enquiry uses NPCI *99*3#', () {
+    expect(RailEngine.balanceUssd, '*99*3#');
+  });
+
+  test('CSV ledger names members instead of ids', () {
+    const group = SplitGroup(
+      id: 'g',
+      name: 'Goa',
+      members: [
+        GroupMember(id: 'me', name: 'You'),
+        GroupMember(id: 'riya', name: 'Riya'),
+      ],
+    );
+    final csv = CsvExportService().exportGroup(
+      group: group,
+      expenses: [
+        Expense(
+          id: '1',
+          groupId: 'g',
+          title: 'Taxi',
+          amountPaise: 50000,
+          createdAt: DateTime(2026, 1, 1),
+          payerIds: const ['me'],
+          shares: const [],
+        ),
+      ],
+      settlements: const [],
+    );
+    expect(csv, contains('Taxi'));
+    expect(csv, contains('You'));
+    expect(csv, isNot(contains('me|')));
   });
 }
