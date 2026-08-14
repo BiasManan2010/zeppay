@@ -117,7 +117,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             .textTheme
                             .displayMedium
                             ?.copyWith(height: 1.1),
-                      ),
+                      )
+                          .animate(key: ValueKey('t$i'))
+                          .fadeIn(duration: 420.ms)
+                          .slideY(begin: 0.12, curve: Curves.easeOutCubic),
                       const SizedBox(height: 14),
                       Text(
                         slide.body,
@@ -126,7 +129,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             .textTheme
                             .bodyMedium
                             ?.copyWith(height: 1.45, fontSize: 15),
-                      ),
+                      )
+                          .animate(key: ValueKey('b$i'))
+                          .fadeIn(delay: 80.ms, duration: 420.ms)
+                          .slideY(begin: 0.08, curve: Curves.easeOutCubic),
                       const Spacer(),
                     ],
                   );

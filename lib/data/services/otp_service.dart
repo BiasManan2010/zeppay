@@ -32,17 +32,25 @@ class OtpService {
     await prefs.setString(prefsKey, url.trim().replaceAll(RegExp(r'/+$'), ''));
   }
 
-  Future<bool> ping() async {
+  Future<Map<String, dynamic>> health() async {
     final base = await resolveUrl();
-    if (base.isEmpty) return false;
+    if (base.isEmpty) return const {'ok': false};
     try {
       final res = await _client
           .get(Uri.parse('$base/health'))
           .timeout(const Duration(seconds: 6));
-      return res.statusCode < 500;
+      if (res.statusCode >= 500) return {'ok': false};
+      final body = jsonDecode(res.body);
+      if (body is Map) return Map<String, dynamic>.from(body);
+      return {'ok': res.statusCode < 500};
     } catch (_) {
-      return false;
+      return const {'ok': false};
     }
+  }
+
+  Future<bool> ping() async {
+    final h = await health();
+    return h['ok'] == true || h['twilio'] == true || h['supabase'] == true;
   }
 
   Future<void> send(String phone) async {

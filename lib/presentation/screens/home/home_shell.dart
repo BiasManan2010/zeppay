@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
@@ -151,19 +152,27 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: selected ? AppColors.hero : AppColors.textDim,
-                size: 24,
+              AnimatedScale(
+                scale: selected ? 1.12 : 1,
+                duration: AppMotion.fast,
+                curve: AppMotion.out,
+                child: Icon(
+                  icon,
+                  color: selected ? AppColors.hero : AppColors.textDim,
+                  size: 24,
+                ),
               ),
               const SizedBox(height: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: selected ? AppColors.hero : AppColors.textDim,
-                  letterSpacing: 0.2,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                ),
+              AnimatedDefaultTextStyle(
+                duration: AppMotion.fast,
+                style:
+                    Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: selected ? AppColors.hero : AppColors.textDim,
+                      letterSpacing: 0.2,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    ) ??
+                    const TextStyle(),
+                child: Text(label),
               ),
             ],
           ),
@@ -203,7 +212,8 @@ class _HomeTab extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
           children: [
-            Row(
+            RiseIn(
+              child: Row(
               children: [
                 const BrandMark(size: 44),
                 const SizedBox(width: 12),
@@ -244,6 +254,7 @@ class _HomeTab extends ConsumerWidget {
                 ),
               ],
             ),
+            ),
             const SizedBox(height: 18),
             if (!isAndroidDevice)
               Container(
@@ -264,9 +275,12 @@ class _HomeTab extends ConsumerWidget {
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
                 ),
               ),
-            Hero(
+            RiseIn(
+              delay: const Duration(milliseconds: 80),
+              child: Hero(
               tag: 'scan-hero',
               child: ScanHeroCard(onTap: () => context.push('/scan')),
+            ),
             ),
             const SizedBox(height: 18),
             const _PeopleRow(),

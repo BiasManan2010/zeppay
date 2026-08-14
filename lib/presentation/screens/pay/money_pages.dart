@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -52,7 +53,9 @@ class SendHubScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
           children: [
-            Text('Send', style: Theme.of(context).textTheme.headlineMedium),
+            RiseIn(
+              child: Text('Send', style: Theme.of(context).textTheme.headlineMedium),
+            ),
             const SizedBox(height: 8),
             Text(
               'Pick how the rupees should move.',
@@ -644,7 +647,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return ZepPage(
       title: 'Settings',
       subtitle:
-          'Your name, then the Twilio Verify proxy. Never paste an Auth Token.',
+          'Your name, then the Twilio SMS proxy URL. Never paste an Auth Token.',
       footer: GlowButton(
         label: 'SAVE & PING',
         onTap: () async {
@@ -655,11 +658,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 .updateProfile(p.copyWith(name: _name.text.trim()));
           }
           await ref.read(otpServiceProvider).saveUrl(_url.text);
-          final ok = await ref.read(otpServiceProvider).ping();
+          final health = await ref.read(otpServiceProvider).health();
           ref.invalidate(otpLiveProvider);
+          final users = health['users'];
+          final reachable = health['ok'] == true || health['twilio'] == true;
           setState(
-            () => _status = ok
-                ? 'Saved. Twilio proxy reachable.'
+            () => _status = reachable
+                ? 'Saved. Proxy up'
+                      '${health['mode'] != null ? ' (${health['mode']})' : ''}'
+                      '${health['supabase'] == true ? ', Supabase on' : ''}'
+                      '${users is num ? ', $users accounts' : ''}.'
                 : (_url.text.trim().isEmpty
                       ? 'Saved. Dev OTP 123456 until a URL is set.'
                       : 'Saved, but /health did not respond.'),
@@ -677,7 +685,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextField(
             controller: _url,
             decoration: const InputDecoration(
-              labelText: 'VERIFY URL',
+              labelText: 'OTP PROXY URL',
               hintText: 'https://your-proxy.example.com',
             ),
           ),
@@ -686,7 +694,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text(_status, style: const TextStyle(color: AppColors.hero)),
           const SizedBox(height: 20),
           Text(
-            'Run backend/server.js with TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SID. Point this URL at that host. Release APKs can bake the same URL via TWILIO_VERIFY_URL.',
+            'Run backend/server.js with Twilio env plus SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Paste supabase/schema.sql in the Supabase SQL editor first. Never put those keys in the app.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],

@@ -58,7 +58,10 @@ class _FaceConfirmScreenState extends ConsumerState<FaceConfirmScreen> {
               Text(
                 '₹${(draft?.amountRupees ?? 0).toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.displayLarge,
-              ),
+              )
+                  .animate()
+                  .fadeIn(duration: 400.ms)
+                  .scale(begin: const Offset(0.92, 0.92), curve: Curves.easeOutBack),
               Text(draft?.payeeName.isNotEmpty == true ? draft!.payeeName : (draft?.vpa ?? ''),
                   style: Theme.of(context).textTheme.bodyMedium),
               const Spacer(),
