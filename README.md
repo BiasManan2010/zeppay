@@ -106,12 +106,12 @@ Failure: `#C45C4A` (never use blue for errors)
 
 ## Payment path
 
-1. Scan QR (`mobile_scanner`) → decode VPA + amount locally  
-2. Face/fingerprint (`local_auth`) — required, not skippable  
-3. Connecting screen (signal-arc pulse)  
-4. Android: dial `*99*1*3*<vpa>*<amount>#` or `18008913333` (Jio / 4G-only)  
-5. Call-end event → confirmation (bolt → check)  
-6. Transaction written to history / balance  
+1. Scan a UPI QR  
+2. Enter the amount  
+3. Android dials `*99#` / 123PAY (or opens UPI) so the user types their **UPI PIN**  
+4. Call-end → confirmation  
+
+Contacts are read-only (`READ_CONTACTS` only). OTP defaults to `https://zeppay.onrender.com`.
 
 ## Tests
 

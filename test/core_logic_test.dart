@@ -19,8 +19,25 @@ void main() {
     expect(draft.payeeName, 'Tea Stall');
   });
 
-  test('parses bare VPA', () {
-    expect(QrParser.parse('me@upi')!.vpa, 'me@upi');
+  test('parses uppercase UPI params and ignores merchant name as VPA', () {
+    final draft = QrParser.parse(
+      'UPI://PAY?PA=shop@ybl&PN=Tea%20Stall&AM=10',
+    );
+    expect(draft!.vpa, 'shop@ybl');
+    expect(draft.amountPaise, 1000);
+    expect(draft.payeeName, 'Tea Stall');
+  });
+
+  test('parses UPI QR embedded in extra text with no amount', () {
+    final draft = QrParser.parse(
+      '000201 extra upi://pay?pa=me@okaxis&pn=Me',
+    );
+    expect(draft!.vpa, 'me@okaxis');
+    expect(draft.amountPaise, 0);
+  });
+
+  test('rejects UPI QR with no pa', () {
+    expect(QrParser.parse('upi://pay?pn=OnlyName'), isNull);
   });
 
   test('equal split remainder goes to first member', () {

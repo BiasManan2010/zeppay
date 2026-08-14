@@ -10,6 +10,7 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/contacts_access.dart';
 import '../../../data/services/providers.dart';
 import '../pay/money_pages.dart';
 import '../split/split_home_screen.dart';
@@ -527,7 +528,24 @@ class _PeopleRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final people = _people(ref.watch(appStoreProvider));
+    final saved = _people(ref.watch(appStoreProvider));
+    final book = ref.watch(phoneContactsProvider).valueOrNull ?? [];
+    final people = [...saved];
+    final seen = people.map((p) => p.vpa).toSet();
+    for (final c in book) {
+      if (c.phones.isEmpty) continue;
+      final last10 = ContactsAccess.last10(c.phones.first.number);
+      if (last10.length < 10) continue;
+      final vpa = '$last10@upi';
+      if (!seen.add(vpa)) continue;
+      people.add(
+        SavedPayee(
+          vpa: vpa,
+          name: c.displayName.isEmpty ? last10 : c.displayName,
+        ),
+      );
+      if (people.length >= 12) break;
+    }
     if (people.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

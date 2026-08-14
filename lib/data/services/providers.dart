@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/models.dart';
 import 'biometric_service.dart';
+import 'contacts_access.dart';
 import 'otp_service.dart';
 import 'telephony_service.dart';
 
@@ -17,6 +18,10 @@ final pendingTxIdProvider = StateProvider<String?>((_) => null);
 
 final otpLiveProvider = FutureProvider((ref) {
   return ref.watch(otpServiceProvider).isLive();
+});
+
+final phoneContactsProvider = FutureProvider((ref) {
+  return ContactsAccess.load(requestIfNeeded: false);
 });
 
 void startPayment(

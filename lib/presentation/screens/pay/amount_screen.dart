@@ -109,7 +109,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'Daily UPI limits are set by your bank. Zep Pay does not hold a second cap.',
+                'Next you enter your UPI PIN on the bank / *99# screen. Daily limits are set by your bank.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textDim, fontSize: 12),
               ),
@@ -147,7 +147,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                               amountPaise: _paise,
                               note: _note.text.trim(),
                             );
-                        context.push('/face');
+                        context.push('/connecting');
                       },
               ),
             ),

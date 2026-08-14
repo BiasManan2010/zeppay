@@ -7,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
-import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
 
@@ -19,9 +18,27 @@ class ScanScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanScreenState extends ConsumerState<ScanScreen> {
-  final _controller = MobileScannerController(detectionSpeed: DetectionSpeed.noDuplicates);
+  final _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
   var _locked = false;
-  var _amount = '';
+  var _ready = false;
+  var _denied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepCamera();
+  }
+
+  Future<void> _prepCamera() async {
+    final status = await Permission.camera.request();
+    if (!mounted) return;
+    setState(() {
+      _denied = !status.isGranted;
+      _ready = status.isGranted;
+    });
+  }
 
   @override
   void dispose() {
@@ -38,83 +55,75 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     if (draft == null) return;
     _locked = true;
     HapticFeedback.mediumImpact();
-    var next = draft;
-    if (next.amountPaise == 0 && _amount.isNotEmpty) {
-      final rupees = double.tryParse(_amount) ?? 0;
-      next = PaymentDraft(
-        vpa: next.vpa,
-        amountPaise: (rupees * 100).round(),
-        payeeName: next.payeeName,
-        note: next.note,
-        source: 'scan',
-      );
+    ref.read(paymentDraftProvider.notifier).state = draft;
+    if (mounted) {
+      await context.push('/pay/amount');
+      _locked = false;
     }
-    if (next.amountPaise <= 0) {
-      if (mounted) {
-        setState(() => _locked = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('QR has no amount — enter rupees below, then scan again')),
-        );
-      }
-      return;
-    }
-    ref.read(paymentDraftProvider.notifier).state = next;
-    if (mounted) context.push('/pay/amount');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.base,
-      body: FutureBuilder(
-        future: Permission.camera.request(),
-        builder: (context, snap) {
-          return Stack(
-            children: [
-              MobileScanner(controller: _controller, onDetect: _onDetect),
-              Container(color: Colors.black.withValues(alpha: 0.45)),
-              const Center(
-                child: SizedBox(width: 260, height: 260, child: ScanBrackets()),
-              ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+      body: Stack(
+        children: [
+          if (_ready)
+            MobileScanner(controller: _controller, onDetect: _onDetect)
+          else
+            const ColoredBox(color: AppColors.base),
+          Container(color: Colors.black.withValues(alpha: 0.45)),
+          const Center(
+            child: SizedBox(width: 260, height: 260, child: ScanBrackets()),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => context.pop(),
-                            icon: const Icon(Icons.close, color: AppColors.white),
-                          ),
-                          const Spacer(),
-                          Text('SCAN QR',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
-                                  ?.copyWith(color: AppColors.white)),
-                          const Spacer(),
-                          const SizedBox(width: 48),
-                        ],
+                      IconButton(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.close, color: AppColors.white),
                       ),
                       const Spacer(),
-                      TextField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onChanged: (v) => _amount = v,
-                        style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w700),
-                        decoration: InputDecoration(
-                          hintText: 'Amount if QR has none',
-                          filled: true,
-                          fillColor: AppColors.base.withValues(alpha: 0.7),
-                        ),
+                      Text(
+                        'SCAN QR',
+                        style: Theme.of(context).textTheme.labelLarge
+                            ?.copyWith(color: AppColors.white),
                       ),
+                      const Spacer(),
+                      const SizedBox(width: 48),
                     ],
                   ),
-                ),
+                  const Spacer(),
+                  Text(
+                    _denied
+                        ? 'Camera permission is off. Enable it to scan.'
+                        : 'Point at a UPI QR. Then enter the amount.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.white),
+                  ),
+                  if (_denied) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () async {
+                        await openAppSettings();
+                      },
+                      child: const Text('OPEN SETTINGS'),
+                    ),
+                    TextButton(
+                      onPressed: _prepCamera,
+                      child: const Text('TRY AGAIN'),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

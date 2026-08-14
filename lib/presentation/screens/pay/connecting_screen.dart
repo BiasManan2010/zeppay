@@ -124,7 +124,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                       _detail.isEmpty
                           ? (isIosDevice
                                 ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
-                                : 'Enter your UPI PIN when the dialer asks. We pull you back the instant the call ends.')
+                                : 'Enter your UPI PIN when the bank asks. We pull you back when the call or UPI app finishes.')
                           : _detail,
                       key: ValueKey(_detail),
                       textAlign: TextAlign.center,
