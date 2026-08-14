@@ -16,14 +16,25 @@ class RailEngine {
     return '*99*1*3*${encodeVpaForUssd(vpa)}*$rupees#';
   }
 
-  static String ivrString() => ivrNumber;
+  /// 123PAY cannot encode a VPA in the tel URI. We pre-send the amount as
+  /// DTMF after two pauses, and show [ivrScript] so the user only speaks the VPA.
+  static String ivrString(PaymentDraft draft) {
+    final rupees = (draft.amountPaise / 100).round();
+    return '$ivrNumber,,$rupees';
+  }
+
+  static String ivrScript(PaymentDraft draft) {
+    final rupees = (draft.amountPaise / 100).toStringAsFixed(0);
+    final who = draft.payeeName.isNotEmpty ? draft.payeeName : draft.vpa;
+    return 'When 123PAY answers, confirm ₹$rupees to $who (${draft.vpa}). Amount is pre-dialed.';
+  }
 
   static String dialFor(PaymentRail rail, PaymentDraft draft) {
     switch (rail) {
       case PaymentRail.ussd:
         return ussdString(vpa: draft.vpa, amountPaise: draft.amountPaise);
       case PaymentRail.ivr:
-        return ivrString();
+        return ivrString(draft);
       case PaymentRail.upiIntent:
         return upiUri(draft);
     }
@@ -38,7 +49,9 @@ class RailEngine {
 
   static PaymentRail select(NetworkInfo info) {
     if (info.platform != 'android') return PaymentRail.upiIntent;
-    if (info.recommendedRail == 'ussd' && info.ussdSupported) return PaymentRail.ussd;
+    if (info.recommendedRail == 'ussd' && info.ussdSupported) {
+      return PaymentRail.ussd;
+    }
     return PaymentRail.ivr;
   }
 }

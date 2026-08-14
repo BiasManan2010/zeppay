@@ -66,7 +66,9 @@ void main() {
   });
 
   test('OCR line parser extracts amounts', () {
-    final items = OcrService.parseLines('Masala dosa  ₹120.00\nFilter coffee 40');
+    final items = OcrService.parseLines(
+      'Masala dosa  ₹120.00\nFilter coffee 40',
+    );
     expect(items.length, 2);
     expect(items.first.label.toLowerCase(), contains('dosa'));
   });
@@ -81,5 +83,15 @@ void main() {
       platform: 'android',
     );
     expect(RailEngine.select(info), PaymentRail.ivr);
+  });
+
+  test('123PAY dial string includes amount DTMF', () {
+    const draft = PaymentDraft(
+      vpa: 'tea@okicici',
+      amountPaise: 15000,
+      payeeName: 'Tea',
+    );
+    expect(RailEngine.ivrString(draft), contains('150'));
+    expect(RailEngine.ivrScript(draft).toLowerCase(), contains('tea@okicici'));
   });
 }

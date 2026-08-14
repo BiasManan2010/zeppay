@@ -34,9 +34,10 @@ class GlowButton extends StatelessWidget {
           gradient: AppColors.scanOrb,
           boxShadow: [
             BoxShadow(
-                color: AppColors.hero.withValues(alpha: 0.4),
-                blurRadius: 22,
-                offset: const Offset(0, 8)),
+              color: AppColors.hero.withValues(alpha: 0.4),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: busy
@@ -44,15 +45,17 @@ class GlowButton extends StatelessWidget {
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.white),
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
               )
             : Text(
                 label,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.white,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: AppColors.white,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
       ),
     );
@@ -134,10 +137,10 @@ class SectionHeader extends StatelessWidget {
               child: Text(
                 '$action >',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.hero,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.hero,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
         ],
@@ -169,15 +172,20 @@ class ActionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border:
-              Border.all(color: AppColors.surfaceBorder.withValues(alpha: 0.7)),
+          border: Border.all(
+            color: AppColors.surfaceBorder.withValues(alpha: 0.7),
+          ),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
+              color: Color(0x66000000),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
             BoxShadow(
-                color: Color(0x22FFFFFF),
-                blurRadius: 1,
-                offset: Offset(0, -0.5)),
+              color: Color(0x22FFFFFF),
+              blurRadius: 1,
+              offset: Offset(0, -0.5),
+            ),
           ],
         ),
         child: Column(
@@ -200,8 +208,10 @@ class ActionTile extends StatelessWidget {
                     top: -4,
                     right: -6,
                     child: Container(
-                      constraints:
-                          const BoxConstraints(minWidth: 18, minHeight: 18),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(
@@ -227,11 +237,11 @@ class ActionTile extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    letterSpacing: 0,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: AppColors.textPrimary,
+                letterSpacing: 0,
+                height: 1.2,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -261,11 +271,12 @@ class ActionTileRow extends StatelessWidget {
 }
 
 class ScanGlyph extends StatelessWidget {
-  const ScanGlyph(
-      {super.key,
-      this.size = 28,
-      this.color = AppColors.white,
-      this.stroke = 2.4});
+  const ScanGlyph({
+    super.key,
+    this.size = 28,
+    this.color = AppColors.white,
+    this.stroke = 2.4,
+  });
 
   final double size;
   final Color color;
@@ -335,9 +346,10 @@ class ScanOrbButton extends StatelessWidget {
       ),
       child: Center(
         child: ScanGlyph(
-            size: size * 0.42,
-            color: AppColors.white,
-            stroke: size > 70 ? 2.6 : 2.2),
+          size: size * 0.42,
+          color: AppColors.white,
+          stroke: size > 70 ? 2.6 : 2.2,
+        ),
       ),
     );
     if (onTap == null) return orb;
@@ -353,8 +365,9 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        name.trim().isEmpty ? 'Z' : name.trim().characters.first.toUpperCase();
+    final initial = name.trim().isEmpty
+        ? 'Z'
+        : name.trim().characters.first.toUpperCase();
     return Container(
       width: size,
       height: size,
@@ -364,7 +377,9 @@ class ProfileAvatar extends StatelessWidget {
         gradient: AppColors.scanOrb,
         boxShadow: [
           BoxShadow(
-              color: AppColors.hero.withValues(alpha: 0.35), blurRadius: 12),
+            color: AppColors.hero.withValues(alpha: 0.35),
+            blurRadius: 12,
+          ),
         ],
       ),
       child: Text(
@@ -386,10 +401,10 @@ class ScanHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final titleStyle = Theme.of(context).textTheme.headlineMedium?.copyWith(
-          fontSize: 26,
-          height: 1.15,
-          fontWeight: FontWeight.w800,
-        );
+      fontSize: 26,
+      height: 1.15,
+      fontWeight: FontWeight.w800,
+    );
     return HapticScale(
       onTap: onTap,
       child: Container(
@@ -441,8 +456,9 @@ class ScanHeroCard extends StatelessWidget {
                               TextSpan(text: 'Tap. Pay.\n', style: titleStyle),
                               TextSpan(
                                 text: 'Anytime.',
-                                style:
-                                    titleStyle?.copyWith(color: AppColors.hero),
+                                style: titleStyle?.copyWith(
+                                  color: AppColors.hero,
+                                ),
                               ),
                               TextSpan(text: '\nAnywhere.', style: titleStyle),
                             ],
@@ -451,25 +467,29 @@ class ScanHeroCard extends StatelessWidget {
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.base.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: AppColors.hero.withValues(alpha: 0.28)),
+                              color: AppColors.hero.withValues(alpha: 0.28),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.signal_cellular_alt_rounded,
-                                  size: 13, color: AppColors.hero),
+                              const Icon(
+                                Icons.signal_cellular_alt_rounded,
+                                size: 13,
+                                color: AppColors.hero,
+                              ),
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
                                   'Works offline via *99# / 123PAY',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
+                                  style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: AppColors.textPrimary,
                                         letterSpacing: 0,
@@ -489,10 +509,9 @@ class ScanHeroCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'Tap to scan',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontSize: 13),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(fontSize: 13),
                       ),
                       const SizedBox(height: 2),
                       SizedBox(
@@ -500,11 +519,8 @@ class ScanHeroCard extends StatelessWidget {
                         child: Text(
                           'Scan any UPI QR to pay instantly, even offline.',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    letterSpacing: 0,
-                                    height: 1.25,
-                                  ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(letterSpacing: 0, height: 1.25),
                         ),
                       ),
                     ],
@@ -535,13 +551,59 @@ class WavePainter extends CustomPainter {
         final y = y0 + math.sin((x / size.width) * math.pi * 2 + w) * amp;
         path.lineTo(x, y);
       }
-      canvas.drawPath(path,
-          paint..color = AppColors.hero.withValues(alpha: 0.08 + w * 0.04));
+      canvas.drawPath(
+        path,
+        paint..color = AppColors.hero.withValues(alpha: 0.08 + w * 0.04),
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class ZepPage extends StatelessWidget {
+  const ZepPage({
+    super.key,
+    required this.title,
+    required this.child,
+    this.subtitle,
+    this.footer,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget child;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.base,
+      appBar: AppBar(title: Text(title)),
+      body: Column(
+        children: [
+          if (subtitle != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ),
+          Expanded(child: child),
+          if (footer != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: footer,
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class BrandMark extends StatelessWidget {
@@ -560,11 +622,8 @@ class BrandMark extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.bolt_rounded,
-        size: size * 0.55,
-        color: AppColors.hero,
-      ),
+      errorBuilder: (_, __, ___) =>
+          Icon(Icons.bolt_rounded, size: size * 0.55, color: AppColors.hero),
     );
   }
 }
