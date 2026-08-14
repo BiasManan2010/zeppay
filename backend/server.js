@@ -7,7 +7,9 @@
  *   SUPABASE_SERVICE_ROLE_KEY=eyJ... \
  *   node server.js
  *
- * App Settings → OTP proxy URL → http://YOUR_LAN_IP:8787
+ * Render: set env vars in the dashboard; PORT is injected. App URL:
+ *   https://YOUR-SERVICE.onrender.com
+ * App Settings → OTP proxy URL, or --dart-define=TWILIO_VERIFY_URL=that URL
  */
 const crypto = require('crypto');
 const express = require('express');
@@ -181,8 +183,9 @@ app.post('/verify/check', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 8787, '0.0.0.0', () =>
+const port = Number(process.env.PORT) || 8787;
+app.listen(port, '0.0.0.0', () =>
   console.log(
-    `Zep Pay OTP proxy on :8787 (${useVerify ? 'verify' : useSms ? 'messaging' : 'dev'}; supabase ${db.enabled() ? 'on' : 'off'})`,
+    `Zep Pay OTP proxy on :${port} (${useVerify ? 'verify' : useSms ? 'messaging' : 'dev'}; supabase ${db.enabled() ? 'on' : 'off'})`,
   ),
 );

@@ -6,7 +6,7 @@ Cross-platform Flutter UPI app: one QR scan + biometric confirmation, then Andro
 
 - Flutter + Riverpod
 - Local JSON store (offline-first, hackathon-ready). Swap the store for Firestore later without rewriting UI.
-- Twilio OTP via `backend/server.js` (Messaging Service or Verify — never put the Auth Token in the app)
+- Twilio OTP via `backend/server.js` on **Render** (Messaging Service or Verify — never put the Auth Token in the app)
 - Android Kotlin platform channel for carrier detection, `ACTION_CALL`, and call-end
 - iOS: offline rails are **not available**; the UI says so and falls back to `upi://` intent
 
@@ -35,7 +35,7 @@ flutter run
 
 Dev OTP (no Twilio): **123456**
 
-Live OTP (Twilio Programmable SMS):
+Live OTP: deploy `backend/` to Render, then point the app at that URL (see **Render** below). For LAN debugging only:
 
 ```powershell
 cd backend
@@ -43,11 +43,40 @@ npm i
 $env:TWILIO_ACCOUNT_SID="ACxxx"
 $env:TWILIO_AUTH_TOKEN="xxx"
 $env:TWILIO_MESSAGING_SERVICE_SID="MGxxx"
-node server.js
+npm start
 flutter run --dart-define=TWILIO_VERIFY_URL=http://192.168.x.x:8787
 ```
 
 If you use Twilio Verify instead, set `TWILIO_VERIFY_SID` (VA…) and skip the Messaging Service SID.
+
+## Render (OTP + Supabase proxy)
+
+The Node proxy is a Render **Web Service**. Secrets stay in Render — never in Flutter `--dart-define` or git.
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service** → this GitHub repo.
+2. **Root Directory:** `backend`
+3. **Runtime:** Node. **Build:** `npm install --omit=dev`. **Start:** `npm start`
+4. Instance can be free; Render injects `PORT`. Health check: `GET /health`
+5. Environment (same keys as `backend/env.example`):
+
+| Key | Notes |
+| --- | --- |
+| `TWILIO_ACCOUNT_SID` | `AC…` |
+| `TWILIO_AUTH_TOKEN` | rotate if it was ever pasted in chat |
+| `TWILIO_MESSAGING_SERVICE_SID` | `MG…` (or `TWILIO_FROM` / `TWILIO_VERIFY_SID`) |
+| `SUPABASE_URL` | `https://xxxx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role, not anon |
+| `OTP_PEPPER` | optional extra salt |
+
+Or apply `render.yaml` (Blueprint). Fill the `sync: false` vars in the dashboard.
+
+After deploy, the public URL is `https://<service>.onrender.com` (no trailing slash).
+
+- Phone: **Settings → OTP PROXY URL**
+- Builds: `--dart-define=TWILIO_VERIFY_URL=https://<service>.onrender.com`
+- GitHub Actions: repo secret `TWILIO_VERIFY_URL` = that same URL
+
+Free Render services sleep after idle; the first OTP after sleep can take ~30s.
 
 ## Supabase (user count + OTP login)
 
