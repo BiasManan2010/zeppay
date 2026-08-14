@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
 
@@ -31,7 +31,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       _busy = true;
       _error = null;
     });
-    final ok = await ref.read(otpServiceProvider).check(phone, _code.text.trim());
+    final ok =
+        await ref.read(otpServiceProvider).check(phone, _code.text.trim());
     if (!ok) {
       setState(() {
         _busy = false;
@@ -47,15 +48,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Widget build(BuildContext context) {
     final phone = ref.watch(pendingPhoneProvider);
     return Scaffold(
-      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login'))),
+      appBar:
+          AppBar(leading: BackButton(onPressed: () => context.go('/login'))),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enter the code', style: Theme.of(context).textTheme.displayMedium),
+            Text('Enter the code',
+                style: Theme.of(context).textTheme.displayMedium),
             const SizedBox(height: 8),
-            Text('Sent to $phone', style: Theme.of(context).textTheme.bodyMedium),
+            Text('Sent to $phone',
+                style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 28),
             TextField(
               controller: _code,
@@ -67,25 +71,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
-              decoration: const InputDecoration(counterText: '', hintText: '••••••'),
+              decoration:
+                  const InputDecoration(counterText: '', hintText: '••••••'),
             ),
-            if (_error != null) Text(_error!, style: const TextStyle(color: AppColors.danger)),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: AppColors.danger)),
             const Spacer(),
-            HapticScale(
-              onTap: _busy ? null : _verify,
-              enabled: !_busy,
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.hero,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text('VERIFY',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-              ),
-            ),
+            GlowButton(
+                label: 'VERIFY', onTap: _busy ? null : _verify, busy: _busy),
           ],
         ),
       ),

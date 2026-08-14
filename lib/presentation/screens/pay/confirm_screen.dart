@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -73,25 +74,20 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                 style: Theme.of(context).textTheme.displayMedium,
               ),
               Text(
-                draft?.payeeName.isNotEmpty == true ? draft!.payeeName : (draft?.vpa ?? ''),
+                draft?.payeeName.isNotEmpty == true
+                    ? draft!.payeeName
+                    : (draft?.vpa ?? ''),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const Spacer(),
-              HapticScale(
-                onTap: () {
-                  ref.read(paymentDraftProvider.notifier).state = null;
-                  context.go('/home');
-                },
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.hero,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text('DONE',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: GlowButton(
+                  label: 'DONE',
+                  onTap: () {
+                    ref.read(paymentDraftProvider.notifier).state = null;
+                    context.go('/home');
+                  },
                 ),
               ),
             ],

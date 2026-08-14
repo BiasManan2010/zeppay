@@ -5,56 +5,56 @@ import 'app_colors.dart';
 
 abstract final class AppTypography {
   static TextTheme textTheme() {
-    final base = GoogleFonts.manropeTextTheme();
+    final base = GoogleFonts.plusJakartaSansTextTheme();
     return base.copyWith(
-      displayLarge: GoogleFonts.manrope(
+      displayLarge: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w800,
         fontSize: 42,
         letterSpacing: -1.2,
         color: AppColors.textPrimary,
       ),
-      displayMedium: GoogleFonts.manrope(
+      displayMedium: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w800,
         fontSize: 32,
         letterSpacing: -0.8,
         color: AppColors.textPrimary,
       ),
-      headlineMedium: GoogleFonts.manrope(
+      headlineMedium: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w700,
         fontSize: 22,
         letterSpacing: -0.3,
         color: AppColors.textPrimary,
       ),
-      titleLarge: GoogleFonts.manrope(
+      titleLarge: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w700,
         fontSize: 18,
         color: AppColors.textPrimary,
       ),
-      titleMedium: GoogleFonts.manrope(
+      titleMedium: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w600,
         fontSize: 16,
         color: AppColors.textPrimary,
       ),
-      bodyLarge: GoogleFonts.manrope(
+      bodyLarge: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w500,
         fontSize: 16,
         color: AppColors.textPrimary,
       ),
-      bodyMedium: GoogleFonts.manrope(
+      bodyMedium: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w500,
         fontSize: 14,
         color: AppColors.textMuted,
       ),
-      labelLarge: GoogleFonts.manrope(
+      labelLarge: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w600,
         fontSize: 13,
-        letterSpacing: 1.4,
+        letterSpacing: 0.4,
         color: AppColors.textMuted,
       ),
-      labelSmall: GoogleFonts.manrope(
+      labelSmall: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w600,
         fontSize: 11,
-        letterSpacing: 1.6,
+        letterSpacing: 0.2,
         color: AppColors.textDim,
       ),
     );

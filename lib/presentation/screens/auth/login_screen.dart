@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/services/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -69,7 +70,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
                   labelText: 'MOBILE NUMBER',
                   hintText: '98765 43210',
@@ -81,30 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(_error!, style: const TextStyle(color: AppColors.danger)),
               ],
               const SizedBox(height: 18),
-              HapticScale(
-                onTap: _busy ? null : _send,
-                enabled: !_busy,
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.hero,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.hero.withValues(alpha: 0.35), blurRadius: 18),
-                    ],
-                  ),
-                  child: _busy
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.base),
-                        )
-                      : Text('SEND OTP',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-                ),
-              ),
+              GlowButton(
+                  label: 'SEND OTP', onTap: _busy ? null : _send, busy: _busy),
               const SizedBox(height: 12),
               Text(
                 'Dev OTP is 123456 until Twilio is wired.',

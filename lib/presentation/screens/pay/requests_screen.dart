@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -33,50 +34,56 @@ class RequestsScreen extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final r = reqs[i];
                 final incoming = r.toPhone == me;
-                return SurfaceCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(incoming ? r.fromName : 'You → ${r.toPhone}',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      MoneyText(r.amountPaise, style: Theme.of(context).textTheme.headlineMedium),
-                      Text(r.note, style: Theme.of(context).textTheme.bodyMedium),
-                      Text(r.status.name.toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
-                      if (incoming && r.status == RequestStatus.pending) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () => ref
-                                  .read(appStoreProvider.notifier)
-                                  .updateRequest(r.id, RequestStatus.declined),
-                              child: const Text('Decline', style: TextStyle(color: AppColors.danger)),
-                            ),
-                            const Spacer(),
-                            HapticScale(
-                              onTap: () {
-                                ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-                                  vpa: r.fromPhone.contains('@') ? r.fromPhone : '${r.fromPhone}@upi',
-                                  amountPaise: r.amountPaise,
-                                  payeeName: r.fromName,
-                                  note: r.note,
-                                  source: 'request',
-                                );
-                                context.push('/face');
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.hero,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Text('PAY'),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(incoming ? r.fromName : 'You → ${r.toPhone}',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        MoneyText(r.amountPaise,
+                            style: Theme.of(context).textTheme.headlineMedium),
+                        Text(r.note,
+                            style: Theme.of(context).textTheme.bodyMedium),
+                        Text(r.status.name.toUpperCase(),
+                            style: Theme.of(context).textTheme.labelSmall),
+                        if (incoming && r.status == RequestStatus.pending) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(appStoreProvider.notifier)
+                                    .updateRequest(
+                                        r.id, RequestStatus.declined),
+                                child: const Text('Decline',
+                                    style: TextStyle(color: AppColors.danger)),
                               ),
-                            ),
-                          ],
-                        ),
+                              const Spacer(),
+                              GlowButton(
+                                label: 'PAY',
+                                expand: false,
+                                onTap: () {
+                                  ref
+                                      .read(paymentDraftProvider.notifier)
+                                      .state = PaymentDraft(
+                                    vpa: r.fromPhone.contains('@')
+                                        ? r.fromPhone
+                                        : '${r.fromPhone}@upi',
+                                    amountPaise: r.amountPaise,
+                                    payeeName: r.fromName,
+                                    note: r.note,
+                                    source: 'request',
+                                  );
+                                  context.push('/face');
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 );
               },
@@ -93,17 +100,29 @@ class RequestsScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: to, decoration: const InputDecoration(labelText: 'TO PHONE')),
+            TextField(
+                controller: to,
+                decoration: const InputDecoration(labelText: 'TO PHONE')),
             const SizedBox(height: 8),
-            TextField(controller: amt, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'AMOUNT')),
+            TextField(
+                controller: amt,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'AMOUNT')),
             const SizedBox(height: 8),
-            TextField(controller: note, decoration: const InputDecoration(labelText: 'NOTE')),
+            TextField(
+                controller: note,
+                decoration: const InputDecoration(labelText: 'NOTE')),
             const SizedBox(height: 12),
-            HapticScale(
+            GlowButton(
+              label: 'SEND REQUEST',
               onTap: () async {
                 final rupees = double.tryParse(amt.text) ?? 0;
                 final me = ref.read(appStoreProvider);
@@ -121,13 +140,6 @@ class RequestsScreen extends ConsumerWidget {
                     );
                 if (ctx.mounted) Navigator.pop(ctx);
               },
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.hero, borderRadius: BorderRadius.circular(14)),
-                child: const Text('SEND REQUEST'),
-              ),
             ),
             const SizedBox(height: 20),
           ],

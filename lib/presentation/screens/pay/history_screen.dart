@@ -59,15 +59,23 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ),
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               itemCount: txs.length,
               itemBuilder: (context, i) {
                 final tx = txs[i];
-                return ListTile(
-                  title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
-                  subtitle: Text(
-                    '${tx.status.name} · ${tx.rail.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SurfaceCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
+                      subtitle: Text(
+                        '${tx.status.name} · ${tx.rail.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',
+                      ),
+                      trailing: MoneyText(tx.amountPaise,
+                          style: Theme.of(context).textTheme.titleMedium),
+                    ),
                   ),
-                  trailing: MoneyText(tx.amountPaise, style: Theme.of(context).textTheme.titleMedium),
                 );
               },
             ),
