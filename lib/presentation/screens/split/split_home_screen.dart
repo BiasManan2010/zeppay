@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 
@@ -16,7 +17,7 @@ class SplitHomeScreen extends ConsumerWidget {
     final groups = ref.watch(appStoreProvider).groups;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Split'),
+        title: const Text('Split & Settle'),
         actions: [
           IconButton(
             onPressed: () => _newGroup(context, ref),
@@ -30,7 +31,7 @@ class SplitHomeScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyMedium),
             )
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
               itemCount: groups.length,
               itemBuilder: (context, i) {
                 final g = groups[i];
@@ -90,7 +91,8 @@ class SplitHomeScreen extends ConsumerWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              HapticScale(
+              GlowButton(
+                label: 'CREATE GROUP',
                 onTap: () async {
                   final me = ref.read(appStoreProvider).profile;
                   final members = [
@@ -122,13 +124,6 @@ class SplitHomeScreen extends ConsumerWidget {
                       );
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: AppColors.hero, borderRadius: BorderRadius.circular(14)),
-                  child: const Text('CREATE GROUP'),
-                ),
               ),
             ],
           ),

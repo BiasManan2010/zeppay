@@ -41,7 +41,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 0.85,
-            colors: [Color(0xFF123A66), AppColors.base],
+            colors: [AppColors.heroDeep, AppColors.base],
           ),
         ),
         child: Center(

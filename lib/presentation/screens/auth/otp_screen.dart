@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
 
@@ -71,21 +71,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             ),
             if (_error != null) Text(_error!, style: const TextStyle(color: AppColors.danger)),
             const Spacer(),
-            HapticScale(
-              onTap: _busy ? null : _verify,
-              enabled: !_busy,
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.hero,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text('VERIFY',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-              ),
-            ),
+            GlowButton(label: 'VERIFY', onTap: _busy ? null : _verify, busy: _busy),
           ],
         ),
       ),

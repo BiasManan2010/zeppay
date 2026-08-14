@@ -57,11 +57,16 @@ abstract final class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.baseAlt,
+        backgroundColor: AppColors.navBar,
         selectedItemColor: AppColors.hero,
         unselectedItemColor: AppColors.textDim,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

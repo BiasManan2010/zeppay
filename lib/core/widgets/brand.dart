@@ -185,59 +185,6 @@ class _BoltPainter extends CustomPainter {
   bool shouldRepaint(covariant _BoltPainter oldDelegate) => oldDelegate.complete != complete;
 }
 
-class ScanHeroCard extends StatelessWidget {
-  const ScanHeroCard({super.key, required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return HapticScale(
-      onTap: onTap,
-      child: Container(
-        height: 220,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: AppColors.scanCard,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.hero.withValues(alpha: 0.35),
-              blurRadius: 36,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.heroGlow,
-              ),
-            ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                  begin: const Offset(0.92, 0.92),
-                  end: const Offset(1.05, 1.05),
-                  duration: 1800.ms,
-                ),
-            const DottedRing(size: 128),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.qr_code_scanner_rounded, size: 36, color: AppColors.white),
-                const SizedBox(height: 10),
-                Text(
-                  'TAP TO SCAN',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.white),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class FaceGlow extends StatelessWidget {
   const FaceGlow({super.key});
 
@@ -325,10 +272,10 @@ class SurfaceCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.stroke.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.stroke.withValues(alpha: 0.7)),
         boxShadow: const [
-          BoxShadow(color: Color(0x33000000), blurRadius: 12, offset: Offset(0, 8)),
+          BoxShadow(color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
         ],
       ),
       child: child,

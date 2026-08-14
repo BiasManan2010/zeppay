@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -33,7 +34,9 @@ class RequestsScreen extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final r = reqs[i];
                 final incoming = r.toPhone == me;
-                return SurfaceCard(
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -53,7 +56,9 @@ class RequestsScreen extends ConsumerWidget {
                               child: const Text('Decline', style: TextStyle(color: AppColors.danger)),
                             ),
                             const Spacer(),
-                            HapticScale(
+                            GlowButton(
+                              label: 'PAY',
+                              expand: false,
                               onTap: () {
                                 ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
                                   vpa: r.fromPhone.contains('@') ? r.fromPhone : '${r.fromPhone}@upi',
@@ -64,19 +69,12 @@ class RequestsScreen extends ConsumerWidget {
                                 );
                                 context.push('/face');
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.hero,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Text('PAY'),
-                              ),
                             ),
                           ],
                         ),
                       ],
                     ],
+                  ),
                   ),
                 );
               },
@@ -103,7 +101,8 @@ class RequestsScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             TextField(controller: note, decoration: const InputDecoration(labelText: 'NOTE')),
             const SizedBox(height: 12),
-            HapticScale(
+            GlowButton(
+              label: 'SEND REQUEST',
               onTap: () async {
                 final rupees = double.tryParse(amt.text) ?? 0;
                 final me = ref.read(appStoreProvider);
@@ -121,13 +120,6 @@ class RequestsScreen extends ConsumerWidget {
                     );
                 if (ctx.mounted) Navigator.pop(ctx);
               },
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.hero, borderRadius: BorderRadius.circular(14)),
-                child: const Text('SEND REQUEST'),
-              ),
             ),
             const SizedBox(height: 20),
           ],
