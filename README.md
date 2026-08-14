@@ -6,7 +6,7 @@ Cross-platform Flutter UPI app: one QR scan + biometric confirmation, then Andro
 
 - Flutter + Riverpod
 - Local JSON store (offline-first, hackathon-ready). Swap the store for Firestore later without rewriting UI.
-- Twilio Verify via `backend/server.js` (never put the Twilio auth token in the app)
+- Twilio OTP via `backend/server.js` (Messaging Service or Verify — never put the Auth Token in the app)
 - Android Kotlin platform channel for carrier detection, `ACTION_CALL`, and call-end
 - iOS: offline rails are **not available**; the UI says so and falls back to `upi://` intent
 
@@ -35,17 +35,30 @@ flutter run
 
 Dev OTP (no Twilio): **123456**
 
-Live OTP:
+Live OTP (Twilio Programmable SMS):
 
 ```powershell
 cd backend
 npm i
 $env:TWILIO_ACCOUNT_SID="ACxxx"
 $env:TWILIO_AUTH_TOKEN="xxx"
-$env:TWILIO_VERIFY_SID="VAxxx"
+$env:TWILIO_MESSAGING_SERVICE_SID="MGxxx"
 node server.js
 flutter run --dart-define=TWILIO_VERIFY_URL=http://192.168.x.x:8787
 ```
+
+If you use Twilio Verify instead, set `TWILIO_VERIFY_SID` (VA…) and skip the Messaging Service SID.
+
+## Supabase (user count + OTP login)
+
+Paste `supabase/schema.sql` into the Supabase SQL editor. Then:
+
+```powershell
+$env:SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+```
+
+`app_users` is only a hashed phone (how many people signed in). `otp_logins` holds the login phone and a hash of the SMS code until it is used or expires. No UPI, name, or bank data is uploaded.
 
 ## Android permissions
 
