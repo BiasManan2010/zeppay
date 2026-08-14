@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/models.dart';
 import 'biometric_service.dart';
+import 'contacts_access.dart';
 import 'otp_service.dart';
 import 'telephony_service.dart';
 
@@ -19,6 +20,10 @@ final otpLiveProvider = FutureProvider((ref) {
   return ref.watch(otpServiceProvider).isLive();
 });
 
+final phoneContactsProvider = FutureProvider((ref) {
+  return ContactsAccess.load(requestIfNeeded: false);
+});
+
 void startPayment(
   WidgetRef ref, {
   required String vpa,
@@ -26,6 +31,7 @@ void startPayment(
   String payeeName = '',
   String note = '',
   String source = 'pay',
+  String category = 'other',
   String? requestId,
   String? settleGroupId,
   String? settleFromId,
@@ -37,6 +43,7 @@ void startPayment(
     payeeName: payeeName,
     note: note,
     source: source,
+    category: category,
     requestId: requestId,
     settleGroupId: settleGroupId,
     settleFromId: settleFromId,

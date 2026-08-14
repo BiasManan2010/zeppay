@@ -31,7 +31,7 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Zep Pay requires Face ID before every payment.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Zep Pay can add split-group members from your contacts.</string>
+	<string>Zep Pay reads your address book so you can pay people on this phone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Zep Pay reads receipt photos for itemized splits.</string>
 	<key>NSMicrophoneUsageDescription</key>

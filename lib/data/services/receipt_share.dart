@@ -20,6 +20,7 @@ class ReceiptShare {
       'To: $who',
       'UPI: ${tx.vpa}',
       if (tx.note.isNotEmpty) 'Note: ${tx.note}',
+      'Spending: ${tx.category}',
       'Zep Pay ID: ${tx.refCode.isEmpty ? tx.id : tx.refCode}',
       when,
       tx.offline ? 'Rail: ${tx.rail.name} (offline)' : 'Rail: UPI intent',

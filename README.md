@@ -99,19 +99,19 @@ $env:SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
 All colors live in `lib/core/theme/app_colors.dart`. Do not hardcode hex in screens.
 
-Hero accent: `#00B4FF`  
-Base: `#0A0A0F` / `#0D0D14`  
-Surfaces: `#161B26`  
+Hero accent: `#3BA3FF`  
+Base: charcoal `#1C1C1E` / `#2C2C2E` (grey-black, not a blue wash)  
+Surfaces: `#3A3A3C`  
 Failure: `#C45C4A` (never use blue for errors)
 
 ## Payment path
 
-1. Scan QR (`mobile_scanner`) → decode VPA + amount locally  
-2. Face/fingerprint (`local_auth`) — required, not skippable  
-3. Connecting screen (signal-arc pulse)  
-4. Android: dial `*99*1*3*<vpa>*<amount>#` or `18008913333` (Jio / 4G-only)  
-5. Call-end event → confirmation (bolt → check)  
-6. Transaction written to history / balance  
+1. Scan a UPI QR  
+2. Enter the amount and pick what you are spending on  
+3. Android dials `*99#` / 123PAY (or opens UPI) so the user types their **UPI PIN**  
+4. Call-end → confirmation  
+
+Contacts are read-only (`READ_CONTACTS` only). OTP defaults to `https://zeppay.onrender.com`.
 
 ## Tests
 

@@ -216,6 +216,7 @@ class TxDetailScreen extends ConsumerWidget {
                 ),
                 Text(tx.vpa),
                 Text(tx.note.isEmpty ? 'No note' : tx.note),
+                Text('Spending · ${tx.category}'),
                 Text(
                   '${tx.rail.name} · ${tx.offline ? 'offline' : 'online'} · ${DateFormat('d MMM y, h:mm a').format(tx.createdAt)}',
                 ),
@@ -238,6 +239,7 @@ class TxDetailScreen extends ConsumerWidget {
                 amountPaise: tx.amountPaise,
                 payeeName: tx.payeeName,
                 note: tx.note,
+                category: tx.category,
                 source: 'again',
               );
               context.push('/pay/amount');
