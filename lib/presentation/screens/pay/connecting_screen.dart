@@ -53,6 +53,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
         createdAt: DateTime.now(),
         payeeName: draft.payeeName,
         note: draft.note,
+        category: draft.category,
         rail: rail,
         offline: rail != PaymentRail.upiIntent,
         refCode: AppStore.payRef(),

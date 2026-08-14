@@ -80,6 +80,7 @@ class PaymentDraft {
     required this.amountPaise,
     this.payeeName = '',
     this.note = '',
+    this.category = 'other',
     this.source = 'scan',
     this.currency = 'INR',
     this.requestId,
@@ -92,6 +93,7 @@ class PaymentDraft {
   final int amountPaise;
   final String payeeName;
   final String note;
+  final String category;
   final String source;
   final String currency;
   final String? requestId;
@@ -106,11 +108,13 @@ class PaymentDraft {
     String? note,
     String? payeeName,
     String? vpa,
+    String? category,
   }) => PaymentDraft(
     vpa: vpa ?? this.vpa,
     amountPaise: amountPaise ?? this.amountPaise,
     payeeName: payeeName ?? this.payeeName,
     note: note ?? this.note,
+    category: category ?? this.category,
     source: source,
     currency: currency,
     requestId: requestId,
@@ -133,6 +137,7 @@ class TxRecord {
     this.offline = true,
     this.currency = 'INR',
     this.refCode = '',
+    this.category = 'other',
   });
 
   final String id;
@@ -146,6 +151,7 @@ class TxRecord {
   final bool offline;
   final String currency;
   final String refCode;
+  final String category;
 
   TxRecord copyWith({TxStatus? status, String? refCode}) => TxRecord(
     id: id,
@@ -159,6 +165,7 @@ class TxRecord {
     offline: offline,
     currency: currency,
     refCode: refCode ?? this.refCode,
+    category: category,
   );
 
   Map<String, dynamic> toJson() => {
@@ -173,6 +180,7 @@ class TxRecord {
     'offline': offline,
     'currency': currency,
     'refCode': refCode,
+    'category': category,
   };
 
   factory TxRecord.fromJson(Map<String, dynamic> j) => TxRecord(
@@ -187,6 +195,7 @@ class TxRecord {
     offline: j['offline'] as bool? ?? true,
     currency: j['currency'] as String? ?? 'INR',
     refCode: j['refCode'] as String? ?? '',
+    category: j['category'] as String? ?? 'other',
   );
 }
 
