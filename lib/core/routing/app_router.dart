@@ -14,6 +14,7 @@ import '../../presentation/screens/pay/connecting_screen.dart';
 import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
 import '../../presentation/screens/pay/money_pages.dart';
+import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
@@ -95,6 +96,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/split-activity',
         builder: (_, __) => const SplitActivityScreen(),
+      ),
+      GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
+      GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+      GoRoute(path: '/categories', builder: (_, __) => const CategorySpendScreen()),
+      GoRoute(
+        path: '/history/:id',
+        builder: (_, s) => TxDetailScreen(txId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/split/:id/expense/:eid',
+        builder: (_, s) => ExpenseDetailScreen(
+          groupId: s.pathParameters['id']!,
+          expenseId: s.pathParameters['eid']!,
+        ),
       ),
       GoRoute(
         path: '/split/:id',

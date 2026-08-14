@@ -87,6 +87,10 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       if (mounted) context.go('/outcome');
     } catch (e) {
       setState(() => _error = e.toString());
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      if (mounted && ref.read(pendingTxIdProvider) != null) {
+        context.go('/outcome');
+      }
     }
   }
 

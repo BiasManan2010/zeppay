@@ -121,6 +121,35 @@ class ProfileScreen extends ConsumerWidget {
                 'Twilio Verify URL',
               ),
             ),
+            SurfaceCard(
+              onTap: () => context.push('/search'),
+              child: _row(
+                context,
+                Icons.search_rounded,
+                'Search',
+                'Payments and split bills',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/categories'),
+              child: _row(
+                context,
+                Icons.pie_chart_outline_rounded,
+                'Categories',
+                'Split spend by type',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              onTap: () => context.push('/help'),
+              child: _row(
+                context,
+                Icons.help_outline_rounded,
+                'How it works',
+                '*99# / 123PAY walkthrough',
+              ),
+            ),
             const SizedBox(height: 24),
             GlowButton(
               label: 'SIGN OUT',

@@ -52,13 +52,13 @@ class TelephonyService {
 
   Future<NetworkInfo> networkInfo() async {
     if (!isAndroidDevice) {
-      return NetworkInfo(
-        operator: kIsWeb ? 'web' : 'ios',
+      return const NetworkInfo(
+        operator: 'ios',
         isJio: false,
         networkType: 'n/a',
         recommendedRail: 'upiIntent',
         ussdSupported: false,
-        platform: kIsWeb ? 'web' : 'ios',
+        platform: 'ios',
       );
     }
     try {

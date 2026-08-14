@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -68,6 +69,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   child: SurfaceCard(
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
+                      onTap: () => context.push('/history/${tx.id}'),
                       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
                       subtitle: Text(
                         '${tx.status.name} · ${tx.rail.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',

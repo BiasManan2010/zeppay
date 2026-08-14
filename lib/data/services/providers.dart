@@ -26,6 +26,10 @@ void startPayment(
   String payeeName = '',
   String note = '',
   String source = 'pay',
+  String? requestId,
+  String? settleGroupId,
+  String? settleFromId,
+  String? settleToId,
 }) {
   ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
     vpa: vpa,
@@ -33,6 +37,10 @@ void startPayment(
     payeeName: payeeName,
     note: note,
     source: source,
+    requestId: requestId,
+    settleGroupId: settleGroupId,
+    settleFromId: settleFromId,
+    settleToId: settleToId,
   );
 }
 

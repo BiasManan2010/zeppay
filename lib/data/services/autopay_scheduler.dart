@@ -16,6 +16,7 @@ class AutopayScheduler {
     final now = DateTime.now();
     for (final m in [...ref.read(appStoreProvider).mandates]) {
       if (!m.active || m.nextRun.isAfter(now)) continue;
+      if (m.limitPaise > 0 && m.amountPaise > m.limitPaise) continue;
       await NotificationService.instance.ping(
         'Autopay due',
         'Pay ₹${(m.amountPaise / 100).toStringAsFixed(0)} to ${m.payee}',

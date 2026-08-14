@@ -69,6 +69,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                   label: 'DONE',
                   onTap: () {
                     ref.read(paymentDraftProvider.notifier).state = null;
+                    ref.read(pendingTxIdProvider.notifier).state = null;
                     context.go('/home');
                   },
                 ),
