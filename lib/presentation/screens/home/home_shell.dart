@@ -10,7 +10,6 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
-import '../../../data/services/contacts_access.dart';
 import '../../../data/services/providers.dart';
 import '../pay/money_pages.dart';
 import '../split/split_home_screen.dart';
@@ -38,7 +37,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ];
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _tab, children: pages),
+      body: pages[_tab],
       bottomNavigationBar: _DockedNav(
         tab: _tab,
         onTab: _go,
@@ -278,10 +277,7 @@ class _HomeTab extends ConsumerWidget {
               ),
             RiseIn(
               delay: const Duration(milliseconds: 80),
-              child: Hero(
-              tag: 'scan-hero',
               child: ScanHeroCard(onTap: () => context.push('/scan')),
-            ),
             ),
             const SizedBox(height: 18),
             const _PeopleRow(),
@@ -528,24 +524,7 @@ class _PeopleRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final saved = _people(ref.watch(appStoreProvider));
-    final book = ref.watch(phoneContactsProvider).valueOrNull ?? [];
-    final people = [...saved];
-    final seen = people.map((p) => p.vpa).toSet();
-    for (final c in book) {
-      if (c.phones.isEmpty) continue;
-      final last10 = ContactsAccess.last10(c.phones.first.number);
-      if (last10.length < 10) continue;
-      final vpa = '$last10@upi';
-      if (!seen.add(vpa)) continue;
-      people.add(
-        SavedPayee(
-          vpa: vpa,
-          name: c.displayName.isEmpty ? last10 : c.displayName,
-        ),
-      );
-      if (people.length >= 12) break;
-    }
+    final people = _people(ref.watch(appStoreProvider));
     if (people.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -562,10 +541,10 @@ class _PeopleRow extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
               final p = people[i];
-              final letter = (p.name.isNotEmpty ? p.name : p.vpa)
-                  .characters
-                  .first
-                  .toUpperCase();
+              final label = p.name.trim().isNotEmpty ? p.name.trim() : p.vpa;
+              final letter = label.isEmpty
+                  ? '?'
+                  : label.characters.first.toUpperCase();
               return InkWell(
                 onTap: () {
                   startPayment(
@@ -594,7 +573,9 @@ class _PeopleRow extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        p.name.split(' ').first,
+                        (p.name.trim().isEmpty ? p.vpa : p.name)
+                            .split(' ')
+                            .first,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall,

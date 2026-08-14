@@ -58,7 +58,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       return;
     }
     await ref.read(appStoreProvider.notifier).login(phone);
-    if (mounted) context.go('/onboarding');
+    if (mounted) context.go('/home');
   }
 
   @override

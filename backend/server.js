@@ -136,7 +136,7 @@ app.post('/verify/start', async (req, res) => {
       await client.verify.v2
         .services(verifySid)
         .verifications.create({ to: phone, channel: 'sms' });
-      return res.json({ ok: true, mode: 'verify' });
+      return res.json({ ok: true, mode: 'verify', to: phone });
     }
 
     const code = six();
@@ -148,9 +148,26 @@ app.post('/verify/start', async (req, res) => {
     if (messagingSid) payload.messagingServiceSid = messagingSid;
     else payload.from = fromNumber;
     await client.messages.create(payload);
-    res.json({ ok: true, mode: 'messaging' });
+    console.log('otp sms accepted', phone);
+    res.json({ ok: true, mode: 'messaging', to: phone });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    const code = e && e.code;
+    const msg = e && e.message ? e.message : String(e);
+    console.error('otp sms failed', phone, code, msg);
+    let error = msg;
+    if (
+      code === 21608 ||
+      code === 21211 ||
+      /unverified/i.test(msg) ||
+      /not a valid/i.test(msg)
+    ) {
+      error =
+        `Twilio trial can only text numbers you add under Verified Caller IDs. Add ${phone} there, or upgrade the Twilio account.`;
+    } else if (/permission/i.test(msg) && /geo|region|india/i.test(msg)) {
+      error =
+        'Twilio is blocked from sending SMS to this country. Enable India in Messaging Geographic Permissions.';
+    }
+    res.status(400).json({ error, to: phone, twilio: code || null });
   }
 });
 
