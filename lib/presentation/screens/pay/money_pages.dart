@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -52,7 +53,9 @@ class SendHubScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
           children: [
-            Text('Send', style: Theme.of(context).textTheme.headlineMedium),
+            RiseIn(
+              child: Text('Send', style: Theme.of(context).textTheme.headlineMedium),
+            ),
             const SizedBox(height: 8),
             Text(
               'Pick how the rupees should move.',

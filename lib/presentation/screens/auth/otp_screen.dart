@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
@@ -92,7 +93,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     if (i > 0) const SizedBox(width: 8),
                     Expanded(
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
+                        duration: AppMotion.fast,
+                        curve: AppMotion.out,
                         height: 58,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
@@ -104,13 +106,26 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                 : AppColors.surfaceBorder,
                             width: i == _code.text.length ? 1.6 : 1,
                           ),
+                          boxShadow: i == _code.text.length
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.hero.withValues(alpha: 0.28),
+                                    blurRadius: 12,
+                                  ),
+                                ]
+                              : null,
                         ),
-                        child: Text(
-                          digits[i] == ' ' ? '' : digits[i],
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                        child: AnimatedScale(
+                          scale: digits[i] == ' ' ? 0.7 : 1,
+                          duration: AppMotion.fast,
+                          curve: AppMotion.spring,
+                          child: Text(
+                            digits[i] == ' ' ? '' : digits[i],
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ),
@@ -134,7 +149,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               ),
             ),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              Text(_error!, style: const TextStyle(color: AppColors.danger))
+                  .animate()
+                  .shake(hz: 5, duration: 320.ms)
+                  .fadeIn(),
             const Spacer(),
             GlowButton(
               label: 'VERIFY',

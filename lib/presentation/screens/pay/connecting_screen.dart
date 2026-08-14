@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
@@ -109,20 +110,26 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                 children: [
                   const SignalArcs(size: 160),
                   const SizedBox(height: 28),
-                  Text(
-                    _label,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  SoftSwitcher(
+                    child: Text(
+                      _label,
+                      key: ValueKey(_label),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _detail.isEmpty
-                        ? (isIosDevice
-                              ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
-                              : 'Enter your UPI PIN when the dialer asks. We pull you back the instant the call ends.')
-                        : _detail,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  SoftSwitcher(
+                    child: Text(
+                      _detail.isEmpty
+                          ? (isIosDevice
+                                ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
+                                : 'Enter your UPI PIN when the dialer asks. We pull you back the instant the call ends.')
+                          : _detail,
+                      key: ValueKey(_detail),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/services/providers.dart';
 
@@ -74,11 +76,14 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             Text('Paying $who', style: Theme.of(context).textTheme.titleMedium),
             Text(draft.vpa, style: Theme.of(context).textTheme.bodyMedium),
             const Spacer(),
-            Text(
-              _raw.isEmpty ? '₹0' : '₹$_raw',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 56,
-                fontWeight: FontWeight.w800,
+            SoftSwitcher(
+              child: Text(
+                _raw.isEmpty ? '₹0' : '₹$_raw',
+                key: ValueKey(_raw),
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -118,7 +123,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: keys
                   .map(
-                    (k) => InkWell(
+                    (k) => HapticScale(
                       onTap: () => _key(k),
                       child: Center(
                         child: Text(
