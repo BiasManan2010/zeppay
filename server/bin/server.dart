@@ -20,6 +20,18 @@ Future<void> main() async {
   stdout.writeln('Zep Pay API on http://${server.address.address}:${server.port}');
 
   await for (final req in server) {
+    // Add CORS headers for all responses
+    req.response.headers.set('Access-Control-Allow-Origin', '*');
+    req.response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    req.response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Handle preflight
+    if (req.method == 'OPTIONS') {
+      req.response.statusCode = 200;
+      await req.response.close();
+      continue;
+    }
+    
     try {
       final path = req.uri.path;
       if (req.method == 'POST' && path == '/verify/start') {
