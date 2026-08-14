@@ -37,7 +37,8 @@ abstract final class AppTheme {
         fillColor: AppColors.surface,
         hintStyle: text.bodyMedium,
         labelStyle: text.labelLarge,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.surfaceBorder),
@@ -53,7 +54,8 @@ abstract final class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surfaceHigh,
-        contentTextStyle: text.bodyMedium?.copyWith(color: AppColors.textPrimary),
+        contentTextStyle:
+            text.bodyMedium?.copyWith(color: AppColors.textPrimary),
         behavior: SnackBarBehavior.floating,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(

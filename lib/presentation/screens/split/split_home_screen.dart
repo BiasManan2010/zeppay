@@ -50,13 +50,17 @@ class SplitHomeScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(g.name, style: Theme.of(context).textTheme.titleMedium),
+                              Text(g.name,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium),
                               Text('${g.kind} · ${g.members.length} people',
-                                  style: Theme.of(context).textTheme.bodyMedium),
+                                  style:
+                                      Theme.of(context).textTheme.bodyMedium),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: AppColors.textDim),
+                        const Icon(Icons.chevron_right,
+                            color: AppColors.textDim),
                       ],
                     ),
                   ),
@@ -78,7 +82,9 @@ class SplitHomeScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'GROUP NAME')),
+              TextField(
+                  controller: name,
+                  decoration: const InputDecoration(labelText: 'GROUP NAME')),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -104,7 +110,8 @@ class SplitHomeScreen extends ConsumerWidget {
                     ),
                   ];
                   if (await FlutterContacts.requestPermission()) {
-                    final contacts = await FlutterContacts.getContacts(withProperties: true);
+                    final contacts =
+                        await FlutterContacts.getContacts(withProperties: true);
                     for (final c in contacts.take(8)) {
                       if (c.phones.isEmpty) continue;
                       members.add(GroupMember(
@@ -117,7 +124,9 @@ class SplitHomeScreen extends ConsumerWidget {
                   await ref.read(appStoreProvider.notifier).upsertGroup(
                         SplitGroup(
                           id: AppStore.id(),
-                          name: name.text.trim().isEmpty ? 'New group' : name.text.trim(),
+                          name: name.text.trim().isEmpty
+                              ? 'New group'
+                              : name.text.trim(),
                           kind: kind,
                           members: members,
                         ),

@@ -41,7 +41,8 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
   void _pay() {
     final vpa = _vpa.text.trim();
     final rupees = double.tryParse(_amount.text.trim()) ?? 0;
-    if (!vpa.contains('@') && !RegExp(r'^\d{10}$').hasMatch(vpa.replaceAll('+91', ''))) {
+    if (!vpa.contains('@') &&
+        !RegExp(r'^\d{10}$').hasMatch(vpa.replaceAll('+91', ''))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a UPI ID or 10-digit number')),
       );
@@ -85,11 +86,14 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
             decoration: const InputDecoration(labelText: 'AMOUNT (₹)'),
           ),
           const SizedBox(height: 12),
-          TextField(controller: _note, decoration: const InputDecoration(labelText: 'NOTE')),
+          TextField(
+              controller: _note,
+              decoration: const InputDecoration(labelText: 'NOTE')),
           const SizedBox(height: 24),
           GlowButton(label: 'PAY', onTap: _pay),
           const SizedBox(height: 16),
-          GlowButton(label: 'SCAN THEIR QR', onTap: () => context.push('/scan')),
+          GlowButton(
+              label: 'SCAN THEIR QR', onTap: () => context.push('/scan')),
         ],
       ),
     );

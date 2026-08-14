@@ -62,7 +62,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
               ),
             ],
-          ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.92, 0.92)),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms)
+              .scale(begin: const Offset(0.92, 0.92)),
         ),
       ),
     );

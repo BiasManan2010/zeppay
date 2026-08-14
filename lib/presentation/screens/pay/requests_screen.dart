@@ -37,44 +37,53 @@ class RequestsScreen extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: SurfaceCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(incoming ? r.fromName : 'You → ${r.toPhone}',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      MoneyText(r.amountPaise, style: Theme.of(context).textTheme.headlineMedium),
-                      Text(r.note, style: Theme.of(context).textTheme.bodyMedium),
-                      Text(r.status.name.toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
-                      if (incoming && r.status == RequestStatus.pending) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () => ref
-                                  .read(appStoreProvider.notifier)
-                                  .updateRequest(r.id, RequestStatus.declined),
-                              child: const Text('Decline', style: TextStyle(color: AppColors.danger)),
-                            ),
-                            const Spacer(),
-                            GlowButton(
-                              label: 'PAY',
-                              expand: false,
-                              onTap: () {
-                                ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-                                  vpa: r.fromPhone.contains('@') ? r.fromPhone : '${r.fromPhone}@upi',
-                                  amountPaise: r.amountPaise,
-                                  payeeName: r.fromName,
-                                  note: r.note,
-                                  source: 'request',
-                                );
-                                context.push('/face');
-                              },
-                            ),
-                          ],
-                        ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(incoming ? r.fromName : 'You → ${r.toPhone}',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        MoneyText(r.amountPaise,
+                            style: Theme.of(context).textTheme.headlineMedium),
+                        Text(r.note,
+                            style: Theme.of(context).textTheme.bodyMedium),
+                        Text(r.status.name.toUpperCase(),
+                            style: Theme.of(context).textTheme.labelSmall),
+                        if (incoming && r.status == RequestStatus.pending) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(appStoreProvider.notifier)
+                                    .updateRequest(
+                                        r.id, RequestStatus.declined),
+                                child: const Text('Decline',
+                                    style: TextStyle(color: AppColors.danger)),
+                              ),
+                              const Spacer(),
+                              GlowButton(
+                                label: 'PAY',
+                                expand: false,
+                                onTap: () {
+                                  ref
+                                      .read(paymentDraftProvider.notifier)
+                                      .state = PaymentDraft(
+                                    vpa: r.fromPhone.contains('@')
+                                        ? r.fromPhone
+                                        : '${r.fromPhone}@upi',
+                                    amountPaise: r.amountPaise,
+                                    payeeName: r.fromName,
+                                    note: r.note,
+                                    source: 'request',
+                                  );
+                                  context.push('/face');
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
                   ),
                 );
               },
@@ -91,15 +100,26 @@ class RequestsScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: to, decoration: const InputDecoration(labelText: 'TO PHONE')),
+            TextField(
+                controller: to,
+                decoration: const InputDecoration(labelText: 'TO PHONE')),
             const SizedBox(height: 8),
-            TextField(controller: amt, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'AMOUNT')),
+            TextField(
+                controller: amt,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'AMOUNT')),
             const SizedBox(height: 8),
-            TextField(controller: note, decoration: const InputDecoration(labelText: 'NOTE')),
+            TextField(
+                controller: note,
+                decoration: const InputDecoration(labelText: 'NOTE')),
             const SizedBox(height: 12),
             GlowButton(
               label: 'SEND REQUEST',

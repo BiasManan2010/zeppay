@@ -72,7 +72,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       subtitle: Text(
                         '${tx.status.name} · ${tx.rail.name} · ${DateFormat('d MMM, h:mm a').format(tx.createdAt)}',
                       ),
-                      trailing: MoneyText(tx.amountPaise, style: Theme.of(context).textTheme.titleMedium),
+                      trailing: MoneyText(tx.amountPaise,
+                          style: Theme.of(context).textTheme.titleMedium),
                     ),
                   ),
                 );
