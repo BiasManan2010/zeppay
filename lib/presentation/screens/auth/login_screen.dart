@@ -131,8 +131,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   .when(
                     data: (live) => Text(
                       live
-                          ? 'We’ll text a Twilio Verify code to this number.'
-                          : 'No Verify URL yet — use 123456, or tap Twilio setup.',
+                          ? 'We’ll text a 6-digit code to this number.'
+                          : 'No OTP URL yet — use 123456, or tap Twilio setup.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelSmall,
                     ),

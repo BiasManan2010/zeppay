@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -20,7 +21,9 @@ class ProfileScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
           children: [
-            Text('Profile', style: Theme.of(context).textTheme.headlineMedium),
+            RiseIn(
+              child: Text('Profile', style: Theme.of(context).textTheme.headlineMedium),
+            ),
             const SizedBox(height: 20),
             SurfaceCard(
               child: Row(

@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
+import '../motion/app_motion.dart';
 import '../theme/app_colors.dart';
 import 'brand.dart';
 
@@ -103,7 +105,9 @@ class RoundIconButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.base, width: 1.5),
                 ),
-              ),
+              )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scaleXY(begin: 1, end: 1.25, duration: 900.ms),
             ),
         ],
       ),
@@ -262,7 +266,13 @@ class ActionTileRow extends StatelessWidget {
         children: [
           for (var i = 0; i < tiles.length; i++) ...[
             if (i > 0) const SizedBox(width: 10),
-            Expanded(child: tiles[i]),
+            Expanded(
+              child: RiseIn(
+                delay: Duration(milliseconds: 45 * i),
+                dy: 0.08,
+                child: tiles[i],
+              ),
+            ),
           ],
         ],
       ),
@@ -351,7 +361,14 @@ class ScanOrbButton extends StatelessWidget {
           stroke: size > 70 ? 2.6 : 2.2,
         ),
       ),
-    );
+    )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .scaleXY(
+          begin: 1,
+          end: 1.045,
+          duration: 1400.ms,
+          curve: Curves.easeInOut,
+        );
     if (onTap == null) return orb;
     return HapticScale(onTap: onTap, child: orb);
   }
@@ -424,7 +441,7 @@ class ScanHeroCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            Positioned.fill(child: CustomPaint(painter: WavePainter())),
+            Positioned.fill(child: _LiveWaves()),
             Positioned(
               right: -30,
               top: -40,
@@ -536,19 +553,23 @@ class ScanHeroCard extends StatelessWidget {
 }
 
 class WavePainter extends CustomPainter {
+  WavePainter({this.phase = 0});
+  final double phase;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = AppColors.hero.withValues(alpha: 0.18);
+      ..strokeWidth = 1.4;
     for (var w = 0; w < 4; w++) {
       final path = Path();
       final amp = 10.0 + w * 6;
       final y0 = size.height * (0.28 + w * 0.16);
       path.moveTo(0, y0);
       for (var x = 0.0; x <= size.width; x += 4) {
-        final y = y0 + math.sin((x / size.width) * math.pi * 2 + w) * amp;
+        final y =
+            y0 +
+            math.sin((x / size.width) * math.pi * 2 + w + phase) * amp;
         path.lineTo(x, y);
       }
       canvas.drawPath(
@@ -559,7 +580,40 @@ class WavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant WavePainter oldDelegate) =>
+      oldDelegate.phase != phase;
+}
+
+class _LiveWaves extends StatefulWidget {
+  @override
+  State<_LiveWaves> createState() => _LiveWavesState();
+}
+
+class _LiveWavesState extends State<_LiveWaves>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(seconds: 5))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) =>
+          CustomPaint(painter: WavePainter(phase: _c.value * math.pi * 2)),
+    );
+  }
 }
 
 class ZepPage extends StatelessWidget {
@@ -593,13 +647,15 @@ class ZepPage extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
-            ),
-          Expanded(child: child),
+            ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.04, end: 0),
+          Expanded(
+            child: RiseIn(delay: const Duration(milliseconds: 40), child: child),
+          ),
           if (footer != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: footer,
-            ),
+            ).animate().fadeIn(delay: 120.ms).slideY(begin: 0.08, end: 0),
         ],
       ),
     );
@@ -628,59 +684,88 @@ class BrandMark extends StatelessWidget {
   }
 }
 
-class AuthBackdrop extends StatelessWidget {
+class AuthBackdrop extends StatefulWidget {
   const AuthBackdrop({super.key, required this.child, this.safe = true});
 
   final Widget child;
   final bool safe;
 
   @override
+  State<AuthBackdrop> createState() => _AuthBackdropState();
+}
+
+class _AuthBackdropState extends State<AuthBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(seconds: 8))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final body = safe ? SafeArea(child: child) : child;
+    final body = widget.safe ? SafeArea(child: widget.child) : widget.child;
     return Scaffold(
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(0, -0.55),
-                  radius: 1.15,
-                  colors: [AppColors.homeWash, AppColors.base],
+      body: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final t = _c.value;
+          return Stack(
+            children: [
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0, -0.55),
+                      radius: 1.15,
+                      colors: [AppColors.homeWash, AppColors.base],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            top: -80,
-            left: -40,
-            child: IgnorePointer(
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.hero.withValues(alpha: 0.16),
+              Positioned(
+                top: -80 + (t * 24),
+                left: -40 + (t * 18),
+                child: IgnorePointer(
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.hero.withValues(alpha: 0.12 + t * 0.08),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            right: -60,
-            child: IgnorePointer(
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.heroDeep.withValues(alpha: 0.22),
+              Positioned(
+                bottom: 80 - (t * 20),
+                right: -60 + (t * 16),
+                child: IgnorePointer(
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.heroDeep.withValues(
+                        alpha: 0.16 + (1 - t) * 0.1,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          Positioned.fill(child: body),
-        ],
+              Positioned.fill(child: body),
+            ],
+          );
+        },
       ),
     );
   }

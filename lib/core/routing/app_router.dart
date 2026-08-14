@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/motion/app_motion.dart';
 import '../../data/local/app_store.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/auth/onboarding_screen.dart';
@@ -56,74 +57,59 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/otp', builder: (_, __) => const OtpScreen()),
-      GoRoute(
-        path: '/verify-setup',
-        builder: (_, __) => const SettingsScreen(),
+      fadeRoute('/splash', () => const SplashScreen()),
+      fadeRoute('/welcome', () => const WelcomeScreen()),
+      fadeRoute('/login', () => const LoginScreen()),
+      fadeRoute('/otp', () => const OtpScreen()),
+      fadeRoute('/verify-setup', () => const SettingsScreen()),
+      fadeRoute('/onboarding', () => const OnboardingScreen()),
+      fadeRoute('/home', () => const HomeShell()),
+      fadeRoute('/scan', () => const ScanScreen()),
+      fadeRoute('/face', () => const FaceConfirmScreen()),
+      fadeRoute('/connecting', () => const ConnectingScreen()),
+      fadeRoute('/outcome', () => const OutcomeScreen()),
+      fadeRoute('/confirm', () => const ConfirmScreen()),
+      fadeRoute('/failed', () => const FailedScreen()),
+      fadeRoute('/pending', () => const PendingScreen()),
+      fadeRoute('/pay/amount', () => const AmountScreen()),
+      fadeRoute('/receive', () => const ReceiveScreen()),
+      fadeRoute('/pay/mobile', () => const PayMobileScreen()),
+      fadeRoute('/pay/upi', () => const PayUpiScreen()),
+      fadeRoute('/pay/contacts', () => const PayContactsScreen()),
+      fadeRoute('/pay/bank', () => const PayBankScreen()),
+      fadeRoute('/history', () => const HistoryScreen()),
+      fadeRoute('/requests', () => const RequestsScreen()),
+      fadeRoute('/autopay', () => const AutopayScreen()),
+      fadeRoute('/balance', () => const BalanceScreen()),
+      fadeRoute('/offline', () => const OfflineRailsScreen()),
+      fadeRoute('/settings', () => const SettingsScreen()),
+      fadeRoute('/analytics', () => const AnalyticsScreen()),
+      fadeRoute('/inbox', () => const InboxScreen()),
+      fadeRoute('/split', () => const SplitHomeScreen()),
+      fadeRoute('/split-bill', () => const SplitBillScreen()),
+      fadeRoute('/settle', () => const SettleHubScreen()),
+      fadeRoute('/split-activity', () => const SplitActivityScreen()),
+      fadeRoute('/help', () => const HelpScreen()),
+      fadeRoute('/search', () => const SearchScreen()),
+      fadeRoute('/categories', () => const CategorySpendScreen()),
+      fadeRouteState(
+        '/history/:id',
+        (s) => TxDetailScreen(txId: s.pathParameters['id']!),
       ),
-      GoRoute(
-        path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
-      ),
-      GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
-      GoRoute(path: '/scan', builder: (_, __) => const ScanScreen()),
-      GoRoute(path: '/face', builder: (_, __) => const FaceConfirmScreen()),
-      GoRoute(
-        path: '/connecting',
-        builder: (_, __) => const ConnectingScreen(),
-      ),
-      GoRoute(path: '/outcome', builder: (_, __) => const OutcomeScreen()),
-      GoRoute(path: '/confirm', builder: (_, __) => const ConfirmScreen()),
-      GoRoute(path: '/failed', builder: (_, __) => const FailedScreen()),
-      GoRoute(path: '/pending', builder: (_, __) => const PendingScreen()),
-      GoRoute(path: '/pay/amount', builder: (_, __) => const AmountScreen()),
-      GoRoute(path: '/receive', builder: (_, __) => const ReceiveScreen()),
-      GoRoute(path: '/pay/mobile', builder: (_, __) => const PayMobileScreen()),
-      GoRoute(path: '/pay/upi', builder: (_, __) => const PayUpiScreen()),
-      GoRoute(
-        path: '/pay/contacts',
-        builder: (_, __) => const PayContactsScreen(),
-      ),
-      GoRoute(path: '/pay/bank', builder: (_, __) => const PayBankScreen()),
-      GoRoute(path: '/history', builder: (_, __) => const HistoryScreen()),
-      GoRoute(path: '/requests', builder: (_, __) => const RequestsScreen()),
-      GoRoute(path: '/autopay', builder: (_, __) => const AutopayScreen()),
-      GoRoute(path: '/balance', builder: (_, __) => const BalanceScreen()),
-      GoRoute(path: '/offline', builder: (_, __) => const OfflineRailsScreen()),
-      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
-      GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
-      GoRoute(path: '/inbox', builder: (_, __) => const InboxScreen()),
-      GoRoute(path: '/split', builder: (_, __) => const SplitHomeScreen()),
-      GoRoute(path: '/split-bill', builder: (_, __) => const SplitBillScreen()),
-      GoRoute(path: '/settle', builder: (_, __) => const SettleHubScreen()),
-      GoRoute(
-        path: '/split-activity',
-        builder: (_, __) => const SplitActivityScreen(),
-      ),
-      GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
-      GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
-      GoRoute(path: '/categories', builder: (_, __) => const CategorySpendScreen()),
-      GoRoute(
-        path: '/history/:id',
-        builder: (_, s) => TxDetailScreen(txId: s.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/split/:id/expense/:eid',
-        builder: (_, s) => ExpenseDetailScreen(
+      fadeRouteState(
+        '/split/:id/expense/:eid',
+        (s) => ExpenseDetailScreen(
           groupId: s.pathParameters['id']!,
           expenseId: s.pathParameters['eid']!,
         ),
       ),
-      GoRoute(
-        path: '/split/:id',
-        builder: (_, s) => GroupDetailScreen(groupId: s.pathParameters['id']!),
+      fadeRouteState(
+        '/split/:id',
+        (s) => GroupDetailScreen(groupId: s.pathParameters['id']!),
       ),
-      GoRoute(
-        path: '/split/:id/add',
-        builder: (_, s) => AddExpenseScreen(groupId: s.pathParameters['id']!),
+      fadeRouteState(
+        '/split/:id/add',
+        (s) => AddExpenseScreen(groupId: s.pathParameters['id']!),
       ),
     ],
   );
