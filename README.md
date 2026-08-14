@@ -56,7 +56,7 @@ The Node proxy is a Render **Web Service**. Secrets stay in Render — never in 
 1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service** → this GitHub repo.
 2. **Root Directory:** `backend`
 3. **Runtime:** Node. **Build:** `npm install --omit=dev`. **Start:** `npm start`
-4. Instance can be free; Render injects `PORT`. Health check: `GET /health`
+4. Instance can be free; Render injects `PORT`. Opening the site URL or `GET /health` returns JSON `{ "ok": true, ... }` — this is an API, not a website.
 5. Environment (same keys as `backend/env.example`):
 
 | Key | Notes |
