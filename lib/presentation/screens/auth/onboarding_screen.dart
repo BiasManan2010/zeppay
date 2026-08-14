@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
 
@@ -48,7 +49,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final bio = ref.read(biometricServiceProvider);
     final available = await bio.isAvailable();
     final ok = !available ||
-        await bio.confirm(reason: 'Enroll biometrics — required for every payment');
+        await bio.confirm(
+            reason: 'Enroll biometrics — required for every payment');
     if (!ok) {
       setState(() {
         _busy = false;
@@ -59,7 +61,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await ref.read(appStoreProvider.notifier).completeOnboarding(
           name: _name.text.trim(),
           upiId: _upi.text.trim().toLowerCase(),
-          bankName: _bank.text.trim().isEmpty ? 'Linked bank' : _bank.text.trim(),
+          bankName:
+              _bank.text.trim().isEmpty ? 'Linked bank' : _bank.text.trim(),
           accountLast4: _last4.text.trim(),
         );
     if (mounted) context.go('/home');
@@ -85,39 +88,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: 28),
               if (_step == 0) ...[
-                TextField(controller: _name, decoration: const InputDecoration(labelText: 'YOUR NAME')),
+                TextField(
+                    controller: _name,
+                    decoration: const InputDecoration(labelText: 'YOUR NAME')),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _upi,
-                  decoration: const InputDecoration(labelText: 'UPI ID', hintText: 'you@okaxis'),
+                  decoration: const InputDecoration(
+                      labelText: 'UPI ID', hintText: 'you@okaxis'),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: _bank, decoration: const InputDecoration(labelText: 'BANK NAME')),
+                TextField(
+                    controller: _bank,
+                    decoration: const InputDecoration(labelText: 'BANK NAME')),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _last4,
                   keyboardType: TextInputType.number,
                   maxLength: 4,
-                  decoration: const InputDecoration(labelText: 'ACCOUNT LAST 4', counterText: ''),
+                  decoration: const InputDecoration(
+                      labelText: 'ACCOUNT LAST 4', counterText: ''),
                 ),
               ] else
                 const Expanded(child: Center(child: FaceGlow())),
-              if (_error != null) Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              if (_error != null)
+                Text(_error!, style: const TextStyle(color: AppColors.danger)),
               const Spacer(),
-              HapticScale(
+              GlowButton(
+                label: _step == 0 ? 'CONTINUE' : 'ENABLE BIOMETRICS',
                 onTap: _busy ? null : _next,
-                enabled: !_busy,
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.hero,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text(_step == 0 ? 'CONTINUE' : 'ENABLE BIOMETRICS',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-                ),
+                busy: _busy,
               ),
             ],
           ),

@@ -41,7 +41,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 0.85,
-            colors: [Color(0xFF123A66), AppColors.base],
+            colors: [AppColors.heroDeep, AppColors.base],
           ),
         ),
         child: Center(
@@ -62,7 +62,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
               ),
             ],
-          ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.92, 0.92)),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms)
+              .scale(begin: const Offset(0.92, 0.92)),
         ),
       ),
     );
