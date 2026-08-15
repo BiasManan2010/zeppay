@@ -48,7 +48,9 @@ jobs:
           if-no-files-found: error
 
   ipa:
-    runs-on: macos-14
+    # Xcode 16 (macos-15) is required for CNAuthorizationStatusLimited
+    # in permission_handler_apple 9.6.x.
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
