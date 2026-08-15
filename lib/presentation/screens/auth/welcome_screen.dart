@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/ux.dart';
+import '../../../data/local/ux_prefs.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -15,27 +17,15 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   final _pages = PageController();
   var _index = 0;
+  var _spend = 'food';
 
-  static const _slides = [
-    (
-      icon: Icons.qr_code_2_rounded,
-      title: 'Tap. Pay.\nAnytime.',
-      body:
-          'Scan any UPI QR and confirm with your face. One motion — even when data is gone.',
-    ),
-    (
-      icon: Icons.cell_tower_rounded,
-      title: 'Offline is\nthe feature.',
-      body:
-          'Zeppay picks *99# or 123PAY for your carrier. You only type your UPI PIN.',
-    ),
-    (
-      icon: Icons.groups_rounded,
-      title: 'Split like\nyou actually live.',
-      body:
-          'Trips, houses, 1-on-1s. Settle up on the same rails you pay merchants with.',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    UxPrefs.defaultSpend().then((v) {
+      if (mounted) setState(() => _spend = v);
+    });
+  }
 
   @override
   void dispose() {
@@ -43,13 +33,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
-  void _next() {
-    if (_index < _slides.length - 1) {
+  Future<void> _next() async {
+    await UxPrefs.saveSpend(_spend);
+    if (_index < 2) {
       _pages.nextPage(
-          duration: const Duration(milliseconds: 380),
-          curve: Curves.easeOutCubic);
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+      );
     } else {
-      context.go('/login');
+      if (mounted) context.go('/login');
     }
   }
 
@@ -60,6 +52,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
         child: Column(
           children: [
+            GoalBar(
+              done: 1 + _index,
+              total: 4,
+              label: 'Opened Zep Pay · already moving',
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -74,75 +71,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
             Expanded(
-              child: PageView.builder(
+              child: PageView(
                 controller: _pages,
-                itemCount: _slides.length,
                 onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (context, i) {
-                  final slide = _slides[i];
-                  return Column(
-                    children: [
-                      const Spacer(),
-                      Container(
-                        width: 168,
-                        height: 168,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.hero.withValues(alpha: 0.4),
-                              blurRadius: 40,
-                            ),
-                          ],
-                        ),
-                        child: i == 0
-                            ? const BrandMark(size: 168)
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: AppColors.scanOrb,
-                                ),
-                                child: Icon(slide.icon,
-                                    size: 56, color: AppColors.white),
-                              ),
-                      )
-                          .animate(key: ValueKey(i))
-                          .fadeIn(duration: 400.ms)
-                          .scale(begin: const Offset(0.86, 0.86)),
-                      const SizedBox(height: 36),
-                      Text(
-                        slide.title,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayMedium
-                            ?.copyWith(height: 1.1),
-                      )
-                          .animate(key: ValueKey('t$i'))
-                          .fadeIn(duration: 420.ms)
-                          .slideY(begin: 0.12, curve: Curves.easeOutCubic),
-                      const SizedBox(height: 14),
-                      Text(
-                        slide.body,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(height: 1.45, fontSize: 15),
-                      )
-                          .animate(key: ValueKey('b$i'))
-                          .fadeIn(delay: 80.ms, duration: 420.ms)
-                          .slideY(begin: 0.08, curve: Curves.easeOutCubic),
-                      const Spacer(),
-                    ],
-                  );
-                },
+                children: [
+                  _ikeaSlide(context),
+                  _valueSlide(
+                    context,
+                    Icons.cell_tower_rounded,
+                    'Offline is\nthe feature.',
+                    '*99# on most SIMs. 123PAY on Jio. You only type the UPI PIN — we already picked the rail.',
+                  ),
+                  _valueSlide(
+                    context,
+                    Icons.groups_rounded,
+                    'Split like\nyou actually live.',
+                    'Trips, houses, 1-on-1s. Settle on the same rails you pay a tea stall with.',
+                  ),
+                ],
               ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (var i = 0; i < _slides.length; i++)
+                for (var i = 0; i < 3; i++)
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 240),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -157,14 +109,93 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             GlowButton(
-              label: _index == _slides.length - 1 ? 'GET STARTED' : 'NEXT',
+              label: _index == 2 ? 'CLAIM MY NUMBER' : 'KEEP GOING',
               onTap: _next,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _ikeaSlide(BuildContext context) {
+    return ListView(
+      children: [
+        const SizedBox(height: 8),
+        const GiftNote(
+          icon: Icons.card_giftcard_rounded,
+          title: 'Demo wallet is waiting',
+          body:
+              '₹12,450 loaded so you can feel a pay before any real rupee moves. Yours after you claim a number.',
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.06),
+        const SizedBox(height: 18),
+        Text(
+          'What do you pay for most?',
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'One tap now. We’ll park that as your default spend chip — you can change it every payment.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        ChoicePills(
+          selected: _spend,
+          onPick: (id) => setState(() => _spend = id),
+          options: const [
+            ('food', 'Food'),
+            ('travel', 'Travel'),
+            ('bills', 'Bills'),
+            ('recharge', 'Recharge'),
+            ('shopping', 'Shopping'),
+            ('other', 'Other'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const LossNote(
+          text:
+              'Skip this and every pay starts from a blank chip — extra taps you’ll feel later.',
+        ),
+      ],
+    );
+  }
+
+  Widget _valueSlide(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String body,
+  ) {
+    return Column(
+      children: [
+        const Spacer(),
+        Container(
+          width: 140,
+          height: 140,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: AppColors.scanOrb,
+          ),
+          child: Icon(icon, size: 52, color: AppColors.white),
+        ).animate().fadeIn(duration: 360.ms).scale(
+              begin: const Offset(0.88, 0.88),
+            ),
+        const SizedBox(height: 28),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.displayMedium?.copyWith(height: 1.1),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          body,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.45),
+        ),
+        const Spacer(),
+      ],
     );
   }
 }

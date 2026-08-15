@@ -361,14 +361,7 @@ class ScanOrbButton extends StatelessWidget {
           stroke: size > 70 ? 2.6 : 2.2,
         ),
       ),
-    )
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scaleXY(
-          begin: 1,
-          end: 1.045,
-          duration: 1400.ms,
-          curve: Curves.easeInOut,
-        );
+    );
     if (onTap == null) return orb;
     return HapticScale(onTap: onTap, child: orb);
   }
@@ -558,6 +551,7 @@ class WavePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width < 1 || size.height < 1) return;
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;

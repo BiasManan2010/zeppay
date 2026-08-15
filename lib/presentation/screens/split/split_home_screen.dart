@@ -43,7 +43,11 @@ class SplitHomeScreen extends ConsumerWidget {
                       children: [
                         CircleAvatar(
                           backgroundColor: AppColors.surfaceHigh,
-                          child: Text(g.name.characters.first.toUpperCase()),
+                          child: Text(
+                            g.name.trim().isEmpty
+                                ? '?'
+                                : g.name.trim().characters.first.toUpperCase(),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(

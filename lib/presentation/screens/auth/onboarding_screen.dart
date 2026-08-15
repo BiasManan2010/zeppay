@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
 
@@ -19,14 +20,55 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _name = TextEditingController();
   final _upi = TextEditingController();
-  final _bank = TextEditingController();
+  final _bank = TextEditingController(text: 'SBI');
   final _last4 = TextEditingController();
   var _step = 0;
   var _busy = false;
+  var _upiTouched = false;
   String? _error;
+
+  static const _banks = ['SBI', 'HDFC', 'ICICI', 'Axis', 'Kotak', 'Other'];
+
+  @override
+  void initState() {
+    super.initState();
+    final p = ref.read(appStoreProvider).profile;
+    if (p != null && p.name.isNotEmpty && p.name.toLowerCase() != 'you') {
+      _name.text = p.name;
+    }
+    if (p != null && p.upiId.contains('@')) {
+      _upi.text = p.upiId;
+      _upiTouched = true;
+    }
+    if (p != null && p.bankName.isNotEmpty && p.bankName != 'Linked bank') {
+      _bank.text = p.bankName;
+    }
+    if (!_upiTouched) {
+      final slug = _name.text
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]'), '');
+      if (slug.isNotEmpty) _upi.text = '$slug@upi';
+    }
+    _name.addListener(_syncHandle);
+  }
+
+  void _syncHandle() {
+    if (_upiTouched) {
+      setState(() {});
+      return;
+    }
+    final slug = _name.text
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    _upi.text = slug.isEmpty ? '' : '$slug@upi';
+    setState(() {});
+  }
 
   @override
   void dispose() {
+    _name.removeListener(_syncHandle);
     _name.dispose();
     _upi.dispose();
     _bank.dispose();
@@ -62,11 +104,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final available = await bio.isAvailable();
     final ok = !available ||
         await bio.confirm(
-            reason: 'Enroll biometrics — required for every payment');
+          reason: 'Lock this phone — without it anyone holding it can pay',
+        );
     if (!ok) {
       setState(() {
         _busy = false;
-        _error = 'Biometric enrollment is required. It cannot be skipped.';
+        _error =
+            'Skip this and this phone can pay without your face. Enable it to keep the wallet.';
       });
       return;
     }
@@ -74,7 +118,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           name: _name.text.trim(),
           upiId: _upi.text.trim().toLowerCase(),
           bankName:
-              _bank.text.trim().isEmpty ? 'Linked bank' : _bank.text.trim(),
+              _bank.text.trim().isEmpty ? 'SBI' : _bank.text.trim(),
           accountLast4: _last4.text.trim(),
         );
     if (mounted) context.go('/home');
@@ -82,11 +126,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['You first.', 'Link your UPI.', 'Face, every time.'];
+    final titles = ['Put your name on it.', 'Handle + bank.', 'Lock the phone.'];
     final bodies = [
-      'This is how friends see you in splits and requests.',
-      'Used to build *99# / 123PAY strings. You never type it by hand later.',
-      'Biometrics gate every payment. Not optional — that’s the trust moment.',
+      'Friends see this in splits. You’re editing a card that already exists — not a blank form.',
+      'Most people pay from SBI / HDFC / ICICI. We parked SBI. Change it if that’s not you.',
+      'Without this, anyone with the phone can fire *99#. You’re one confirm from sealing it.',
     ];
     return AuthBackdrop(
       child: Padding(
@@ -94,19 +138,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            GoalBar(
+              done: 2 + _step,
+              total: 4,
+              label: 'Number already in · finish your card',
+            ),
+            const SizedBox(height: 16),
             StepPills(count: 3, index: _step),
-            const SizedBox(height: 28),
-            Text(titles[_step],
-                style: Theme.of(context).textTheme.displayMedium),
+            const SizedBox(height: 20),
+            Text(titles[_step], style: Theme.of(context).textTheme.displayMedium)
+                .animate(key: ValueKey(_step))
+                .fadeIn(duration: 280.ms)
+                .slideY(begin: 0.04),
             const SizedBox(height: 8),
-            Text(bodies[_step],
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(height: 1.4)),
-            const SizedBox(height: 28),
+            Text(
+              bodies[_step],
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            ZepCardPreview(
+              name: _name.text,
+              handle: _upi.text,
+              bank: _bank.text,
+            ),
+            const SizedBox(height: 14),
             Expanded(
-              child: AnimatedSwitcher(
+              child: SingleChildScrollView(
+                child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 280),
                 child: _step == 0
                     ? GlassPanel(
@@ -129,27 +187,54 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ? GlassPanel(
                             key: const ValueKey('upi'),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 TextField(
                                   controller: _upi,
+                                  onChanged: (_) {
+                                    _upiTouched = true;
+                                    setState(() {});
+                                  },
                                   decoration: const InputDecoration(
                                     labelText: 'UPI ID',
                                     hintText: 'you@okaxis',
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                TextField(
-                                  controller: _bank,
-                                  decoration: const InputDecoration(
-                                      labelText: 'BANK NAME'),
+                                Text(
+                                  'BANK',
+                                  style: Theme.of(context).textTheme.labelLarge,
                                 ),
+                                const SizedBox(height: 8),
+                                ChoicePills(
+                                  selected: _banks.contains(_bank.text)
+                                      ? _bank.text
+                                      : 'Other',
+                                  onPick: (id) {
+                                    _bank.text = id == 'Other' ? '' : id;
+                                    setState(() {});
+                                  },
+                                  options: [
+                                    for (final b in _banks) (b, b),
+                                  ],
+                                ),
+                                if (_bank.text.isEmpty ||
+                                    !_banks.contains(_bank.text)) ...[
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _bank,
+                                    decoration: const InputDecoration(
+                                      labelText: 'BANK NAME',
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 12),
                                 TextField(
                                   controller: _last4,
                                   keyboardType: TextInputType.number,
                                   maxLength: 4,
                                   decoration: const InputDecoration(
-                                    labelText: 'ACCOUNT LAST 4',
+                                    labelText: 'ACCOUNT LAST 4 (OPTIONAL)',
                                     counterText: '',
                                   ),
                                 ),
@@ -161,22 +246,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             child: FaceGlow(),
                           ),
               ),
+              ),
             ),
             if (_error != null) ...[
               Text(_error!, style: const TextStyle(color: AppColors.danger)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
             ],
+            if (_step == 2)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: LossNote(
+                  text:
+                      'Leave now and this card is unfinished — no *99# handle, no face lock.',
+                ),
+              ),
             GlowButton(
               label: _step == 0
-                  ? 'CONTINUE'
+                  ? 'THAT’S ME'
                   : _step == 1
-                      ? 'LOCK IT IN'
-                      : 'ENABLE BIOMETRICS',
+                      ? 'LOCK THE HANDLE'
+                      : 'SEAL WITH FACE',
               onTap: _busy ? null : _next,
               busy: _busy,
             ),
           ],
-        ).animate().fadeIn(duration: 350.ms),
+        ),
       ),
     );
   }

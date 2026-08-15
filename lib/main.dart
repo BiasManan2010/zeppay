@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,7 +11,18 @@ import 'data/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.init();
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Zep Pay: $error\n$stack');
+    return true;
+  };
+  try {
+    await NotificationService.instance.init();
+  } catch (e) {
+    debugPrint('notifications init failed: $e');
+  }
   runApp(const ProviderScope(child: ZepPayApp()));
 }
 
