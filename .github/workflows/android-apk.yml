@@ -10,7 +10,8 @@ permissions:
   contents: write
 
 env:
-  FLUTTER_VERSION: "3.35.7"
+  # 3.41+ matches ios/Runner AppDelegate (FlutterImplicitEngineDelegate / UIScene).
+  FLUTTER_VERSION: "3.41.0"
 
 jobs:
   apk:
