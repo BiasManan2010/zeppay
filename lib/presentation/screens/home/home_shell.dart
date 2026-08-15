@@ -8,6 +8,7 @@ import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -255,7 +256,17 @@ class _HomeTab extends ConsumerWidget {
               ],
             ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
+            RiseIn(
+              delay: const Duration(milliseconds: 40),
+              child: GiftNote(
+                icon: Icons.bolt_rounded,
+                title: 'You’re in · demo wallet live',
+                body:
+                    'Scan a QR before you leave this screen — the amount pad is already wired to your default spend chip.',
+              ),
+            ),
+            const SizedBox(height: 14),
             if (!isAndroidDevice)
               Container(
                 width: double.infinity,
