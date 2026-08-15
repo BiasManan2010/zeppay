@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/ux.dart';
+import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -18,6 +20,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController();
   var _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    UxPrefs.lastPhone().then((v) {
+      if (!mounted || v.length < 10) return;
+      final d = v.replaceAll(RegExp(r'\D'), '');
+      _phone.text = d.length >= 10 ? d.substring(d.length - 10) : d;
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -41,6 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(otpServiceProvider).send(phone);
+      await UxPrefs.savePhone(phone);
       ref.read(pendingPhoneProvider.notifier).state = phone;
       if (mounted) context.go('/otp');
     } catch (e) {
@@ -52,39 +66,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ready = _phone.text.replaceAll(RegExp(r'\D'), '').length >= 10;
     return AuthBackdrop(
-      child: Padding(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(child: BrandMark(size: 128)),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'ZEPPAY',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.white,
-                  letterSpacing: 7,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+        children: [
+            const GoalBar(
+              done: 2,
+              total: 4,
+              label: 'App open · number next',
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 12),
+            const Center(child: BrandMark(size: 96)),
+            const SizedBox(height: 18),
             Text(
-              'Your number.\nThen you scan.',
+              'Claim the wallet.',
               style: Theme.of(
                 context,
               ).textTheme.displayMedium?.copyWith(height: 1.12),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
-              'OTP is sent to the number you type — each person uses their own phone. Twilio trial only delivers to Verified Caller IDs until you upgrade.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(height: 1.4),
+              'Bank apps: 6 screens before a QR. Zep Pay: this field. OTP goes to the number you type.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
-            const Spacer(),
+            const SizedBox(height: 16),
+            const GiftNote(
+              icon: Icons.account_balance_wallet_outlined,
+              title: '₹12,450 demo wallet',
+              body:
+                  'Already sitting on the other side of OTP. No KYC, no rupee leaves your bank.',
+            ),
+            const SizedBox(height: 12),
             GlassPanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +113,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: _phone,
                     keyboardType: TextInputType.phone,
+                    onChanged: (_) => setState(() {}),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                     style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 22,
@@ -121,20 +139,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
+            const LossNote(
+              text:
+                  'Walk away here and the demo wallet + your spend chip stay unclaimed on this phone.',
+            ),
+            const SizedBox(height: 14),
             GlowButton(
-              label: 'SEND OTP',
-              onTap: _busy ? null : _send,
+              label: ready ? 'SEND OTP' : 'ENTER 10 DIGITS',
+              onTap: _busy || !ready ? null : _send,
               busy: _busy,
             ),
-            const SizedBox(height: 12),
             Center(
               child: ref
                   .watch(otpLiveProvider)
                   .when(
                     data: (live) => Text(
                       live
-                          ? 'We’ll text a 6-digit code to this number.'
+                          ? 'We’ll text this exact number.'
                           : 'No OTP URL yet — use 123456, or tap Twilio setup.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelSmall,
@@ -147,8 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onPressed: () => context.push('/verify-setup'),
               child: const Text('Twilio setup'),
             ),
-          ],
-        ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.04, end: 0),
+        ],
       ),
     );
   }
