@@ -8,6 +8,7 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
+import '../../../data/services/profile_media.dart';
 import '../../../data/services/providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -128,7 +129,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final titles = ['Put your name on it.', 'Handle + bank.', 'Lock the phone.'];
     final bodies = [
-      'Friends see this in splits. You’re editing a card that already exists — not a blank form.',
+      'This is what people see on your QR. Tap the photo to change it.',
       'Most people pay from SBI / HDFC / ICICI. We parked SBI. Change it if that’s not you.',
       'Without this, anyone with the phone can fire *99#. You’re one confirm from sealing it.',
     ];
@@ -169,18 +170,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: _step == 0
                     ? GlassPanel(
                         key: const ValueKey('you'),
-                        child: TextField(
-                          controller: _name,
-                          textCapitalization: TextCapitalization.words,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'YOUR NAME',
-                            hintText: 'Manan',
-                          ),
+                        child: Column(
+                          children: [
+                            HapticScale(
+                              onTap: () async {
+                                final path = await ProfileMedia.pick();
+                                if (path == null) return;
+                                final p = ref.read(appStoreProvider).profile;
+                                if (p == null) return;
+                                await ref
+                                    .read(appStoreProvider.notifier)
+                                    .updateProfile(p.copyWith(photoPath: path));
+                                if (mounted) setState(() {});
+                              },
+                              child: ProfileAvatar(
+                                name: _name.text,
+                                photoPath: ref
+                                        .watch(appStoreProvider)
+                                        .profile
+                                        ?.photoPath ??
+                                    '',
+                                size: 84,
+                                showEdit: true,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _name,
+                              textCapitalization: TextCapitalization.words,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              decoration: const InputDecoration(
+                                labelText: 'YOUR NAME',
+                                hintText: 'Manan',
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : _step == 1

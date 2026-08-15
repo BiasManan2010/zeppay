@@ -125,10 +125,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       children: [
         const SizedBox(height: 8),
         const GiftNote(
-          icon: Icons.card_giftcard_rounded,
-          title: 'Demo wallet is waiting',
+          icon: Icons.qr_code_2_rounded,
+          title: 'Your number. Your name.',
           body:
-              '₹12,450 loaded so you can feel a pay before any real rupee moves. Yours after you claim a number.',
+              'No demo balance. You add a photo and UPI ID — then scan or share your QR.',
         ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.06),
         const SizedBox(height: 18),
         Text(

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -368,37 +369,83 @@ class ScanOrbButton extends StatelessWidget {
 }
 
 class ProfileAvatar extends StatelessWidget {
-  const ProfileAvatar({super.key, required this.name, this.size = 48});
+  const ProfileAvatar({
+    super.key,
+    required this.name,
+    this.photoPath = '',
+    this.size = 48,
+    this.showEdit = false,
+  });
 
   final String name;
+  final String photoPath;
   final double size;
+  final bool showEdit;
 
   @override
   Widget build(BuildContext context) {
     final initial = name.trim().isEmpty
         ? 'Z'
         : name.trim().characters.first.toUpperCase();
-    return Container(
+    final file = photoPath.isEmpty ? null : File(photoPath);
+    final hasPhoto = file != null && file.existsSync();
+    return SizedBox(
       width: size,
       height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: AppColors.scanOrb,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.hero.withValues(alpha: 0.35),
-            blurRadius: 12,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppColors.scanOrb,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.hero.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                ),
+              ],
+              image: hasPhoto
+                  ? DecorationImage(
+                      image: FileImage(file),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: hasPhoto
+                ? null
+                : Text(
+                    initial,
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: size * 0.38,
+                    ),
+                  ),
           ),
+          if (showEdit)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: size * 0.32,
+                height: size * 0.32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.hero,
+                  border: Border.all(color: AppColors.base, width: 2),
+                ),
+                child: Icon(
+                  Icons.camera_alt_rounded,
+                  size: size * 0.16,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
         ],
-      ),
-      child: Text(
-        initial,
-        style: TextStyle(
-          color: AppColors.white,
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.38,
-        ),
       ),
     );
   }
