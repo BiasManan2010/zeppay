@@ -1,4 +1,4 @@
-name: Android APK
+name: Mobile release
 
 on:
   push:
@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+
+env:
+  FLUTTER_VERSION: "3.35.7"
 
 jobs:
   apk:
@@ -25,7 +28,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.7"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -44,18 +47,83 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
+  ipa:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (unsigned)
+        env:
+          TWILIO_VERIFY_URL: ${{ secrets.TWILIO_VERIFY_URL }}
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL:-https://zeppay.onrender.com}
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          APP=$(find build/ios -name 'Runner.app' -print | head -n 1)
+          if [ -z "$APP" ]; then
+            echo "Runner.app not found"
+            find build/ios -maxdepth 4 -print
+            exit 1
+          fi
+          echo "Packaging $APP"
+          rm -rf Payload zeppay.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/Runner.app
+          zip -r zeppay.ipa Payload
+          ls -lh zeppay.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeppay-ipa
+          path: zeppay.ipa
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [apk, ipa]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: zeppay-apk
+          path: dist
+
+      - name: Download IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: zeppay-ipa
+          path: dist
+
       - name: Publish GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-${{ github.run_number }}
-          name: Zep Pay Android ${{ github.run_number }}
+          tag_name: app-${{ github.run_number }}
+          name: Zep Pay ${{ github.run_number }}
           body: |
-            Sideload this APK on an Android phone for the hackathon demo.
+            Android APK + iOS IPA (unsigned) for the demo.
 
-            1. Download `app-release.apk`
-            2. Enable Install unknown apps for Chrome/Files
-            3. Open the APK and install
-            4. If Twilio Verify is configured, use the SMS code. Otherwise OTP is **123456**
-          files: build/app/outputs/flutter-apk/app-release.apk
+            **Android:** download `app-release.apk` → allow unknown sources → install.
+
+            **iOS:** `zeppay.ipa` is **unsigned** (no Apple Developer cert on CI). Install with Sideloadly, AltStore, or Xcode after signing with your team. Offline `*99#` / 123PAY is Android-only; iOS opens the UPI app.
+
+            OTP: live Twilio if configured, otherwise **123456**.
+          files: |
+            dist/app-release.apk
+            dist/zeppay.ipa
           make_latest: true
