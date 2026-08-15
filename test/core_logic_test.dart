@@ -40,6 +40,41 @@ void main() {
     expect(QrParser.parse('upi://pay?pn=OnlyName'), isNull);
   });
 
+  test('parses FamPay UPI intent', () {
+    final draft = QrParser.parse(
+      'upi://pay?pa=manan@yesfam&pn=Manan%20Shah&cu=INR&mc=0000',
+    );
+    expect(draft!.vpa, 'manan@yesfam');
+    expect(draft.payeeName, 'Manan Shah');
+  });
+
+  test('parses FamPay-style Bharat QR EMV with nested VPA', () {
+    const inner = '0014A00000052410100112shop@yesfam';
+    final emv =
+        '00020101021126${inner.length.toString().padLeft(2, '0')}$inner'
+        '5204000053033565802IN5912Fam Merchant6304ABCD';
+    final draft = QrParser.parse(emv);
+    expect(draft, isNotNull);
+    expect(draft!.vpa, 'shop@yesfam');
+    expect(draft.payeeName, 'Fam Merchant');
+  });
+
+  test('parses Android intent wrapper used by some FamPay QRs', () {
+    final draft = QrParser.parse(
+      'intent://pay?pa=user@fbl&pn=Fam&am=50#Intent;scheme=upi;end',
+    );
+    expect(draft!.vpa, 'user@fbl');
+    expect(draft.amountPaise, 5000);
+  });
+
+  test('parses HTTPS pay link with pa', () {
+    final draft = QrParser.parse(
+      'https://fampay.in/pay?pa=tea@yesfam&pn=Tea&am=12',
+    );
+    expect(draft!.vpa, 'tea@yesfam');
+    expect(draft.amountPaise, 1200);
+  });
+
   test('equal split remainder goes to first member', () {
     final members = [
       const GroupMember(id: 'a', name: 'A'),

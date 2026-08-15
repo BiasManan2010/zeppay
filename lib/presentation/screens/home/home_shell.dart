@@ -4,11 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/motion/app_motion.dart';
-import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
-import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -192,9 +190,7 @@ class _HomeTab extends ConsumerWidget {
     final app = ref.watch(appStoreProvider);
     final profile = app.profile;
     final first = (profile?.name ?? '').trim().split(' ').first;
-    final greeting = first.isEmpty || first.toLowerCase() == 'you'
-        ? 'there'
-        : first;
+    final greeting = first.isEmpty ? 'there' : first;
     final me = app.sessionPhone ?? '';
     final pending = app.requests
         .where((r) => r.status == RequestStatus.pending && r.toPhone == me)
@@ -215,253 +211,139 @@ class _HomeTab extends ConsumerWidget {
           children: [
             RiseIn(
               child: Row(
-              children: [
-                const BrandMark(size: 44),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hello, $greeting 👋',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleLarge?.copyWith(fontSize: 20),
-                      ),
-                      MoneyText(
-                        profile?.balancePaise ?? 0,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.hero,
-                          fontWeight: FontWeight.w700,
+                children: [
+                  HapticScale(
+                    onTap: () => onOpenTab(3),
+                    child: ProfileAvatar(
+                      name: profile?.name ?? '',
+                      photoPath: profile?.photoPath ?? '',
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hello, $greeting',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(fontSize: 20),
                         ),
-                      ),
-                    ],
+                        Text(
+                          profile?.upiId.isNotEmpty == true
+                              ? profile!.upiId
+                              : 'Add your UPI ID in Profile',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                RoundIconButton(
-                  icon: Icons.notifications_none_rounded,
-                  badge: pending > 0,
-                  onTap: () => context.push('/inbox'),
-                ),
-                const SizedBox(width: 8),
-                RoundIconButton(
-                  icon: Icons.search_rounded,
-                  onTap: () => context.push('/search'),
-                ),
-                const SizedBox(width: 8),
-                RoundIconButton(
-                  icon: Icons.help_outline_rounded,
-                  onTap: () => context.push('/help'),
-                ),
-              ],
+                  RoundIconButton(
+                    icon: Icons.qr_code_2_rounded,
+                    onTap: () => context.push('/receive'),
+                  ),
+                  if (pending > 0) ...[
+                    const SizedBox(width: 8),
+                    RoundIconButton(
+                      icon: Icons.notifications_none_rounded,
+                      badge: true,
+                      onTap: () => context.push('/inbox'),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             RiseIn(
-              delay: const Duration(milliseconds: 40),
-              child: GiftNote(
-                icon: Icons.bolt_rounded,
-                title: 'You’re in · demo wallet live',
-                body:
-                    'Scan a QR before you leave this screen — the amount pad is already wired to your default spend chip.',
+              delay: const Duration(milliseconds: 50),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _HomeAction(
+                      icon: Icons.qr_code_scanner_rounded,
+                      label: 'Scan',
+                      hint: 'Pay',
+                      onTap: () => context.push('/scan'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _HomeAction(
+                      icon: Icons.qr_code_2_rounded,
+                      label: 'My QR',
+                      hint: 'Share',
+                      onTap: () => context.push('/receive'),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 14),
-            if (!isAndroidDevice)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceHigh,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.45),
-                  ),
-                ),
-                child: Text(
-                  'Offline *99# / 123PAY is Android-only. On iOS, Zep Pay opens the online UPI intent instead of silently failing.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
-                ),
-              ),
             RiseIn(
-              delay: const Duration(milliseconds: 80),
+              delay: const Duration(milliseconds: 90),
               child: ScanHeroCard(onTap: () => context.push('/scan')),
             ),
             const SizedBox(height: 18),
             const _PeopleRow(),
-            const SizedBox(height: 22),
-            SectionHeader(title: 'Send Money', onAction: () => onOpenTab(1)),
-            ActionTileRow(
-              tiles: [
-                ActionTile(
-                  icon: Icons.phone_iphone_rounded,
-                  label: 'To Mobile',
-                  onTap: () => context.push('/pay/mobile'),
-                ),
-                ActionTile(
-                  icon: Icons.alternate_email_rounded,
-                  label: 'To UPI ID',
-                  onTap: () => context.push('/pay/upi'),
-                ),
-                ActionTile(
-                  icon: Icons.contacts_rounded,
-                  label: 'To Contacts',
-                  onTap: () => context.push('/pay/contacts'),
-                ),
-                ActionTile(
-                  icon: Icons.call_received_rounded,
-                  label: 'Receive',
-                  onTap: () => context.push('/receive'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            SectionHeader(
-              title: 'Split & Settle',
-              onAction: () => onOpenTab(2),
-            ),
-            ActionTileRow(
-              tiles: [
-                ActionTile(
-                  icon: Icons.group_add_rounded,
-                  label: 'Split Bill',
-                  onTap: () => context.push('/split-bill'),
-                ),
-                ActionTile(
-                  icon: Icons.pie_chart_outline_rounded,
-                  label: 'My Groups',
-                  onTap: () => context.push('/split'),
-                ),
-                ActionTile(
-                  icon: Icons.swap_horiz_rounded,
-                  label: 'Settle Up',
-                  onTap: () => context.push('/settle'),
-                ),
-                ActionTile(
-                  icon: Icons.assignment_outlined,
-                  label: 'Activity',
-                  onTap: () => context.push('/split-activity'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            HapticScale(
-              onTap: () => context.push('/offline'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.hero.withValues(alpha: 0.14),
-                      ),
-                      child: const Icon(
-                        Icons.cell_tower_rounded,
-                        color: AppColors.hero,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.hero.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Offline Only',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.hero,
-                                    letterSpacing: 0,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Offline Payment',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            'Use *99# / 123PAY when data drops.',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textDim,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            SectionHeader(title: 'Quick Access', onAction: () => onOpenTab(3)),
-            ActionTileRow(
-              tiles: [
-                ActionTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: 'Check Balance',
-                  onTap: () => context.push('/balance'),
-                ),
-                ActionTile(
-                  icon: Icons.history_rounded,
-                  label: 'Transaction History',
-                  onTap: () => context.push('/history'),
-                ),
-                ActionTile(
-                  icon: Icons.upload_file_outlined,
-                  label: 'Pending Requests',
-                  badge: pending > 0 ? '$pending' : null,
-                  onTap: () => context.push('/requests'),
-                ),
-                ActionTile(
-                  icon: Icons.settings_outlined,
-                  label: 'Settings',
-                  onTap: () => context.push('/settings'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Text('Recent', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (app.transactions.isEmpty)
-              Text(
-                'No payments yet. Scan to start.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              )
-            else
-              ...app.transactions.take(4).map(
+            if (app.transactions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Recent', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              ...app.transactions.take(6).map(
                     (tx) => _TxTile(
                       tx: tx,
                       onTap: () => context.push('/history/${tx.id}'),
                     ),
                   ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return HapticScale(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.hero.withValues(alpha: 0.16),
+              ),
+              child: Icon(icon, color: AppColors.hero, size: 22),
+            ),
+            const SizedBox(height: 12),
+            Text(label, style: Theme.of(context).textTheme.titleMedium),
+            Text(hint, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
       ),
