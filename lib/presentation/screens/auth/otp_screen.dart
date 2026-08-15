@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
 
@@ -58,7 +59,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       return;
     }
     await ref.read(appStoreProvider.notifier).login(phone);
-    if (mounted) context.go('/onboarding');
+    if (mounted) context.go('/home');
   }
 
   @override
@@ -71,12 +72,17 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const GoalBar(
+              done: 3,
+              total: 4,
+              label: 'Number claimed · code is the last gate',
+            ),
+            const SizedBox(height: 8),
             IconButton(
               onPressed: () => context.go('/login'),
               icon: const Icon(Icons.arrow_back_rounded,
                   color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 8),
             Text('Enter the code',
                 style: Theme.of(context).textTheme.displayMedium),
             const SizedBox(height: 8),
@@ -84,7 +90,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               'Sent to $phone',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
+            const GiftNote(
+              icon: Icons.lock_open_rounded,
+              title: 'Wallet already loaded',
+              body: 'Type the 6 digits. The demo ₹12,450 is on the next screen.',
+            ),
+            const SizedBox(height: 20),
             GestureDetector(
               onTap: () => _focus.requestFocus(),
               child: Row(

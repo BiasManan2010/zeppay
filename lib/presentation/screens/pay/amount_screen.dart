@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/motion/app_motion.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/models/spend_kinds.dart';
+import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
 
 class AmountScreen extends ConsumerStatefulWidget {
@@ -18,7 +20,7 @@ class AmountScreen extends ConsumerStatefulWidget {
 
 class _AmountScreenState extends ConsumerState<AmountScreen> {
   var _raw = '';
-  var _category = 'other';
+  var _category = 'food';
   final _note = TextEditingController();
 
   @override
@@ -32,7 +34,14 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
           : rupees.toStringAsFixed(2);
     }
     _note.text = draft?.note ?? '';
-    _category = draft?.category ?? 'other';
+    final existing = draft?.category ?? '';
+    if (existing.isNotEmpty && existing != 'other') {
+      _category = existing;
+    } else {
+      UxPrefs.defaultSpend().then((v) {
+        if (mounted) setState(() => _category = v);
+      });
+    }
   }
 
   @override
@@ -79,15 +88,34 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             Text(draft.vpa, style: Theme.of(context).textTheme.bodyMedium),
             const Spacer(),
             SoftSwitcher(
-              child: Text(
-                _raw.isEmpty ? '₹0' : '₹$_raw',
+              child: Column(
                 key: ValueKey(_raw),
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontSize: 52,
-                  fontWeight: FontWeight.w800,
-                ),
+                children: [
+                  Text(
+                    '₹1,00,000',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.textDim,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  Text(
+                    _raw.isEmpty ? '₹0' : '₹$_raw',
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      fontSize: 52,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (_paise > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '${((_paise / 100) / 100000 * 100).toStringAsFixed(2)}% of a typical ₹1L UPI daily cap',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -171,6 +199,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                               note: _note.text.trim(),
                               category: _category,
                             );
+                        UxPrefs.saveSpend(_category);
                         context.push('/connecting');
                       },
               ),
