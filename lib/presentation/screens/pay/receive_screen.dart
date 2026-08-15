@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -19,6 +24,8 @@ class ReceiveScreen extends ConsumerStatefulWidget {
 class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   final _amount = TextEditingController();
   final _note = TextEditingController();
+  final _qrKey = GlobalKey();
+  var _sharing = false;
 
   @override
   void dispose() {
@@ -29,12 +36,39 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   String _upiUri(String vpa, String name) {
     final am = double.tryParse(_amount.text.trim());
-    final tn = Uri.encodeComponent(_note.text.trim());
     final pn = Uri.encodeComponent(name);
     final buf = StringBuffer('upi://pay?pa=$vpa&pn=$pn&cu=INR');
     if (am != null && am > 0) buf.write('&am=${am.toStringAsFixed(2)}');
-    if (tn.isNotEmpty) buf.write('&tn=$tn');
+    final tn = _note.text.trim();
+    if (tn.isNotEmpty) buf.write('&tn=${Uri.encodeComponent(tn)}');
     return buf.toString();
+  }
+
+  Future<void> _share(String vpa, String name, String uri) async {
+    setState(() => _sharing = true);
+    HapticFeedback.mediumImpact();
+    try {
+      final box = _qrKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (box != null) {
+        final image = await box.toImage(pixelRatio: 3);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (bytes != null) {
+          final dir = await getTemporaryDirectory();
+          final file = File('${dir.path}/zeppay-qr.png');
+          await file.writeAsBytes(bytes.buffer.asUint8List());
+          final amt = _amount.text.trim();
+          final line = amt.isEmpty
+              ? 'Pay $name on UPI: $vpa'
+              : 'Pay ₹$amt to $name on UPI: $vpa';
+          await Share.shareXFiles([XFile(file.path)], text: line);
+          return;
+        }
+      }
+      await Share.share('Pay $name on UPI: $vpa\n$uri');
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 
   @override
@@ -44,25 +78,48 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     final name = p?.name.isNotEmpty == true ? p!.name : 'Zep Pay';
     final uri = vpa.contains('@') ? _upiUri(vpa, name) : '';
     return ZepPage(
-      title: 'Receive money',
-      subtitle: 'Your UPI QR. Anyone with GPay, PhonePe, or BHIM can scan it.',
+      title: 'My QR',
+      subtitle: 'Share this so someone can pay you.',
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           if (uri.isEmpty)
-            const Text('Add a UPI ID in onboarding or Settings first.')
+            const Text('Add a UPI ID in onboarding first.')
           else
             Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: QrImageView(
-                  data: uri,
-                  size: 220,
-                  backgroundColor: AppColors.white,
+              child: RepaintBoundary(
+                key: _qrKey,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    children: [
+                      QrImageView(
+                        data: uri,
+                        size: 220,
+                        backgroundColor: AppColors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        vpa,
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -72,6 +129,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                 ? null
                 : () async {
                     await Clipboard.setData(ClipboardData(text: vpa));
+                    HapticFeedback.selectionClick();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('UPI ID copied')),
@@ -97,7 +155,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           TextField(
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'REQUEST AMOUNT (OPTIONAL)'),
+            decoration: const InputDecoration(labelText: 'AMOUNT (OPTIONAL)'),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
@@ -108,16 +166,11 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           ),
           const SizedBox(height: 16),
           GlowButton(
-            label: 'SHARE UPI ID',
-            onTap: vpa.isEmpty
+            label: 'SHARE QR',
+            busy: _sharing,
+            onTap: vpa.isEmpty || uri.isEmpty
                 ? null
-                : () {
-                    final amt = _amount.text.trim();
-                    final line = amt.isEmpty
-                        ? 'Pay me on UPI: $vpa'
-                        : 'Pay ₹$amt to $name on UPI: $vpa';
-                    Share.share(line);
-                  },
+                : () => _share(vpa, name, uri),
           ),
         ],
       ),

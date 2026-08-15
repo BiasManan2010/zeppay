@@ -15,6 +15,7 @@ class UserProfile {
     this.upiId = '',
     this.bankName = '',
     this.accountLast4 = '',
+    this.photoPath = '',
     this.balancePaise = 0,
     this.biometricEnrolled = false,
     this.onboarded = false,
@@ -25,6 +26,7 @@ class UserProfile {
   final String upiId;
   final String bankName;
   final String accountLast4;
+  final String photoPath;
   final int balancePaise;
   final bool biometricEnrolled;
   final bool onboarded;
@@ -35,6 +37,7 @@ class UserProfile {
     String? upiId,
     String? bankName,
     String? accountLast4,
+    String? photoPath,
     int? balancePaise,
     bool? biometricEnrolled,
     bool? onboarded,
@@ -45,6 +48,7 @@ class UserProfile {
       upiId: upiId ?? this.upiId,
       bankName: bankName ?? this.bankName,
       accountLast4: accountLast4 ?? this.accountLast4,
+      photoPath: photoPath ?? this.photoPath,
       balancePaise: balancePaise ?? this.balancePaise,
       biometricEnrolled: biometricEnrolled ?? this.biometricEnrolled,
       onboarded: onboarded ?? this.onboarded,
@@ -57,6 +61,7 @@ class UserProfile {
     'upiId': upiId,
     'bankName': bankName,
     'accountLast4': accountLast4,
+    'photoPath': photoPath,
     'balancePaise': balancePaise,
     'biometricEnrolled': biometricEnrolled,
     'onboarded': onboarded,
@@ -68,6 +73,7 @@ class UserProfile {
     upiId: j['upiId'] as String? ?? '',
     bankName: j['bankName'] as String? ?? '',
     accountLast4: j['accountLast4'] as String? ?? '',
+    photoPath: j['photoPath'] as String? ?? '',
     balancePaise: j['balancePaise'] as int? ?? 0,
     biometricEnrolled: j['biometricEnrolled'] as bool? ?? false,
     onboarded: j['onboarded'] as bool? ?? false,

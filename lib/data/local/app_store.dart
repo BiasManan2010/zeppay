@@ -25,7 +25,14 @@ class AppStore extends Notifier<AppState> {
     final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return;
     try {
-      state = AppState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final loaded = AppState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final clean = _withoutDemo(loaded);
+      state = clean;
+      if (loaded.profile?.balancePaise == 1245000 ||
+          loaded.profile?.name.trim().toLowerCase() == 'you' ||
+          loaded.groups.any((g) => g.name.toLowerCase() == 'goa trip')) {
+        await _persist();
+      }
     } catch (_) {}
   }
 
@@ -38,40 +45,29 @@ class AppStore extends Notifier<AppState> {
     final existing = state.profile;
     final profile = (existing != null && existing.phone == phone)
         ? existing
-        : UserProfile(phone: phone, name: 'You', balancePaise: 1245000);
+        : UserProfile(phone: phone);
     state = state.copyWith(sessionPhone: phone, profile: profile);
-    if (state.groups.isEmpty) {
-      state = state.copyWith(
-        groups: [
-          SplitGroup(
-            id: id(),
-            name: 'Goa trip',
-            kind: 'trip',
-            members: [
-              GroupMember(
-                id: 'me',
-                name: profile.name.isEmpty ? 'You' : profile.name,
-                phone: phone,
-                upiId: profile.upiId,
-              ),
-              const GroupMember(
-                id: 'riya',
-                name: 'Riya',
-                phone: '+919876543210',
-                upiId: 'riya@okicici',
-              ),
-              const GroupMember(
-                id: 'arjun',
-                name: 'Arjun',
-                phone: '+919123456789',
-                upiId: 'arjun@ybl',
-              ),
-            ],
-          ),
-        ],
-      );
-    }
     await _persist();
+  }
+
+  AppState _withoutDemo(AppState s) {
+    var profile = s.profile;
+    if (profile != null) {
+      var next = profile;
+      if (next.balancePaise == 1245000) {
+        next = next.copyWith(balancePaise: 0);
+      }
+      if (next.name.trim().toLowerCase() == 'you') {
+        next = next.copyWith(name: '');
+      }
+      profile = next;
+    }
+    final groups = s.groups.where((g) {
+      final demoTrip = g.name.toLowerCase() == 'goa trip' &&
+          g.members.any((m) => m.id == 'riya' || m.id == 'arjun');
+      return !demoTrip;
+    }).toList();
+    return s.copyWith(profile: profile, groups: groups);
   }
 
   Future<void> completeOnboarding({

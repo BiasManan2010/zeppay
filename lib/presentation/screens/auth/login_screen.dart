@@ -80,24 +80,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const Center(child: BrandMark(size: 96)),
             const SizedBox(height: 18),
             Text(
-              'Claim the wallet.',
+              'Your number.',
               style: Theme.of(
                 context,
               ).textTheme.displayMedium?.copyWith(height: 1.12),
             ),
             const SizedBox(height: 8),
             Text(
-              'Bank apps: 6 screens before a QR. Zep Pay: this field. OTP goes to the number you type.',
+              'OTP goes to the number you type. Then your name, photo, and UPI ID.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
             const SizedBox(height: 16),
-            const GiftNote(
-              icon: Icons.account_balance_wallet_outlined,
-              title: '₹12,450 demo wallet',
-              body:
-                  'Already sitting on the other side of OTP. No KYC, no rupee leaves your bank.',
-            ),
-            const SizedBox(height: 12),
             GlassPanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 10),
             const LossNote(
               text:
-                  'Walk away here and the demo wallet + your spend chip stay unclaimed on this phone.',
+                  'Walk away here and this phone stays unsigned-in — nothing is saved yet.',
             ),
             const SizedBox(height: 14),
             GlowButton(

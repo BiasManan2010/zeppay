@@ -93,8 +93,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             const SizedBox(height: 12),
             const GiftNote(
               icon: Icons.lock_open_rounded,
-              title: 'Wallet already loaded',
-              body: 'Type the 6 digits. The demo ₹12,450 is on the next screen.',
+              title: 'Almost in',
+              body: 'Six digits. Then you set your name and QR — no fake balance.',
             ),
             const SizedBox(height: 20),
             GestureDetector(
