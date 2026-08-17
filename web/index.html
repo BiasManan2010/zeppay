@@ -34,10 +34,32 @@
 
   <title>Zep Pay</title>
   <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script>
+    window.zepDecodeQr = function (imageData) {
+      if (!window.jsQR) return null;
+      var code = jsQR(imageData.data, imageData.width, imageData.height);
+      return code ? { data: code.data } : null;
+    };
+  </script>
   <style>
-    html, body { height: 100%; margin: 0; background: #1C1C1E; }
-    /* Keep the camera video visible; opaque Flutter panes turn iOS Safari grey. */
-    flt-glass-pane { background-color: transparent !important; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #1C1C1E;
+    }
+    /* iOS Safari: keep platform views (camera video) visible under Flutter */
+    flt-glass-pane,
+    flutter-view,
+    flt-scene-host,
+    flt-semantics-host {
+      background: transparent !important;
+    }
+    flt-platform-view,
+    flt-platform-view-slot,
+    flt-platform-view-slot canvas {
+      background: transparent !important;
+    }
   </style>
 </head>
 <body>

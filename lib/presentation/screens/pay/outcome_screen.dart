@@ -9,7 +9,10 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/payment_session.dart';
+import '../../../data/services/payment_status_detector.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/security_audit.dart';
 
 class OutcomeScreen extends ConsumerWidget {
   const OutcomeScreen({super.key});
@@ -22,7 +25,10 @@ class OutcomeScreen extends ConsumerWidget {
     final id = ref.read(pendingTxIdProvider);
     if (id != null) {
       await ref.read(appStoreProvider.notifier).resolveTransaction(id, status);
+      final audit = await ref.read(securityAuditProvider.future);
+      await audit.paymentResolved(id, status);
     }
+    ref.read(paymentSessionProvider.notifier).clear();
     final draft = ref.read(paymentDraftProvider);
     if (status == TxStatus.success && draft?.requestId != null) {
       await ref
@@ -58,6 +64,15 @@ class OutcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(paymentDraftProvider);
+    final session = ref.watch(paymentSessionProvider);
+    final away = session.away;
+    final suggestion = session.suggestion;
+    final hint = away != null
+        ? suggestionLabel(suggestion, away)
+        : (isWebApp
+            ? 'You returned from the dialer. Confirm so history stays honest.'
+            : 'Tell us what happened so history stays honest.');
+
     return AuthBackdrop(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -71,10 +86,35 @@ class OutcomeScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               isWebApp
-                  ? 'Your UPI app collected the PIN. Tell us what happened so history stays honest.'
+                  ? 'Zep Pay watched you leave for Phone and come back. We cannot read the bank — you confirm the result.'
                   : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            if (away != null) ...[
+              const SizedBox(height: 10),
+              GlassPanel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Session · ${away.inSeconds}s in dialer',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: AppColors.hero,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(hint, style: Theme.of(context).textTheme.bodyMedium),
+                    if (suggestion != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Suggested: ${suggestion.name.toUpperCase()}',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             GlassPanel(
               child: Column(
@@ -99,12 +139,16 @@ class OutcomeScreen extends ConsumerWidget {
             ),
             const Spacer(),
             GlowButton(
-              label: 'YES, PAID',
+              label: suggestion == TxStatus.success
+                  ? 'YES, PAID'
+                  : 'YES, PAID',
               onTap: () => _pick(context, ref, TxStatus.success),
             ),
             const SizedBox(height: 10),
             GlowButton(
-              label: 'STILL PENDING',
+              label: suggestion == TxStatus.pending
+                  ? 'STILL PENDING (LIKELY)'
+                  : 'STILL PENDING',
               onTap: () => _pick(context, ref, TxStatus.pending),
             ),
             const SizedBox(height: 10),
@@ -115,7 +159,9 @@ class OutcomeScreen extends ConsumerWidget {
                 height: 56,
                 child: Center(
                   child: Text(
-                    'FAILED / DROPPED',
+                    suggestion == TxStatus.failed
+                        ? 'FAILED / CANCELLED (LIKELY)'
+                        : 'FAILED / DROPPED',
                     style: Theme.of(
                       context,
                     ).textTheme.labelLarge?.copyWith(color: AppColors.danger),
