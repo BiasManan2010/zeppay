@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -131,7 +132,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final bodies = [
       'This is what people see on your QR. Tap the photo to change it.',
       'Most people pay from SBI / HDFC / ICICI. We parked SBI. Change it if that’s not you.',
-      'Without this, anyone with the phone can fire *99#. You’re one confirm from sealing it.',
+      isWebApp
+          ? 'On iPhone this is your last step. Next screens open GPay / PhonePe for the UPI PIN.'
+          : 'Without this, anyone with the phone can fire *99#. You’re one confirm from sealing it.',
     ];
     return AuthBackdrop(
       child: Padding(
@@ -281,11 +284,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               const SizedBox(height: 8),
             ],
             if (_step == 2)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 10),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
                 child: LossNote(
-                  text:
-                      'Leave now and this card is unfinished — no *99# handle, no face lock.',
+                  text: isWebApp
+                      ? 'Leave now and this card is unfinished — no name on your QR yet.'
+                      : 'Leave now and this card is unfinished — no *99# handle, no face lock.',
                 ),
               ),
             GlowButton(
@@ -293,7 +297,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ? 'THAT’S ME'
                   : _step == 1
                       ? 'LOCK THE HANDLE'
-                      : 'SEAL WITH FACE',
+                      : isWebApp
+                          ? 'FINISH'
+                          : 'SEAL WITH FACE',
               onTap: _busy ? null : _next,
               busy: _busy,
             ),

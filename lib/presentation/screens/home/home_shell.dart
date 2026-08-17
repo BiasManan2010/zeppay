@@ -8,6 +8,7 @@ import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -348,16 +349,23 @@ class _HomeTab extends ConsumerWidget {
                   label: 'To UPI ID',
                   onTap: () => context.push('/pay/upi'),
                 ),
-                ActionTile(
-                  icon: Icons.contacts_rounded,
-                  label: 'To Contacts',
-                  onTap: () => context.push('/pay/contacts'),
-                ),
+                if (supportsDeviceContacts)
+                  ActionTile(
+                    icon: Icons.contacts_rounded,
+                    label: 'To Contacts',
+                    onTap: () => context.push('/pay/contacts'),
+                  ),
                 ActionTile(
                   icon: Icons.call_received_rounded,
                   label: 'Receive',
                   onTap: () => context.push('/receive'),
                 ),
+                if (isWebApp)
+                  ActionTile(
+                    icon: Icons.account_balance_rounded,
+                    label: 'To Bank',
+                    onTap: () => context.push('/pay/bank'),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
@@ -390,7 +398,8 @@ class _HomeTab extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 22),
-            HapticScale(
+            if (supportsOfflineRails) ...[
+              HapticScale(
               onTap: () => context.push('/offline'),
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -463,14 +472,16 @@ class _HomeTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 22),
+            ],
             SectionHeader(title: 'Quick Access', onAction: () => onOpenTab(3)),
             ActionTileRow(
               tiles: [
-                ActionTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: 'Check Balance',
-                  onTap: () => context.push('/balance'),
-                ),
+                if (supportsOfflineRails)
+                  ActionTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Check Balance',
+                    onTap: () => context.push('/balance'),
+                  ),
                 ActionTile(
                   icon: Icons.history_rounded,
                   label: 'Transaction History',
@@ -487,15 +498,22 @@ class _HomeTab extends ConsumerWidget {
                   label: 'Settings',
                   onTap: () => context.push('/settings'),
                 ),
+                if (isWebApp)
+                  ActionTile(
+                    icon: Icons.event_repeat_rounded,
+                    label: 'Autopay',
+                    onTap: () => context.push('/autopay'),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
             Text('Recent', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (app.transactions.isEmpty)
-              Text(
-                'No payments yet. Scan to start.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              const EmptyScene(
+                art: ZepArt.emptyPay,
+                message: 'No payments yet. Scan to start.',
+                size: 140,
               )
             else
               ...app.transactions.take(4).map(
@@ -630,7 +648,9 @@ class _PeopleRow extends ConsumerWidget {
       children: [
         SectionHeader(
           title: 'People',
-          onAction: () => context.push('/pay/contacts'),
+          onAction: () => context.push(
+            supportsDeviceContacts ? '/pay/contacts' : '/pay/upi',
+          ),
         ),
         SizedBox(
           height: 92,

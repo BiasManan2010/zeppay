@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../core/widgets/ux.dart';
-import '../../../data/local/ux_prefs.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -17,15 +17,6 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   final _pages = PageController();
   var _index = 0;
-  var _spend = 'food';
-
-  @override
-  void initState() {
-    super.initState();
-    UxPrefs.defaultSpend().then((v) {
-      if (mounted) setState(() => _spend = v);
-    });
-  }
 
   @override
   void dispose() {
@@ -34,14 +25,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _next() async {
-    await UxPrefs.saveSpend(_spend);
-    if (_index < 2) {
+    if (_index < 1) {
       _pages.nextPage(
         duration: const Duration(milliseconds: 380),
         curve: Curves.easeOutCubic,
       );
-    } else {
-      if (mounted) context.go('/login');
+    } else if (mounted) {
+      context.go('/login');
     }
   }
 
@@ -52,8 +42,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
         child: Column(
           children: [
-            GoalBar(
-              done: 1 + _index,
+            const GoalBar(
+              done: 1,
               total: 4,
               label: 'Opened Zep Pay · already moving',
             ),
@@ -75,16 +65,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 controller: _pages,
                 onPageChanged: (i) => setState(() => _index = i),
                 children: [
-                  _ikeaSlide(context),
                   _valueSlide(
                     context,
-                    Icons.cell_tower_rounded,
-                    'Offline is\nthe feature.',
-                    '*99# on most SIMs. 123PAY on Jio. You only type the UPI PIN — we already picked the rail.',
+                    ZepArt.scan,
+                    'Scan. Pay.\nOn this phone.',
+                    'Point the camera at any UPI QR — FamPay, GPay, PhonePe, Paytm. Then amount, then your UPI app.',
                   ),
                   _valueSlide(
                     context,
-                    Icons.groups_rounded,
+                    ZepArt.split,
                     'Split like\nyou actually live.',
                     'Trips, houses, 1-on-1s. Settle on the same rails you pay a tea stall with.',
                   ),
@@ -94,7 +83,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (var i = 0; i < 3; i++)
+                for (var i = 0; i < 2; i++)
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 240),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -111,7 +100,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
             const SizedBox(height: 16),
             GlowButton(
-              label: _index == 2 ? 'CLAIM MY NUMBER' : 'KEEP GOING',
+              label: _index == 1 ? 'CLAIM MY NUMBER' : 'KEEP GOING',
               onTap: _next,
             ),
           ],
@@ -120,73 +109,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  Widget _ikeaSlide(BuildContext context) {
-    return ListView(
-      children: [
-        const SizedBox(height: 8),
-        const GiftNote(
-          icon: Icons.qr_code_2_rounded,
-          title: 'Your number. Your name.',
-          body:
-              'No demo balance. You add a photo and UPI ID — then scan or share your QR.',
-        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.06),
-        const SizedBox(height: 18),
-        Text(
-          'What do you pay for most?',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'One tap now. We’ll park that as your default spend chip — you can change it every payment.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 12),
-        ChoicePills(
-          selected: _spend,
-          onPick: (id) => setState(() => _spend = id),
-          options: const [
-            ('food', 'Food'),
-            ('travel', 'Travel'),
-            ('bills', 'Bills'),
-            ('recharge', 'Recharge'),
-            ('shopping', 'Shopping'),
-            ('other', 'Other'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const LossNote(
-          text:
-              'Skip this and every pay starts from a blank chip — extra taps you’ll feel later.',
-        ),
-      ],
-    );
-  }
-
   Widget _valueSlide(
     BuildContext context,
-    IconData icon,
+    ZepArt art,
     String title,
     String body,
   ) {
     return Column(
       children: [
         const Spacer(),
-        Container(
-          width: 140,
-          height: 140,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: AppColors.scanOrb,
-          ),
-          child: Icon(icon, size: 52, color: AppColors.white),
-        ).animate().fadeIn(duration: 360.ms).scale(
-              begin: const Offset(0.88, 0.88),
-            ),
+        ZepIllustration(art, size: 196)
+            .animate()
+            .fadeIn(duration: 360.ms)
+            .scale(begin: const Offset(0.88, 0.88)),
         const SizedBox(height: 28),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(height: 1.1),
+          style:
+              Theme.of(context).textTheme.displayMedium?.copyWith(height: 1.1),
         ),
         const SizedBox(height: 12),
         Text(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../widgets/contact_picker.dart';
@@ -26,9 +27,11 @@ class SplitHomeScreen extends ConsumerWidget {
         ],
       ),
       body: groups.isEmpty
-          ? Center(
-              child: Text('Trip, house, or 1-on-1. Add a group to start.',
-                  style: Theme.of(context).textTheme.bodyMedium),
+          ? const Center(
+              child: EmptyScene(
+                art: ZepArt.emptySplit,
+                message: 'Trip, house, or 1-on-1. Add a group to start.',
+              ),
             )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
