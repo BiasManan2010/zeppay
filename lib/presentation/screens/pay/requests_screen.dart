@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -27,7 +28,12 @@ class RequestsScreen extends ConsumerWidget {
         ],
       ),
       body: reqs.isEmpty
-          ? const Center(child: Text('No pending requests'))
+          ? const Center(
+              child: EmptyScene(
+                art: ZepArt.emptyRequest,
+                message: 'No pending requests',
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
               itemCount: reqs.length,

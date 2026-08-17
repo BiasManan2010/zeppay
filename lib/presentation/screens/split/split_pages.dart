@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -76,7 +77,11 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [
           if (groups.isEmpty)
-            const Text('No groups yet. Open My Groups to create one.')
+            const EmptyScene(
+              art: ZepArt.emptySplit,
+              message: 'No groups yet. Open My Groups to create one.',
+              size: 140,
+            )
           else
             DropdownButtonFormField<String>(
               initialValue: _groupId ?? groups.first.id,

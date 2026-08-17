@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../core/widgets/ux.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
@@ -77,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               label: 'App open · number next',
             ),
             const SizedBox(height: 12),
-            const Center(child: BrandMark(size: 96)),
+            const Center(child: ZepIllustration(ZepArt.otp, size: 168)),
             const SizedBox(height: 18),
             Text(
               'Your number.',
