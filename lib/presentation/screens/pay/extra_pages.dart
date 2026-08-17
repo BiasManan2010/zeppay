@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/media_image.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -320,11 +319,14 @@ class ExpenseDetailScreen extends ConsumerWidget {
               ),
             ),
           ],
-          if (e.receiptPath != null && File(e.receiptPath!).existsSync()) ...[
+          if (e.receiptPath != null && mediaExists(e.receiptPath!)) ...[
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.file(File(e.receiptPath!), fit: BoxFit.cover),
+              child: Image(
+                image: mediaImage(e.receiptPath!)!,
+                fit: BoxFit.cover,
+              ),
             ),
           ],
         ],

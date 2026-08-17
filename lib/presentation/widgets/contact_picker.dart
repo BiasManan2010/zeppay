@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/chrome.dart';
@@ -37,7 +36,7 @@ Future<List<GroupMember>> pickGroupMembers(BuildContext context) async {
 
 class _PickerSheet extends StatefulWidget {
   const _PickerSheet({required this.people});
-  final List<Contact> people;
+  final List<PhoneContact> people;
 
   @override
   State<_PickerSheet> createState() => _PickerSheetState();
@@ -77,7 +76,7 @@ class _PickerSheetState extends State<_PickerSheet> {
                   return CheckboxListTile(
                     value: on,
                     title: Text(c.displayName),
-                    subtitle: Text(c.phones.first.number),
+                    subtitle: Text(c.phones.first),
                     onChanged: (v) => setState(() {
                       if (v == true) {
                         _selected.add(c.id);
@@ -96,7 +95,7 @@ class _PickerSheetState extends State<_PickerSheet> {
                     .where((c) => _selected.contains(c.id))
                     .map((c) {
                       final last10 = ContactsAccess.last10(
-                        c.phones.first.number,
+                        c.phones.first,
                       );
                       return GroupMember(
                         id: c.id.isEmpty ? AppStore.id() : c.id,

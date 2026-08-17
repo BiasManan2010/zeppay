@@ -5,3 +5,5 @@ bool get isAndroidDevice =>
 
 bool get isIosDevice =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+bool get isWebApp => kIsWeb;

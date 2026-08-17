@@ -1,10 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -66,13 +65,17 @@ class GroupDetailScreen extends ConsumerWidget {
                 expenses: expenses,
                 settlements: settlements,
               );
-              final dir = await getTemporaryDirectory();
               final safe = group.name.replaceAll(RegExp(r'[^\w]+'), '_');
-              final file = File('${dir.path}/$safe.csv');
-              await file.writeAsString(csv);
-              await Share.shareXFiles([
-                XFile(file.path, mimeType: 'text/csv'),
-              ], text: '${group.name} ledger');
+              await Share.shareXFiles(
+                [
+                  XFile.fromData(
+                    utf8.encode(csv),
+                    name: '$safe.csv',
+                    mimeType: 'text/csv',
+                  ),
+                ],
+                text: '${group.name} ledger',
+              );
             },
             icon: const Icon(Icons.ios_share),
           ),

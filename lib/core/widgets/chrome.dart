@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../media_image.dart';
 import '../motion/app_motion.dart';
 import '../theme/app_colors.dart';
 import 'brand.dart';
@@ -387,8 +387,8 @@ class ProfileAvatar extends StatelessWidget {
     final initial = name.trim().isEmpty
         ? 'Z'
         : name.trim().characters.first.toUpperCase();
-    final file = photoPath.isEmpty ? null : File(photoPath);
-    final hasPhoto = file != null && file.existsSync();
+    final photo = mediaImage(photoPath);
+    final hasPhoto = photo != null;
     return SizedBox(
       width: size,
       height: size,
@@ -410,7 +410,7 @@ class ProfileAvatar extends StatelessWidget {
               ],
               image: hasPhoto
                   ? DecorationImage(
-                      image: FileImage(file),
+                      image: photo,
                       fit: BoxFit.cover,
                     )
                   : null,
