@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 
 class ReceiveScreen extends ConsumerStatefulWidget {
@@ -89,7 +90,11 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           if (uri.isEmpty)
-            const Text('Add a UPI ID in onboarding first.')
+            const EmptyScene(
+              art: ZepArt.receive,
+              message: 'Add a UPI ID in onboarding first.',
+              size: 148,
+            )
           else
             Center(
               child: RepaintBoundary(

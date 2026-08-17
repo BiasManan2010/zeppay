@@ -5,8 +5,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../media_image.dart';
 import '../motion/app_motion.dart';
+import '../platform.dart';
 import '../theme/app_colors.dart';
 import 'brand.dart';
+import 'illustrations.dart';
 
 class GlowButton extends StatelessWidget {
   const GlowButton({
@@ -545,7 +547,9 @@ class ScanHeroCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'Works offline via *99# / 123PAY',
+                                  isWebApp
+                                      ? 'Opens GPay / PhonePe / Paytm'
+                                      : 'Works offline via *99# / 123PAY',
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: AppColors.textPrimary,
@@ -562,8 +566,8 @@ class ScanHeroCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Column(
                     children: [
-                      const ScanOrbButton(size: 86),
-                      const SizedBox(height: 8),
+                      const ZepIllustration(ZepArt.scan, size: 108, float: false),
+                      const SizedBox(height: 4),
                       Text(
                         'Tap to scan',
                         style: Theme.of(
@@ -574,7 +578,9 @@ class ScanHeroCard extends StatelessWidget {
                       SizedBox(
                         width: 110,
                         child: Text(
-                          'Scan any UPI QR to pay instantly, even offline.',
+                          isWebApp
+                              ? 'Scan any UPI QR, then pay in your UPI app.'
+                              : 'Scan any UPI QR to pay instantly, even offline.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(letterSpacing: 0, height: 1.25),

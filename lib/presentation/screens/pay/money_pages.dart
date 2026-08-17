@@ -82,12 +82,13 @@ class SendHubScreen extends StatelessWidget {
               subtitle: 'name@okaxis, name@ybl, and the rest',
               onTap: () => context.push('/pay/upi'),
             ),
-            _HubTile(
-              icon: Icons.contacts_rounded,
-              title: 'Phone contacts',
-              subtitle: 'Pick a person, then enter amount',
-              onTap: () => context.push('/pay/contacts'),
-            ),
+            if (!isWebApp)
+              _HubTile(
+                icon: Icons.contacts_rounded,
+                title: 'Phone contacts',
+                subtitle: 'Pick a person, then enter amount',
+                onTap: () => context.push('/pay/contacts'),
+              ),
             _HubTile(
               icon: Icons.account_balance_rounded,
               title: 'Bank account',
@@ -176,8 +177,9 @@ class _PayMobileScreenState extends ConsumerState<PayMobileScreen> {
   Widget build(BuildContext context) {
     return ZepPage(
       title: 'Pay to mobile',
-      subtitle:
-          'We append @upi if they have not shared a VPA. Same offline rails as scan.',
+      subtitle: isWebApp
+          ? 'We append @upi if they have not shared a VPA. Then your UPI app opens.'
+          : 'We append @upi if they have not shared a VPA. Same offline rails as scan.',
       footer: GlowButton(
         label: 'CONTINUE',
         onTap: () {
@@ -582,27 +584,33 @@ class BalanceScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          GlowButton(
-            label: 'CHECK VIA *99#',
-            onTap: () => dialBalanceEnquiry(context, ref),
-          ),
-          const SizedBox(height: 10),
-          GlowButton(
-            label: 'MINI STATEMENT',
-            onTap: () async {
-              try {
-                final tel = ref.read(telephonyServiceProvider);
-                await tel.requestPermissions();
-                await tel.dial('*99#');
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$e')),
-                  );
+          if (supportsOfflineRails) ...[
+            GlowButton(
+              label: 'CHECK VIA *99#',
+              onTap: () => dialBalanceEnquiry(context, ref),
+            ),
+            const SizedBox(height: 10),
+            GlowButton(
+              label: 'MINI STATEMENT',
+              onTap: () async {
+                try {
+                  final tel = ref.read(telephonyServiceProvider);
+                  await tel.requestPermissions();
+                  await tel.dial('*99#');
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('$e')),
+                    );
+                  }
                 }
-              }
-            },
-          ),
+              },
+            ),
+          ] else
+            Text(
+              'Live UPI balance lives in GPay / PhonePe / your bank app. iPhone cannot run *99# from this PWA.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
         ],
       ),
     );
