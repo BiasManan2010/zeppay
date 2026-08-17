@@ -1,11 +1,9 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -54,14 +52,21 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         final image = await box.toImage(pixelRatio: 3);
         final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
         if (bytes != null) {
-          final dir = await getTemporaryDirectory();
-          final file = File('${dir.path}/zeppay-qr.png');
-          await file.writeAsBytes(bytes.buffer.asUint8List());
+          final png = bytes.buffer.asUint8List();
           final amt = _amount.text.trim();
           final line = amt.isEmpty
               ? 'Pay $name on UPI: $vpa'
               : 'Pay ₹$amt to $name on UPI: $vpa';
-          await Share.shareXFiles([XFile(file.path)], text: line);
+          await Share.shareXFiles(
+            [
+              XFile.fromData(
+                png,
+                name: 'zeppay-qr.png',
+                mimeType: 'image/png',
+              ),
+            ],
+            text: line,
+          );
           return;
         }
       }

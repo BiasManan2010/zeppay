@@ -290,7 +290,26 @@ class _HomeTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 14),
-            if (!isAndroidDevice)
+            if (isWebApp)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceHigh,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.hero.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Text(
+                  'On iPhone: Safari → Share → Add to Home Screen. Zep Pay opens like an app. Camera scan needs Safari permission once.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.heroSoft),
+                ),
+              )
+            else if (isIosDevice)
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 14),
