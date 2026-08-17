@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/motion/app_motion.dart';
+import '../../core/platform.dart';
 import '../../data/local/app_store.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/auth/onboarding_screen.dart';
@@ -56,6 +57,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               loc == '/welcome' ||
               loc == '/onboarding')) {
         return '/home';
+      }
+      if (isWebApp) {
+        if (loc == '/offline') return '/help';
+        if (loc == '/pay/contacts') return '/pay/upi';
+        if (loc == '/face') return '/connecting';
       }
       return null;
     },

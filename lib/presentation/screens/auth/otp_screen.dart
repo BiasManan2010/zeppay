@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
@@ -83,6 +84,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               icon: const Icon(Icons.arrow_back_rounded,
                   color: AppColors.textPrimary),
             ),
+            const Center(child: ZepIllustration(ZepArt.otp, size: 88)),
+            const SizedBox(height: 4),
             Text('Enter the code',
                 style: Theme.of(context).textTheme.displayMedium),
             const SizedBox(height: 8),

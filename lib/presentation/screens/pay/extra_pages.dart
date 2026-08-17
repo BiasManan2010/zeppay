@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/media_image.dart';
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -21,31 +23,52 @@ class HelpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const steps = [
-      (
-        'Scan or pick a payee',
-        'QR, mobile, UPI ID, contacts, or bank. Amount stays on this phone.',
-      ),
-      (
-        'Face or device lock',
-        'Every payment needs biometric or PIN. Nothing dials until you confirm.',
-      ),
-      (
-        '*99# or 123PAY',
-        'Android picks USSD when the SIM supports it, else Jio/4G uses 123PAY IVR. iOS opens UPI instead.',
-      ),
-      (
-        'UPI PIN in the dialer',
-        'That PIN never touches Zep Pay. After the call ends we ask if it landed.',
-      ),
-      (
-        'History stays honest',
-        'Yes / pending / failed is your call. We do not invent a success.',
-      ),
-    ];
+    final steps = isWebApp
+        ? const [
+            (
+              'Scan or pick a payee',
+              'QR, mobile, UPI ID, or bank. Amount stays on this phone.',
+            ),
+            (
+              'Open your UPI app',
+              'Zep Pay hands the payment to GPay, PhonePe, Paytm, or any UPI app on this iPhone.',
+            ),
+            (
+              'UPI PIN in that app',
+              'That PIN never touches Zep Pay. After you return, tell us if it landed.',
+            ),
+            (
+              'History stays honest',
+              'Yes / pending / failed is your call. We do not invent a success.',
+            ),
+          ]
+        : const [
+            (
+              'Scan or pick a payee',
+              'QR, mobile, UPI ID, contacts, or bank. Amount stays on this phone.',
+            ),
+            (
+              'Face or device lock',
+              'Every payment needs biometric or PIN. Nothing dials until you confirm.',
+            ),
+            (
+              '*99# or 123PAY',
+              'Android picks USSD when the SIM supports it, else Jio/4G uses 123PAY IVR. iOS opens UPI instead.',
+            ),
+            (
+              'UPI PIN in the dialer',
+              'That PIN never touches Zep Pay. After the call ends we ask if it landed.',
+            ),
+            (
+              'History stays honest',
+              'Yes / pending / failed is your call. We do not invent a success.',
+            ),
+          ];
     return ZepPage(
       title: 'How Zep Pay works',
-      subtitle: 'Offline rails, then the everyday layer on top.',
+      subtitle: isWebApp
+          ? 'iPhone PWA: scan, amount, then your UPI app.'
+          : 'Offline rails, then the everyday layer on top.',
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [
@@ -81,10 +104,11 @@ class HelpScreen extends StatelessWidget {
                 ),
               ),
             ),
-          GlowButton(
-            label: 'OFFLINE RAILS',
-            onTap: () => context.push('/offline'),
-          ),
+          if (supportsOfflineRails)
+            GlowButton(
+              label: 'OFFLINE RAILS',
+              onTap: () => context.push('/offline'),
+            ),
         ],
       ),
     );
@@ -144,7 +168,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           Expanded(
             child: q.isEmpty
-                ? const Center(child: Text('Type to search everything local.'))
+                ? const Center(
+                    child: EmptyScene(
+                      art: ZepArt.history,
+                      message: 'Type to search everything local.',
+                      size: 140,
+                    ),
+                  )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     children: [

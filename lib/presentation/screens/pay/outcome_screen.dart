@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -69,7 +70,9 @@ class OutcomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
+              isWebApp
+                  ? 'Your UPI app collected the PIN. Tell us what happened so history stays honest.'
+                  : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 28),

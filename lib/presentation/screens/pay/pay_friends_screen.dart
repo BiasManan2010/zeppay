@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/platform.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -68,7 +69,9 @@ class _PayFriendsScreenState extends ConsumerState<PayFriendsScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
         children: [
           Text(
-            'To mobile, UPI ID, or a bank account — same offline rails as scan.',
+            isWebApp
+                ? 'To mobile, UPI ID, or a bank account — then your UPI app.'
+                : 'To mobile, UPI ID, or a bank account — same offline rails as scan.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 18),

@@ -63,13 +63,25 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
 
       if (!isAndroidDevice) {
         setState(() {
-          _label = 'Opening UPI (iOS fallback)';
-          _detail = RailEngine.upiUri(draft);
+          _label = 'Opening your UPI app';
+          _detail = isWebApp
+              ? 'GPay, PhonePe, or Paytm will ask for the UPI PIN.'
+              : RailEngine.upiUri(draft);
         });
-        await Future<void>.delayed(const Duration(milliseconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 400));
         final uri = Uri.parse(RailEngine.upiUri(draft));
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        var opened = false;
+        try {
+          opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          opened = false;
+        }
+        if (!opened && mounted) {
+          setState(() {
+            _error =
+                'Could not open a UPI app. Install GPay or PhonePe on this iPhone, then retry.';
+          });
+          return;
         }
         if (mounted) context.go('/outcome');
         return;
@@ -123,7 +135,9 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                   SoftSwitcher(
                     child: Text(
                       _detail.isEmpty
-                          ? (isIosDevice
+                          ? (isWebApp
+                                ? 'Safari will hand this pay to GPay, PhonePe, or Paytm.'
+                                : isIosDevice
                                 ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
                                 : 'Enter your UPI PIN when the bank asks. We pull you back when the call or UPI app finishes.')
                           : _detail,

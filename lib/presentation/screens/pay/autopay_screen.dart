@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -23,7 +24,12 @@ class AutopayScreen extends ConsumerWidget {
         ],
       ),
       body: mandates.isEmpty
-          ? const Center(child: Text('No mandates yet'))
+          ? const Center(
+              child: EmptyScene(
+                art: ZepArt.autopay,
+                message: 'No mandates yet',
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
               itemCount: mandates.length,

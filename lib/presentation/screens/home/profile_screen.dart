@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/motion/app_motion.dart';
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -270,7 +271,9 @@ class ProfileScreen extends ConsumerWidget {
                 context,
                 Icons.help_outline_rounded,
                 'How it works',
-                '*99# / 123PAY walkthrough',
+                isWebApp
+                    ? 'Scan, amount, then your UPI app'
+                    : '*99# / 123PAY walkthrough',
               ),
             ),
             const SizedBox(height: 24),

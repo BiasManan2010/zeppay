@@ -28,6 +28,7 @@
   <link rel="apple-touch-icon" href="favicon.png">
   <meta name="theme-color" content="#1C1C1E">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta http-equiv="Permissions-Policy" content="camera=(self)">
 
   <link rel="icon" type="image/png" href="favicon.png"/>
 
@@ -35,6 +36,8 @@
   <link rel="manifest" href="manifest.json">
   <style>
     html, body { height: 100%; margin: 0; background: #1C1C1E; }
+    /* Keep the camera video visible; opaque Flutter panes turn iOS Safari grey. */
+    flt-glass-pane { background-color: transparent !important; }
   </style>
 </head>
 <body>

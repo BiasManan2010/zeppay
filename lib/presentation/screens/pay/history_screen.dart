@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/models/spend_kinds.dart';
@@ -61,7 +62,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
+            child: txs.isEmpty
+                ? const Center(
+                    child: EmptyScene(
+                      art: ZepArt.history,
+                      message:
+                          'Nothing here yet. Scan a QR to make your first pay.',
+                    ),
+                  )
+                : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               itemCount: txs.length,
               itemBuilder: (context, i) {
