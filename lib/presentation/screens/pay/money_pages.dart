@@ -1,12 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -322,7 +322,7 @@ class PayContactsScreen extends ConsumerStatefulWidget {
 }
 
 class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
-  List<Contact> _people = [];
+  List<PhoneContact> _people = [];
   var _loading = true;
   String? _error;
   String _query = '';
@@ -339,6 +339,14 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
       _error = null;
     });
     try {
+      if (isWebApp) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Safari cannot read the address book. Pay by UPI ID, or scan a QR.';
+        });
+        return;
+      }
       if (!await ContactsAccess.request()) {
         setState(() {
           _loading = false;
@@ -422,9 +430,7 @@ class _PayContactsScreenState extends ConsumerState<PayContactsScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final c = filtered[i];
-                      final raw = c.phones.isEmpty
-                          ? ''
-                          : c.phones.first.number;
+                      final raw = c.phones.isEmpty ? '' : c.phones.first;
                       final last10 = ContactsAccess.last10(raw);
                       return ListTile(
                         contentPadding: EdgeInsets.zero,

@@ -10,7 +10,6 @@ permissions:
   contents: write
 
 env:
-  # 3.41+ matches ios/Runner AppDelegate (FlutterImplicitEngineDelegate / UIScene).
   FLUTTER_VERSION: "3.41.0"
 
 jobs:
@@ -48,10 +47,8 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
-  ipa:
-    # Xcode 16 (macos-15) is required for CNAuthorizationStatusLimited
-    # in permission_handler_apple 9.6.x.
-    runs-on: macos-15
+  pwa:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,39 +63,45 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS (unsigned)
+      - name: Enable web
+        run: flutter config --enable-web
+
+      - name: Build PWA
         env:
           TWILIO_VERIFY_URL: ${{ secrets.TWILIO_VERIFY_URL }}
         run: |
-          flutter build ios --release --no-codesign \
+          flutter build web --release --pwa-strategy=offline-first \
+            --base-href /zeppay/ \
             --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL:-https://zeppay.onrender.com}
 
-      - name: Package IPA
-        run: |
-          set -euo pipefail
-          APP=$(find build/ios -name 'Runner.app' -print | head -n 1)
-          if [ -z "$APP" ]; then
-            echo "Runner.app not found"
-            find build/ios -maxdepth 4 -print
-            exit 1
-          fi
-          echo "Packaging $APP"
-          rm -rf Payload zeppay.ipa
-          mkdir Payload
-          cp -R "$APP" Payload/Runner.app
-          zip -r zeppay.ipa Payload
-          ls -lh zeppay.ipa
-
-      - name: Upload IPA artifact
+      - name: Upload PWA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: zeppay-ipa
-          path: zeppay.ipa
+          name: zeppay-pwa
+          path: build/web
           if-no-files-found: error
+
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [pwa]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download PWA
+        uses: actions/download-artifact@v4
+        with:
+          name: zeppay-pwa
+          path: public
+
+      - name: Publish GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: public
+          force_orphan: true
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [apk, ipa]
+    needs: [apk, pwa]
     runs-on: ubuntu-latest
     steps:
       - name: Download APK
@@ -107,26 +110,20 @@ jobs:
           name: zeppay-apk
           path: dist
 
-      - name: Download IPA
-        uses: actions/download-artifact@v4
-        with:
-          name: zeppay-ipa
-          path: dist
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: app-${{ github.run_number }}
           name: Zep Pay ${{ github.run_number }}
           body: |
-            Android APK + iOS IPA (unsigned) for the demo.
-
             **Android:** download `app-release.apk` → allow unknown sources → install.
 
-            **iOS:** `zeppay.ipa` is **unsigned** (no Apple Developer cert on CI). Install with Sideloadly, AltStore, or Xcode after signing with your team. Offline `*99#` / 123PAY is Android-only; iOS opens the UPI app.
+            **iPhone:** open the PWA (no IPA):
+            https://biasmanan2010.github.io/zeppay/
+
+            Safari → Share → **Add to Home Screen**. Offline `*99#` / 123PAY is Android-only.
 
             OTP: live Twilio if configured, otherwise **123456**.
           files: |
             dist/app-release.apk
-            dist/zeppay.ipa
           make_latest: true
