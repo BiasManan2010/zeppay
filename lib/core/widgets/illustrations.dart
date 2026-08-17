@@ -333,11 +333,15 @@ class _ZepArtPainter extends CustomPainter {
     );
     canvas.drawRRect(cal, Paint()..color = AppColors.surfaceHigh);
     canvas.drawRRect(
-      Rect.fromLTWH(
-        size.width * 0.22,
-        size.height * 0.22,
-        size.width * 0.56,
-        size.height * 0.16,
+      RRect.fromRectAndCorners(
+        Rect.fromLTWH(
+          size.width * 0.22,
+          size.height * 0.22,
+          size.width * 0.56,
+          size.height * 0.16,
+        ),
+        topLeft: const Radius.circular(18),
+        topRight: const Radius.circular(18),
       ),
       Paint()..color = AppColors.hero,
     );
