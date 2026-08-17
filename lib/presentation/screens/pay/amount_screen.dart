@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/motion/app_motion.dart';
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/models/spend_kinds.dart';
+import '../../../data/local/app_store.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/security_audit.dart';
 
 class AmountScreen extends ConsumerStatefulWidget {
   const AmountScreen({super.key});
@@ -192,7 +195,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                 label: _paise <= 0 ? 'PAY' : 'PAY ₹$_raw',
                 onTap: _paise <= 0
                     ? null
-                    : () {
+                    : () async {
                         ref.read(paymentDraftProvider.notifier).state = draft
                             .copyWith(
                               amountPaise: _paise,
@@ -200,6 +203,28 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                               category: _category,
                             );
                         UxPrefs.saveSpend(_category);
+                        if (isWebApp) {
+                          final audit =
+                              await ref.read(securityAuditProvider.future);
+                          final ok = await audit.authorizePayment(
+                            amountPaise: _paise,
+                            txId: AppStore.id(),
+                            vpa: draft.vpa,
+                          );
+                          if (!ok) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Session expired. Verify OTP again before paying.',
+                                ),
+                              ),
+                            );
+                            context.go('/login');
+                            return;
+                          }
+                        }
+                        if (!context.mounted) return;
                         context.push('/connecting');
                       },
               ),

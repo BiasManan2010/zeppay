@@ -10,8 +10,10 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/dial_return.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/rail_engine.dart';
+import '../../../data/services/security_audit.dart';
 
 class ConnectingScreen extends ConsumerStatefulWidget {
   const ConnectingScreen({super.key});
@@ -38,6 +40,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       return;
     }
     final tel = ref.read(telephonyServiceProvider);
+    final audit = await ref.read(securityAuditProvider.future);
     try {
       await tel.requestPermissions();
       final info = await tel.networkInfo();
@@ -60,13 +63,33 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       );
       await ref.read(appStoreProvider.notifier).logTransaction(tx);
       ref.read(pendingTxIdProvider.notifier).state = tx.id;
+      ref.read(paymentSessionProvider.notifier).begin(tx.id);
+
+      if (isWebApp) {
+        setState(() {
+          if (rail == PaymentRail.ivr) {
+            _label = 'Calling 123PAY…';
+            _detail = RailEngine.ivrScript(draft);
+          } else {
+            _label = 'Dialing *99#…';
+            _detail = 'Phone opens with the USSD string. Enter UPI PIN in the dialer.';
+          }
+        });
+        await audit.dialOpened(tx.id, dial);
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+        await tel.dial(dial);
+        final away = await waitForDialerReturn();
+        ref.read(paymentSessionProvider.notifier).recordReturn(away);
+        final suggestion = ref.read(paymentSessionProvider).suggestion;
+        await audit.dialReturned(tx.id, away, suggestion);
+        if (mounted) context.go('/outcome');
+        return;
+      }
 
       if (!isAndroidDevice) {
         setState(() {
           _label = 'Opening your UPI app';
-          _detail = isWebApp
-              ? 'GPay, PhonePe, or Paytm will ask for the UPI PIN.'
-              : RailEngine.upiUri(draft);
+          _detail = RailEngine.upiUri(draft);
         });
         await Future<void>.delayed(const Duration(milliseconds: 400));
         final uri = Uri.parse(RailEngine.upiUri(draft));
@@ -97,8 +120,17 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
         }
       });
       await Future<void>.delayed(const Duration(milliseconds: 900));
+      final dialStart = DateTime.now();
+      await audit.dialOpened(tx.id, dial);
       await tel.dial(dial);
       await tel.waitForCallEnd();
+      final away = DateTime.now().difference(dialStart);
+      ref.read(paymentSessionProvider.notifier).recordReturn(away);
+      await audit.dialReturned(
+        tx.id,
+        away,
+        ref.read(paymentSessionProvider).suggestion,
+      );
       if (mounted) context.go('/outcome');
     } catch (e) {
       setState(() => _error = e.toString());
@@ -136,10 +168,10 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                     child: Text(
                       _detail.isEmpty
                           ? (isWebApp
-                                ? 'Safari will hand this pay to GPay, PhonePe, or Paytm.'
-                                : isIosDevice
-                                ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
-                                : 'Enter your UPI PIN when the bank asks. We pull you back when the call or UPI app finishes.')
+                              ? 'Safari hands off to Phone — *99# or 123PAY.'
+                              : isIosDevice
+                                  ? 'Offline USSD/IVR is Android-only. Using online UPI instead.'
+                                  : 'Enter your UPI PIN when the bank asks.')
                           : _detail,
                       key: ValueKey(_detail),
                       textAlign: TextAlign.center,

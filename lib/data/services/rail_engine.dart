@@ -51,6 +51,10 @@ class RailEngine {
   }
 
   static PaymentRail select(NetworkInfo info) {
+    if (info.platform == 'web') {
+      if (info.recommendedRail == 'ivr') return PaymentRail.ivr;
+      return PaymentRail.ussd;
+    }
     if (info.platform != 'android') return PaymentRail.upiIntent;
     if (info.recommendedRail == 'ussd' && info.ussdSupported) {
       return PaymentRail.ussd;

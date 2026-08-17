@@ -6,6 +6,8 @@ import 'biometric_service.dart';
 import 'contacts_access.dart';
 import 'otp_service.dart';
 import 'telephony_service.dart';
+import 'security_audit.dart';
+import 'payment_session.dart';
 
 final otpServiceProvider = Provider((_) => OtpService());
 final biometricServiceProvider = Provider((_) => BiometricService());

@@ -11,6 +11,7 @@ import '../../../core/widgets/illustrations.dart';
 import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/security_audit.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
@@ -60,6 +61,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       return;
     }
     await ref.read(appStoreProvider.notifier).login(phone);
+    final audit = await ref.read(securityAuditProvider.future);
+    await audit.onOtpVerified(phone);
     if (mounted) context.go('/home');
   }
 
