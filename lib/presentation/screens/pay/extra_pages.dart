@@ -31,15 +31,15 @@ class HelpScreen extends StatelessWidget {
             ),
             (
               'Phone dialer opens',
-              'Zep Pay launches *99# or 123PAY in Phone. Enter your UPI PIN there — it never touches us.',
+              'UPI ID is copied. *99*1*3 opens in Phone — paste, amount, PIN.',
             ),
             (
-              'We detect your return',
-              'When you come back from Phone we time the session and suggest success / pending / failed.',
+              'You report the USSD result',
+              'What did *99# show? SUCCESS / FAILED / CANCELLED / PENDING — that is the record.',
             ),
             (
               'History stays honest',
-              'You confirm the final status. We do not invent a success.',
+              'We never mark paid without your tap. Check bank SMS if unsure.',
             ),
           ]
         : const [
@@ -67,7 +67,7 @@ class HelpScreen extends StatelessWidget {
     return ZepPage(
       title: 'How Zep Pay works',
       subtitle: isWebApp
-          ? 'iPhone PWA: scan, amount, Phone dialer, auto-detect return.'
+          ? 'iPhone PWA: scan, *99*1*3 in Phone, then you confirm.'
           : 'Offline rails, then the everyday layer on top.',
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),

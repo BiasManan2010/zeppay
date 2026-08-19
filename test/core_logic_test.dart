@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeppay/data/services/payment_verification.dart';
+import 'package:zeppay/data/services/payment_status_detector.dart';
+import 'package:zeppay/data/services/payment_tracker.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
 import 'package:zeppay/data/local/app_store.dart';
@@ -184,6 +187,59 @@ void main() {
 
   test('local payment refs are ZP-prefixed', () {
     expect(AppStore.payRef(), startsWith('ZP'));
+  });
+
+  test('dialer timing never marks two-minute idle as success', () {
+    expect(detectPaymentStatus(const Duration(seconds: 5)), TxStatus.failed);
+    expect(detectPaymentStatus(const Duration(seconds: 45)), TxStatus.success);
+    expect(detectPaymentStatus(const Duration(seconds: 120)), TxStatus.pending);
+    expect(detectPaymentStatus(const Duration(seconds: 150)), TxStatus.failed);
+  });
+
+  test('user USSD outcome maps to ledger status', () {
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.success),
+      TxStatus.success,
+    );
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.noDial),
+      TxStatus.failed,
+    );
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.pending),
+      TxStatus.pending,
+    );
+    expect(
+      canConfirmSuccess(
+        outcome: UssdUserOutcome.success,
+        amountMatches: true,
+      ),
+      isTrue,
+    );
+    expect(
+      canConfirmSuccess(
+        outcome: UssdUserOutcome.success,
+        amountMatches: false,
+      ),
+      isFalse,
+    );
+  });
+
+  test('payment tracker steps follow USSD flow order', () {
+    final track = PaymentTrack(
+      txId: '1',
+      refCode: 'ZP1',
+      vpa: 'shop@upi',
+      amountPaise: 5000,
+      startedAt: DateTime.now(),
+      phase: PaymentTrackPhase.awaitingConfirm,
+      longestPhoneStint: const Duration(seconds: 42),
+      userOutcome: UssdUserOutcome.success,
+    );
+    final steps = trackSteps(track);
+    expect(steps.length, 4);
+    expect(steps.last.label, 'You confirm');
+    expect(steps[2].state, PaymentTrackStepState.done);
   });
 
   test('tx json keeps spending category', () {
