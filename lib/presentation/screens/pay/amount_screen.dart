@@ -136,7 +136,9 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'UPI ID is on the clipboard. Pay opens *99*1*3 in Phone.',
+                  isIosWeb
+                      ? 'iPhone opens GPay / PhonePe — not *99#. UPI ID copies when you pay.'
+                      : 'UPI ID is on the clipboard. Pay opens *99*1*3 in Phone.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelSmall,
                 ),

@@ -60,9 +60,11 @@ class OutcomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isWebApp
-                  ? 'Zep Pay watched you leave for Phone and come back. We cannot read the bank — you confirm the result.'
-                  : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
+              isIosWeb
+                  ? 'Zep Pay opened your UPI app (or copied the ID). Confirm what happened — we cannot read the bank.'
+                  : isWebApp
+                      ? 'Zep Pay watched you leave for Phone and come back. We cannot read the bank — you confirm the result.'
+                      : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (away != null) ...[
