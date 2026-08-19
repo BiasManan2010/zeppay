@@ -23,26 +23,45 @@ class HelpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = isWebApp
+    final steps = isIosWeb
         ? const [
             (
               'Scan or pick a payee',
               'QR, mobile, UPI ID, or bank. Amount stays on this phone.',
             ),
             (
-              'Phone dialer opens',
-              'Zep Pay launches *99# or 123PAY in Phone. Enter your UPI PIN there — it never touches us.',
+              'GPay or PhonePe opens',
+              'iPhone cannot dial *99#. Zep Pay opens your UPI app with the payee and amount.',
             ),
             (
-              'We detect your return',
-              'When you come back from Phone we time the session and suggest success / pending / failed.',
+              'Confirm in your UPI app',
+              'Enter your UPI PIN in GPay / PhonePe — it never touches Zep Pay.',
             ),
             (
               'History stays honest',
-              'You confirm the final status. We do not invent a success.',
+              'You confirm success / pending / failed when you return.',
             ),
           ]
-        : const [
+        : isWebApp
+            ? const [
+                (
+                  'Scan or pick a payee',
+                  'QR, mobile, UPI ID, or bank. Amount stays on this phone.',
+                ),
+                (
+                  'Phone dialer opens',
+                  'Zep Pay launches *99# or 123PAY in Phone. Enter your UPI PIN there — it never touches us.',
+                ),
+                (
+                  'We detect your return',
+                  'When you come back from Phone we time the session and suggest success / pending / failed.',
+                ),
+                (
+                  'History stays honest',
+                  'You confirm the final status. We do not invent a success.',
+                ),
+              ]
+            : const [
             (
               'Scan or pick a payee',
               'QR, mobile, UPI ID, contacts, or bank. Amount stays on this phone.',
@@ -66,9 +85,11 @@ class HelpScreen extends StatelessWidget {
           ];
     return ZepPage(
       title: 'How Zep Pay works',
-      subtitle: isWebApp
-          ? 'iPhone PWA: scan, amount, Phone dialer, auto-detect return.'
-          : 'Offline rails, then the everyday layer on top.',
+      subtitle: isIosWeb
+          ? 'iPhone PWA: scan, amount, GPay / PhonePe, then confirm.'
+          : isWebApp
+              ? 'Android browser: scan, amount, Phone dialer, auto-detect return.'
+              : 'Offline rails, then the everyday layer on top.',
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [

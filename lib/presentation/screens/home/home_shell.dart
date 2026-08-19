@@ -304,7 +304,9 @@ class _HomeTab extends ConsumerWidget {
                   ),
                 ),
                 child: Text(
-                  'On iPhone: Add to Home Screen, allow Camera once, then pay via Phone (*99# / 123PAY).',
+                  isIosWeb
+                      ? 'On iPhone: scan a QR, enter amount, then pay in GPay or PhonePe. *99# does not work on iOS.'
+                      : 'On Android browser: scan, amount, then *99# / 123PAY in Phone.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.heroSoft),
