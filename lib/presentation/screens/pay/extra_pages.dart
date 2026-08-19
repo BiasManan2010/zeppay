@@ -35,7 +35,7 @@ class HelpScreen extends StatelessWidget {
             ),
             (
               'You confirm the result',
-              'When you return, we suggest success / pending / failed from timing — you choose.',
+              'Tracker logs copy → dial → Phone time → your tap. We never auto-mark paid.',
             ),
             (
               'History stays honest',

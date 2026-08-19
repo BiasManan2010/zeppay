@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import 'call_visibility_web.dart';
+import 'dial_return.dart';
 import 'network_info.dart';
 
 /// iPhone PWA: open Phone with *99# / 123PAY via `tel:` and watch return.

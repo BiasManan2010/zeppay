@@ -10,7 +10,9 @@ import '../../../core/widgets/chrome.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/payment_status_detector.dart';
+import '../../../data/services/payment_tracker.dart';
 import '../../../data/services/providers.dart';
+import '../../../presentation/widgets/payment_track_card.dart';
 
 class OutcomeScreen extends ConsumerWidget {
   const OutcomeScreen({super.key});
@@ -24,7 +26,7 @@ class OutcomeScreen extends ConsumerWidget {
     if (id != null) {
       await applyPaymentResult(ref, status);
     } else {
-      ref.read(paymentSessionProvider.notifier).clear();
+      await ref.read(paymentSessionProvider.notifier).clear();
     }
     if (!context.mounted) return;
     if (status == TxStatus.success) {
@@ -39,9 +41,10 @@ class OutcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(paymentDraftProvider);
-    final session = ref.watch(paymentSessionProvider);
-    final away = session.away;
-    final suggestion = session.suggestion;
+    final track = ref.watch(paymentSessionProvider).value?.track;
+    final away = track?.away;
+    final suggestion = track?.suggestion;
+    final steps = track == null ? const <PaymentTrackStep>[] : trackSteps(track);
     final hint = away != null
         ? suggestionLabel(suggestion, away)
         : (isWebApp
@@ -61,10 +64,17 @@ class OutcomeScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               isWebApp
-                  ? 'Zep Pay cannot read the bank. Only tap Yes if your SMS or USSD receipt confirms payment.'
+                  ? 'Zep Pay tracked your Phone session. Only tap Yes if SMS or USSD confirms payment.'
                   : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            if (steps.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              PaymentTrackCard(
+                steps: steps,
+                title: 'Tracking log',
+              ),
+            ],
             if (away != null) ...[
               const SizedBox(height: 10),
               GlassPanel(
@@ -72,17 +82,17 @@ class OutcomeScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Session · ${away.inSeconds}s in dialer',
+                      'Longest Phone stint · ${away.inSeconds}s',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             color: AppColors.hero,
                           ),
                     ),
                     const SizedBox(height: 4),
                     Text(hint, style: Theme.of(context).textTheme.bodyMedium),
-                    if (suggestion != null) ...[
+                    if (track?.refCode.isNotEmpty == true) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Suggested: ${suggestion.name.toUpperCase()}',
+                        'Ref ${track!.refCode}',
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ],

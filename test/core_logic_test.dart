@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeppay/data/services/dial_session.dart';
 import 'package:zeppay/data/services/payment_status_detector.dart';
+import 'package:zeppay/data/services/payment_tracker.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
 import 'package:zeppay/data/local/app_store.dart';
@@ -192,6 +194,41 @@ void main() {
     expect(detectPaymentStatus(const Duration(seconds: 45)), TxStatus.success);
     expect(detectPaymentStatus(const Duration(seconds: 120)), TxStatus.pending);
     expect(detectPaymentStatus(const Duration(seconds: 150)), TxStatus.failed);
+  });
+
+  test('payment tracker flags late return without real phone stint', () {
+    final track = PaymentTrack(
+      txId: '1',
+      refCode: 'ZP1',
+      vpa: 'shop@upi',
+      amountPaise: 10000,
+      startedAt: DateTime(2026, 1, 1, 12),
+      dialOpenedAt: DateTime(2026, 1, 1, 12),
+    );
+    final report = DialSessionReport(
+      longestStint: const Duration(seconds: 3),
+      stintCount: 1,
+      leftAt: DateTime(2026, 1, 1, 12),
+      returnedAt: DateTime(2026, 1, 1, 12, 2),
+    );
+    expect(evaluateDialSession(report, track), TxStatus.pending);
+  });
+
+  test('payment tracker steps follow USSD flow order', () {
+    final track = PaymentTrack(
+      txId: '1',
+      refCode: 'ZP1',
+      vpa: 'shop@upi',
+      amountPaise: 5000,
+      startedAt: DateTime.now(),
+      phase: PaymentTrackPhase.awaitingConfirm,
+      longestPhoneStint: const Duration(seconds: 42),
+      suggestion: TxStatus.success,
+    );
+    final steps = trackSteps(track);
+    expect(steps.length, 4);
+    expect(steps.last.label, 'You confirm');
+    expect(steps[2].state, PaymentTrackStepState.done);
   });
 
   test('tx json keeps spending category', () {

@@ -11,6 +11,7 @@ import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/payment_session.dart';
 import '../../../data/services/providers.dart';
 import '../pay/money_pages.dart';
 import '../split/split_home_screen.dart';
@@ -190,6 +191,11 @@ class _HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStoreProvider);
+    final track = ref.watch(paymentSessionProvider).value?.track;
+    if (track?.needsConfirmation == true &&
+        ref.read(pendingTxIdProvider) != track!.txId) {
+      resumePendingPaymentTrack(ref);
+    }
     final profile = app.profile;
     final first = (profile?.name ?? '').trim().split(' ').first;
     final greeting = first.isEmpty ? 'there' : first;
@@ -290,6 +296,56 @@ class _HomeTab extends ConsumerWidget {
                 ],
               ),
             ),
+            if (track?.needsConfirmation == true) ...[
+              const SizedBox(height: 12),
+              RiseIn(
+                child: HapticScale(
+                  onTap: () => context.push('/outcome'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.hourglass_top_rounded,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Payment awaiting confirmation',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(color: AppColors.warning),
+                              ),
+                              Text(
+                                '${track!.refCode} · ₹${(track.amountPaise / 100).toStringAsFixed(0)} → ${track.vpa}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.textMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             if (isWebApp)
               Container(
