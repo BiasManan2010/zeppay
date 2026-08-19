@@ -36,11 +36,158 @@
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
-    window.zepDecodeQr = function (imageData) {
-      if (!window.jsQR) return null;
-      var code = jsQR(imageData.data, imageData.width, imageData.height);
-      return code ? { data: code.data } : null;
-    };
+    (function () {
+      var cam = { host: null, video: null, stream: null, timer: null };
+
+      function decodeImageData(imageData) {
+        if (!window.jsQR || !imageData) return null;
+        var code = jsQR(imageData.data, imageData.width, imageData.height);
+        return code ? { data: code.data } : null;
+      }
+
+      window.zepDecodeQr = function (imageData) {
+        return decodeImageData(imageData);
+      };
+
+      window.zepDecodeImageUrl = function (url) {
+        return new Promise(function (resolve) {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var w = img.naturalWidth || img.width;
+              var h = img.naturalHeight || img.height;
+              if (!w || !h) {
+                resolve(null);
+                return;
+              }
+              var max = 1280;
+              var scale = Math.min(1, max / Math.max(w, h));
+              var cw = Math.max(1, Math.round(w * scale));
+              var ch = Math.max(1, Math.round(h * scale));
+              var canvas = document.createElement('canvas');
+              canvas.width = cw;
+              canvas.height = ch;
+              var ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, cw, ch);
+              resolve(decodeImageData(ctx.getImageData(0, 0, cw, ch)));
+            } catch (e) {
+              resolve(null);
+            }
+          };
+          img.onerror = function () { resolve(null); };
+          img.crossOrigin = 'anonymous';
+          img.src = url;
+        });
+      };
+
+      function placeHost(rect) {
+        var host = cam.host;
+        if (!host) return;
+        if (rect && rect.width > 8 && rect.height > 8) {
+          host.style.left = rect.left + 'px';
+          host.style.top = rect.top + 'px';
+          host.style.width = rect.width + 'px';
+          host.style.height = rect.height + 'px';
+          host.style.transform = 'none';
+          host.style.webkitTransform = 'none';
+        } else {
+          host.style.left = '50%';
+          host.style.top = '22%';
+          host.style.width = 'min(72vw, 280px)';
+          host.style.height = 'min(72vw, 280px)';
+          host.style.transform = 'translateX(-50%) translateZ(0)';
+          host.style.webkitTransform = 'translateX(-50%) translateZ(0)';
+        }
+      }
+
+      function stopCamera() {
+        if (cam.timer) {
+          clearInterval(cam.timer);
+          cam.timer = null;
+        }
+        if (cam.stream) {
+          cam.stream.getTracks().forEach(function (t) { t.stop(); });
+          cam.stream = null;
+        }
+        if (cam.video) {
+          cam.video.srcObject = null;
+        }
+        if (cam.host) {
+          cam.host.remove();
+          cam.host = null;
+        }
+        cam.video = null;
+        document.body.classList.remove('zep-scanning');
+      }
+
+      window.zepStopCamera = stopCamera;
+
+      window.zepPlaceCamera = function (rect) {
+        placeHost(rect);
+      };
+
+      window.zepStartCamera = function (rect, onOk, onErr) {
+        stopCamera();
+        var media = navigator.mediaDevices;
+        if (!media || !media.getUserMedia) {
+          onErr('no-media');
+          return;
+        }
+
+        var host = document.createElement('div');
+        host.id = 'zep-cam-host';
+        var video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.setAttribute('autoplay', '');
+        video.setAttribute('muted', '');
+        host.appendChild(video);
+        document.body.appendChild(host);
+        cam.host = host;
+        cam.video = video;
+        placeHost(rect);
+
+        function attach(stream) {
+          cam.stream = stream;
+          video.srcObject = stream;
+          document.body.classList.add('zep-scanning');
+          var play = video.play();
+          if (play && play.then) {
+            play.then(function () { onOk(); }).catch(function (e) { onErr(e); });
+          } else {
+            onOk();
+          }
+        }
+
+        media.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'environment' } }
+        }).then(attach).catch(function () {
+          media.getUserMedia({ audio: false, video: true }).then(attach).catch(onErr);
+        });
+      };
+
+      window.zepDecodeImageUrlCb = function (url, onOk) {
+        window.zepDecodeImageUrl(url).then(function (result) { onOk(result); });
+      };
+
+      window.zepGrabCameraFrame = function () {
+        var video = cam.video;
+        if (!video) return null;
+        var w = video.videoWidth;
+        var h = video.videoHeight;
+        if (!w || !h) return null;
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        return decodeImageData(ctx.getImageData(0, 0, w, h));
+      };
+    })();
   </script>
   <style>
     html, body {
@@ -48,16 +195,18 @@
       margin: 0;
       background: #1C1C1E;
     }
-    /* Camera sits under Flutter; the scan window is a transparent hole. */
+    /* Live camera must sit ON TOP of the Flutter canvas (CanvasKit is opaque). */
     #zep-cam-host {
       position: fixed;
-      inset: 0;
-      z-index: 0;
+      z-index: 2147483646;
       overflow: hidden;
-      margin: 0;
-      padding: 0;
+      border-radius: 22px;
       background: #000;
       pointer-events: none;
+      opacity: 1;
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.55);
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
     #zep-cam-host video {
       width: 100%;
@@ -65,6 +214,8 @@
       object-fit: cover;
       display: block;
       background: #000;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
     flutter-view,
     flt-glass-pane,
@@ -72,10 +223,9 @@
     flt-semantics-host {
       position: relative;
       z-index: 1;
-      background: transparent !important;
     }
     body.zep-scanning {
-      background: #000;
+      background: #1C1C1E;
     }
   </style>
 </head>

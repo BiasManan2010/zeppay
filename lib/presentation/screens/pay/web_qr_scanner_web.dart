@@ -3,10 +3,13 @@ import 'dart:async';
 import 'dart:html' as html;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:js' as js;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js_util' as js_util;
 
 import 'package:flutter/material.dart';
 
-/// Full-screen HTML video *under* Flutter — small fixed overlays stay grey on iOS PWAs.
+/// iOS Safari needs the camera started from JS in the same user-gesture turn.
+/// The preview is an HTML overlay on top of the opaque Flutter canvas.
 class WebQrScanner extends StatefulWidget {
   const WebQrScanner({
     super.key,
@@ -28,11 +31,6 @@ class WebQrScanner extends StatefulWidget {
 }
 
 class _WebQrScannerState extends State<WebQrScanner> {
-  static const _hostId = 'zep-cam-host';
-
-  html.VideoElement? _video;
-  html.DivElement? _host;
-  html.MediaStream? _stream;
   Timer? _timer;
   Timer? _placeTimer;
   StreamSubscription<html.Event>? _resize;
@@ -44,149 +42,81 @@ class _WebQrScannerState extends State<WebQrScanner> {
   @override
   void initState() {
     super.initState();
-    _resize = html.window.onResize.listen((_) => _syncHost());
+    _resize = html.window.onResize.listen((_) => _placeCamera());
   }
 
-  Future<void> _start() async {
+  Map<String, double>? _scanRect() {
+    final ctx = widget.scanWindowKey?.currentContext;
+    final box = ctx?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || box.size.width < 8) return null;
+    final origin = box.localToGlobal(Offset.zero);
+    return {
+      'left': origin.dx,
+      'top': origin.dy,
+      'width': box.size.width,
+      'height': box.size.height,
+    };
+  }
+
+  void _placeCamera() {
+    final rect = _scanRect();
+    if (rect == null) return;
+    js.context.callMethod('zepPlaceCamera', [js.JsObject.jsify(rect)]);
+  }
+
+  void _start() {
     if (_busy || _started) return;
     setState(() {
       _busy = true;
       _error = null;
     });
-    try {
-      final media = html.window.navigator.mediaDevices;
-      if (media == null) {
-        throw Exception('no media');
-      }
-      html.MediaStream stream;
-      try {
-        stream = await media.getUserMedia({
-          'audio': false,
-          'video': {
-            'facingMode': {'ideal': 'environment'},
-          },
+    final rect = _scanRect();
+    js.context.callMethod('zepStartCamera', [
+      rect == null ? null : js.JsObject.jsify(rect),
+      js_util.allowInterop((_) {
+        if (!mounted) return;
+        _started = true;
+        widget.onCameraStarted?.call();
+        _placeCamera();
+        WidgetsBinding.instance.addPostFrameCallback((_) => _placeCamera());
+        _timer = Timer.periodic(const Duration(milliseconds: 280), (_) => _tick());
+        _placeTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
+          _placeCamera();
         });
-      } catch (_) {
-        stream = await media.getUserMedia({
-          'audio': false,
-          'video': true,
+        setState(() => _busy = false);
+      }),
+      js_util.allowInterop((_) {
+        js.context.callMethod('zepStopCamera');
+        widget.onCameraError?.call();
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error = 'blocked';
         });
-      }
-      _stream = stream;
-      _insertHost();
-      final video = _video!;
-      video.srcObject = stream;
-      await video.play();
-      await _waitForFrames(video);
-      _started = true;
-      widget.onCameraStarted?.call();
-      html.document.body?.classes.add('zep-scanning');
-      _syncHost();
-      _timer = Timer.periodic(const Duration(milliseconds: 280), (_) => _tick());
-      _placeTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
-        _syncHost();
-      });
-      if (mounted) setState(() => _busy = false);
-    } catch (_) {
-      _removeHost();
-      widget.onCameraError?.call();
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = 'blocked';
-      });
-    }
-  }
-
-  Future<void> _waitForFrames(html.VideoElement video) async {
-    for (var i = 0; i < 40; i++) {
-      if (video.videoWidth > 1 && video.videoHeight > 1) return;
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-  }
-
-  void _insertHost() {
-    _removeHost(keepCallbacks: true);
-    final host = html.DivElement()..id = _hostId;
-    final video = html.VideoElement()
-      ..autoplay = true
-      ..muted = true
-      ..setAttribute('playsinline', '')
-      ..setAttribute('webkit-playsinline', '')
-      ..setAttribute('autoplay', '')
-      ..setAttribute('muted', '');
-    video.style
-      ..width = '100%'
-      ..height = '100%'
-      ..objectFit = 'cover'
-      ..backgroundColor = '#000'
-      ..display = 'block';
-    host.append(video);
-    final body = html.document.body;
-    if (body != null) {
-      body.insertAdjacentElement('afterbegin', host);
-    }
-    _host = host;
-    _video = video;
-    _syncHost();
-  }
-
-  void _syncHost() {
-    final host = _host;
-    if (host == null) return;
-    host.style
-      ..position = 'fixed'
-      ..left = '0'
-      ..top = '0'
-      ..width = '100%'
-      ..height = '100%'
-      ..zIndex = '0'
-      ..overflow = 'hidden'
-      ..pointerEvents = 'none'
-      ..margin = '0'
-      ..padding = '0'
-      ..transform = 'none'
-      ..backgroundColor = '#000';
-    host.style.setProperty('-webkit-transform', 'none');
+      }),
+    ]);
   }
 
   void _tick() {
     if (_locked || !_started) return;
-    final video = _video;
-    if (video == null) return;
-    final w = video.videoWidth;
-    final h = video.videoHeight;
-    if (w < 2 || h < 2) return;
-    final canvas = html.CanvasElement(width: w, height: h);
-    canvas.context2D.drawImage(video, 0, 0);
-    final imageData = canvas.context2D.getImageData(0, 0, w, h);
-    final result = js.context.callMethod('zepDecodeQr', [imageData]);
+    final result = js.context.callMethod('zepGrabCameraFrame');
     if (result == null) return;
-    final data = result['data'] as String?;
+    final data = (result as js.JsObject)['data'] as String?;
     if (data == null || data.isEmpty) return;
     _locked = true;
     _timer?.cancel();
     _placeTimer?.cancel();
-    _removeHost();
+    _stopCamera();
     widget.onDetect(data);
   }
 
-  void _removeHost({bool keepCallbacks = false}) {
+  void _stopCamera() {
     _timer?.cancel();
     _timer = null;
     _placeTimer?.cancel();
     _placeTimer = null;
-    for (final track in _stream?.getTracks() ?? <html.MediaStreamTrack>[]) {
-      track.stop();
-    }
-    _stream = null;
-    _video?.srcObject = null;
-    _host?.remove();
-    html.document.getElementById(_hostId)?.remove();
-    _host = null;
-    _video = null;
-    html.document.body?.classes.remove('zep-scanning');
-    if (_started && !keepCallbacks) {
+    js.context.callMethod('zepStopCamera');
+    if (_started) {
       _started = false;
       widget.onCameraStopped?.call();
     }
@@ -195,7 +125,7 @@ class _WebQrScannerState extends State<WebQrScanner> {
   @override
   void dispose() {
     _resize?.cancel();
-    _removeHost();
+    _stopCamera();
     super.dispose();
   }
 
