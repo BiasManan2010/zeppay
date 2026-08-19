@@ -9,26 +9,71 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
-import '../../../data/services/payment_status_detector.dart';
 import '../../../data/services/payment_tracker.dart';
+import '../../../data/services/payment_verification.dart';
 import '../../../data/services/providers.dart';
 import '../../../presentation/widgets/payment_track_card.dart';
 
-class OutcomeScreen extends ConsumerWidget {
+class OutcomeScreen extends ConsumerStatefulWidget {
   const OutcomeScreen({super.key});
 
-  Future<void> _pick(
-    BuildContext context,
-    WidgetRef ref,
-    TxStatus status,
-  ) async {
+  @override
+  ConsumerState<OutcomeScreen> createState() => _OutcomeScreenState();
+}
+
+class _OutcomeScreenState extends ConsumerState<OutcomeScreen> {
+  UssdUserOutcome? _picked;
+  var _amountMatches = false;
+  final _smsRef = TextEditingController();
+  var _showSuccessGate = false;
+
+  @override
+  void dispose() {
+    _smsRef.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final outcome = _picked;
+    if (outcome == null) return;
+
+    if (outcome == UssdUserOutcome.success) {
+      if (!_amountMatches) {
+        setState(() => _showSuccessGate = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Confirm the debited amount before marking success.'),
+          ),
+        );
+        return;
+      }
+      final track = ref.read(paymentSessionProvider).value?.track;
+      final guard = track == null
+          ? null
+          : successGuardMessage(outcome: outcome, track: track);
+      if (guard != null && !_showSuccessGate) {
+        setState(() => _showSuccessGate = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(guard)),
+        );
+        return;
+      }
+    }
+
+    await ref.read(paymentSessionProvider.notifier).recordUserVerification(
+          outcome: outcome,
+          smsRef: _smsRef.text,
+          amountConfirmed: _amountMatches,
+        );
+
+    final status = statusFromUserOutcome(outcome);
     final id = ref.read(pendingTxIdProvider);
     if (id != null) {
       await applyPaymentResult(ref, status);
     } else {
       await ref.read(paymentSessionProvider.notifier).clear();
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (status == TxStatus.success) {
       context.go('/confirm');
     } else if (status == TxStatus.pending) {
@@ -39,17 +84,14 @@ class OutcomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final draft = ref.watch(paymentDraftProvider);
     final track = ref.watch(paymentSessionProvider).value?.track;
-    final away = track?.away;
-    final suggestion = track?.suggestion;
     final steps = track == null ? const <PaymentTrackStep>[] : trackSteps(track);
-    final hint = away != null
-        ? suggestionLabel(suggestion, away)
-        : (isWebApp
-            ? 'You returned from the dialer. Confirm so history stays honest.'
-            : 'Tell us what happened so history stays honest.');
+    final amount = draft?.amountRupees ?? 0;
+    final guard = _picked == UssdUserOutcome.success && track != null
+        ? successGuardMessage(outcome: _picked!, track: track)
+        : null;
 
     return AuthBackdrop(
       child: Padding(
@@ -58,55 +100,39 @@ class OutcomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Did it go through?',
+              'What did *99# show?',
               style: Theme.of(context).textTheme.displayMedium,
             ),
             const SizedBox(height: 8),
             Text(
               isWebApp
-                  ? 'Zep Pay tracked your Phone session. Only tap Yes if SMS or USSD confirms payment.'
-                  : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
+                  ? 'Zep Pay cannot read your bank. Pick exactly what Phone / USSD displayed — that becomes the record.'
+                  : 'Pick what the dialer showed. This is your payment verdict.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (steps.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               PaymentTrackCard(
                 steps: steps,
-                title: 'Tracking log',
+                title: 'Session log (facts only)',
               ),
             ],
-            if (away != null) ...[
-              const SizedBox(height: 10),
-              GlassPanel(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Longest Phone stint · ${away.inSeconds}s',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.hero,
-                          ),
+            if (track != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                sessionContextNote(track),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.textDim,
                     ),
-                    const SizedBox(height: 4),
-                    Text(hint, style: Theme.of(context).textTheme.bodyMedium),
-                    if (track?.refCode.isNotEmpty == true) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Ref ${track!.refCode}',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ],
-                ),
               ),
             ],
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
             GlassPanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₹${(draft?.amountRupees ?? 0).toStringAsFixed(2)}',
+                    '₹${amount.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.displayMedium,
                   ),
                   Text(
@@ -115,47 +141,141 @@ class OutcomeScreen extends ConsumerWidget {
                         : (draft?.vpa ?? ''),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  Text(draft?.vpa ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                  if (track?.refCode.isNotEmpty == true)
+                    Text(
+                      'Ref ${track!.refCode}',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView(
+                children: [
+                  for (final outcome in UssdUserOutcome.values)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _OutcomeTile(
+                        outcome: outcome,
+                        selected: _picked == outcome,
+                        onTap: () => setState(() {
+                          _picked = outcome;
+                          _showSuccessGate = false;
+                          if (outcome != UssdUserOutcome.success) {
+                            _amountMatches = false;
+                          }
+                        }),
+                      ),
+                    ),
+                  if (_picked == UssdUserOutcome.success) ...[
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      value: _amountMatches,
+                      onChanged: (v) =>
+                          setState(() => _amountMatches = v ?? false),
+                      title: Text(
+                        '₹${amount.toStringAsFixed(2)} was debited from my account',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    TextField(
+                      controller: _smsRef,
+                      decoration: const InputDecoration(
+                        labelText: 'Bank SMS ref (optional)',
+                        hintText: 'Last 6 digits from debit SMS',
+                      ),
+                      keyboardType: TextInputType.text,
+                    ),
+                    if (guard != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        guard,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.warning,
+                            ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+            GlowButton(
+              label: _picked == null
+                  ? 'SELECT AN OUTCOME'
+                  : 'RECORD: ${_picked!.title}',
+              onTap: _picked == null ? null : _submit,
+            ),
+          ],
+        ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
+      ),
+    );
+  }
+}
+
+class _OutcomeTile extends StatelessWidget {
+  const _OutcomeTile({
+    required this.outcome,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final UssdUserOutcome outcome;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return HapticScale(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.hero.withValues(alpha: 0.12)
+              : AppColors.surfaceHigh.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.hero : AppColors.surfaceBorder,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              outcome.icon,
+              color: selected ? AppColors.hero : AppColors.textMuted,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    draft?.vpa ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    outcome.title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: selected
+                              ? AppColors.textPrimary
+                              : AppColors.textMuted,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    outcome.subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textDim,
+                        ),
                   ),
                 ],
               ),
             ),
-            const Spacer(),
-            GlowButton(
-              label: suggestion == TxStatus.success
-                  ? 'YES, PAID (LIKELY)'
-                  : 'YES, PAID',
-              onTap: () => _pick(context, ref, TxStatus.success),
-            ),
-            const SizedBox(height: 10),
-            GlowButton(
-              label: suggestion == TxStatus.pending
-                  ? 'STILL PENDING (LIKELY)'
-                  : 'STILL PENDING',
-              onTap: () => _pick(context, ref, TxStatus.pending),
-            ),
-            const SizedBox(height: 10),
-            HapticScale(
-              onTap: () => _pick(context, ref, TxStatus.failed),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: Center(
-                  child: Text(
-                    suggestion == TxStatus.failed
-                        ? 'FAILED / CANCELLED (LIKELY)'
-                        : 'FAILED / DROPPED',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.danger),
-                  ),
-                ),
-              ),
-            ),
           ],
-        ).animate().fadeIn(duration: 420.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
+        ),
       ),
     );
   }

@@ -323,7 +323,7 @@ class _HomeTab extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Payment awaiting confirmation',
+                                'Confirm what *99# showed',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleSmall

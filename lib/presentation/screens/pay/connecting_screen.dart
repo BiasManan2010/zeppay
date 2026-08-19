@@ -71,7 +71,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       await audit.dialReturned(
         txId,
         report.longestStint,
-        ref.read(paymentSessionProvider).value?.track?.suggestion,
+        null,
       );
     } catch (_) {
       await session.markAwaitingConfirm();

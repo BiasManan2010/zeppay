@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
-import 'dial_session.dart';
-import 'payment_status_detector.dart';
+import 'payment_verification.dart';
 
 /// Lifecycle of one offline USSD payment attempt.
 enum PaymentTrackPhase {
@@ -32,7 +31,9 @@ class PaymentTrack {
     this.returnedAt,
     this.longestPhoneStint = Duration.zero,
     this.stintCount = 0,
-    this.suggestion,
+    this.userOutcome,
+    this.userSmsRef = '',
+    this.amountConfirmed = false,
     this.resolvedStatus,
   });
 
@@ -49,8 +50,13 @@ class PaymentTrack {
   final DateTime? returnedAt;
   final Duration longestPhoneStint;
   final int stintCount;
-  final TxStatus? suggestion;
+  final UssdUserOutcome? userOutcome;
+  final String userSmsRef;
+  final bool amountConfirmed;
   final TxStatus? resolvedStatus;
+
+  /// Deprecated timing hint — not shown as judgment in UI.
+  TxStatus? get suggestion => null;
 
   bool get needsConfirmation =>
       phase == PaymentTrackPhase.awaitingConfirm && resolvedStatus == null;
@@ -70,7 +76,9 @@ class PaymentTrack {
     DateTime? returnedAt,
     Duration? longestPhoneStint,
     int? stintCount,
-    TxStatus? suggestion,
+    UssdUserOutcome? userOutcome,
+    String? userSmsRef,
+    bool? amountConfirmed,
     TxStatus? resolvedStatus,
   }) =>
       PaymentTrack(
@@ -87,7 +95,9 @@ class PaymentTrack {
         returnedAt: returnedAt ?? this.returnedAt,
         longestPhoneStint: longestPhoneStint ?? this.longestPhoneStint,
         stintCount: stintCount ?? this.stintCount,
-        suggestion: suggestion ?? this.suggestion,
+        userOutcome: userOutcome ?? this.userOutcome,
+        userSmsRef: userSmsRef ?? this.userSmsRef,
+        amountConfirmed: amountConfirmed ?? this.amountConfirmed,
         resolvedStatus: resolvedStatus ?? this.resolvedStatus,
       );
 
@@ -105,7 +115,9 @@ class PaymentTrack {
         'returnedAt': returnedAt?.toIso8601String(),
         'longestPhoneStintMs': longestPhoneStint.inMilliseconds,
         'stintCount': stintCount,
-        'suggestion': suggestion?.name,
+        'userOutcome': userOutcome?.name,
+        'userSmsRef': userSmsRef,
+        'amountConfirmed': amountConfirmed,
         'resolvedStatus': resolvedStatus?.name,
       };
 
@@ -126,6 +138,14 @@ class PaymentTrack {
       }
     }
 
+    UssdUserOutcome? parseOutcome(String? raw) {
+      if (raw == null || raw.isEmpty) return null;
+      for (final o in UssdUserOutcome.values) {
+        if (o.name == raw) return o;
+      }
+      return null;
+    }
+
     return PaymentTrack(
       txId: j['txId'] as String? ?? '',
       refCode: j['refCode'] as String? ?? '',
@@ -142,7 +162,9 @@ class PaymentTrack {
       longestPhoneStint:
           Duration(milliseconds: j['longestPhoneStintMs'] as int? ?? 0),
       stintCount: j['stintCount'] as int? ?? 0,
-      suggestion: parseStatus(j['suggestion'] as String?),
+      userOutcome: parseOutcome(j['userOutcome'] as String?),
+      userSmsRef: j['userSmsRef'] as String? ?? '',
+      amountConfirmed: j['amountConfirmed'] as bool? ?? false,
       resolvedStatus: parseStatus(j['resolvedStatus'] as String?),
     );
   }
@@ -176,22 +198,7 @@ class PaymentTrackStore {
   }
 }
 
-/// Evaluates dial timing into a suggested status — never auto-marks paid.
-TxStatus evaluateDialSession(DialSessionReport session, PaymentTrack track) {
-  if (session.timedOut && !session.everLeftPhone) return TxStatus.failed;
-  if (!session.everLeftPhone) return TxStatus.failed;
-
-  final dialAt = track.dialOpenedAt ?? track.startedAt;
-  final returned = session.returnedAt ?? track.returnedAt ?? DateTime.now();
-  final sinceDial = returned.difference(dialAt).inSeconds;
-
-  if (sinceDial >= 120 && session.longestStint.inSeconds < 20) {
-    return TxStatus.pending;
-  }
-
-  return detectPaymentStatus(session.longestStint);
-}
-
+/// Dial session timing facts — no automatic payment verdict.
 List<PaymentTrackStep> trackSteps(PaymentTrack track) {
   final phase = track.phase;
   PaymentTrackStepState s(PaymentTrackPhase need) {
@@ -211,8 +218,10 @@ List<PaymentTrackStep> trackSteps(PaymentTrack track) {
   }
 
   String confirmDetail() {
-    if (track.suggestion == null) return 'Waiting for your tap';
-    return 'Suggested: ${track.suggestion!.name.toUpperCase()}';
+    if (track.userOutcome != null) {
+      return track.userOutcome!.title;
+    }
+    return 'Tell us what USSD showed';
   }
 
   return [
