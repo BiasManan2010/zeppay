@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,7 +74,7 @@ Future<void> applyPaymentResult(WidgetRef ref, TxStatus status) async {
     final audit = await ref.read(securityAuditProvider.future);
     await audit.paymentResolved(id, status);
   }
-  ref.read(paymentSessionProvider.notifier).clear();
+  await ref.read(paymentSessionProvider.notifier).resolve(status);
   final draft = ref.read(paymentDraftProvider);
   if (status == TxStatus.success && draft?.requestId != null) {
     await ref
@@ -107,4 +108,22 @@ String routeForTxStatus(TxStatus status) {
     case TxStatus.failed:
       return '/failed';
   }
+}
+
+/// Restore draft + pending tx when a tracked payment still needs confirmation.
+void resumePendingPaymentTrack(WidgetRef ref) {
+  final track = ref.read(paymentSessionProvider).value?.track;
+  if (track == null || !track.needsConfirmation) return;
+  ref.read(pendingTxIdProvider.notifier).state = track.txId;
+  final app = ref.read(appStoreProvider);
+  final tx = app.transactions.where((t) => t.id == track.txId).firstOrNull;
+  if (tx == null) return;
+  ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
+    vpa: tx.vpa,
+    amountPaise: tx.amountPaise,
+    payeeName: tx.payeeName,
+    note: tx.note,
+    category: tx.category,
+    source: 'track',
+  );
 }
