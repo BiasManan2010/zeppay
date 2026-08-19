@@ -34,8 +34,8 @@ class HelpScreen extends StatelessWidget {
               'UPI ID is copied. *99*1*3 opens in Phone — paste, amount, PIN.',
             ),
             (
-              'You confirm the result',
-              'Tracker logs copy → dial → Phone time → your tap. We never auto-mark paid.',
+              'You report the USSD result',
+              'What did *99# show? SUCCESS / FAILED / CANCELLED / PENDING — that is the record.',
             ),
             (
               'History stays honest',

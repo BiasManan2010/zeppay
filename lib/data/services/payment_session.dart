@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import 'dial_session.dart';
 import 'payment_tracker.dart';
+import 'payment_verification.dart';
 
 class PaymentSessionState {
   const PaymentSessionState({this.track});
@@ -87,7 +88,6 @@ class PaymentSessionNotifier extends AsyncNotifier<PaymentSessionState> {
   Future<void> recordDialSession(DialSessionReport session) async {
     final track = state.value?.track;
     if (track == null) return;
-    final suggestion = evaluateDialSession(session, track);
     await _persist(
       track.copyWith(
         phase: PaymentTrackPhase.awaitingConfirm,
@@ -95,7 +95,22 @@ class PaymentSessionNotifier extends AsyncNotifier<PaymentSessionState> {
         returnedAt: session.returnedAt ?? DateTime.now(),
         longestPhoneStint: session.longestStint,
         stintCount: session.stintCount,
-        suggestion: suggestion,
+      ),
+    );
+  }
+
+  Future<void> recordUserVerification({
+    required UssdUserOutcome outcome,
+    String smsRef = '',
+    bool amountConfirmed = false,
+  }) async {
+    final track = state.value?.track;
+    if (track == null) return;
+    await _persist(
+      track.copyWith(
+        userOutcome: outcome,
+        userSmsRef: smsRef.trim(),
+        amountConfirmed: amountConfirmed,
       ),
     );
   }
@@ -104,10 +119,7 @@ class PaymentSessionNotifier extends AsyncNotifier<PaymentSessionState> {
     final track = state.value?.track;
     if (track == null) return;
     await _persist(
-      track.copyWith(
-        phase: PaymentTrackPhase.awaitingConfirm,
-        suggestion: track.suggestion ?? TxStatus.pending,
-      ),
+      track.copyWith(phase: PaymentTrackPhase.awaitingConfirm),
     );
   }
 

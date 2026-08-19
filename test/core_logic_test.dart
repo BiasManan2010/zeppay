@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zeppay/data/services/dial_session.dart';
+import 'package:zeppay/data/services/payment_verification.dart';
 import 'package:zeppay/data/services/payment_status_detector.dart';
 import 'package:zeppay/data/services/payment_tracker.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
@@ -196,22 +196,33 @@ void main() {
     expect(detectPaymentStatus(const Duration(seconds: 150)), TxStatus.failed);
   });
 
-  test('payment tracker flags late return without real phone stint', () {
-    final track = PaymentTrack(
-      txId: '1',
-      refCode: 'ZP1',
-      vpa: 'shop@upi',
-      amountPaise: 10000,
-      startedAt: DateTime(2026, 1, 1, 12),
-      dialOpenedAt: DateTime(2026, 1, 1, 12),
+  test('user USSD outcome maps to ledger status', () {
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.success),
+      TxStatus.success,
     );
-    final report = DialSessionReport(
-      longestStint: const Duration(seconds: 3),
-      stintCount: 1,
-      leftAt: DateTime(2026, 1, 1, 12),
-      returnedAt: DateTime(2026, 1, 1, 12, 2),
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.noDial),
+      TxStatus.failed,
     );
-    expect(evaluateDialSession(report, track), TxStatus.pending);
+    expect(
+      statusFromUserOutcome(UssdUserOutcome.pending),
+      TxStatus.pending,
+    );
+    expect(
+      canConfirmSuccess(
+        outcome: UssdUserOutcome.success,
+        amountMatches: true,
+      ),
+      isTrue,
+    );
+    expect(
+      canConfirmSuccess(
+        outcome: UssdUserOutcome.success,
+        amountMatches: false,
+      ),
+      isFalse,
+    );
   });
 
   test('payment tracker steps follow USSD flow order', () {
@@ -223,7 +234,7 @@ void main() {
       startedAt: DateTime.now(),
       phase: PaymentTrackPhase.awaitingConfirm,
       longestPhoneStint: const Duration(seconds: 42),
-      suggestion: TxStatus.success,
+      userOutcome: UssdUserOutcome.success,
     );
     final steps = trackSteps(track);
     expect(steps.length, 4);
