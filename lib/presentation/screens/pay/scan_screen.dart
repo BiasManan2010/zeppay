@@ -15,6 +15,7 @@ import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
 import 'scan_lock_overlay.dart';
+import 'qr_scan_transition.dart';
 import 'web_qr_scanner.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   var _denied = false;
   var _torch = false;
   var _webCameraError = false;
+  var _shatter = false;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
   PaymentDraft? _hit;
 
@@ -116,15 +118,24 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     }
     _locked = true;
     HapticFeedback.mediumImpact();
-    setState(() => _hit = draft);
+    await Clipboard.setData(ClipboardData(text: draft.vpa));
+    setState(() {
+      _hit = draft;
+      _shatter = true;
+    });
     if (!isWebApp) await _safeStop();
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
+
+  Future<void> _afterShatter() async {
     if (!mounted) return;
+    final draft = _hit;
+    if (draft == null) return;
     ref.read(paymentDraftProvider.notifier).state = draft;
     await context.push('/pay/amount');
     if (!mounted) return;
     _locked = false;
     _hit = null;
+    _shatter = false;
     _webCameraError = false;
     setState(() {});
     if (!isWebApp) unawaited(_safeStart());
@@ -297,7 +308,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                   ? (isWebApp
                       ? 'Safari blocked the camera. Settings → Safari → Camera → Allow, then reopen Zep Pay.'
                       : 'Camera permission is off. Enable it to scan.')
-                  : 'Hold the QR in the window. FamPay, GPay, PhonePe, Paytm all work.',
+                  : 'UPI ID copies on lock. Then amount, then Phone (*99*1*3).',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.white),
             ),
@@ -326,50 +337,37 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.of(context).disableAnimations;
     return Scaffold(
-      backgroundColor: isWebApp ? Colors.black : AppColors.base,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _toolbar(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: _locked
-                          ? AppColors.hero
-                          : AppColors.hero.withValues(alpha: 0.45),
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: isWebApp
-                        ? _webCamera()
-                        : Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              _nativeCamera(),
-                              IgnorePointer(
-                                child: Center(
-                                  child: PaytmScanFrame(
-                                    locked: _locked,
-                                    t: _locked ? 1 : 0.45,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: isWebApp ? _webCamera() : _nativeCamera(),
+          ),
+          const Positioned.fill(
+            child: IgnorePointer(child: ScanIdleFrame()),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _toolbar(),
+                const Spacer(),
+                _hints(),
+              ],
+            ),
+          ),
+          if (_shatter)
+            Positioned.fill(
+              child: QrScanTransition(
+                reducedMotion: reduce,
+                onComplete: () {
+                  unawaited(_afterShatter());
+                },
               ),
             ),
-            _hints(),
-          ],
-        ),
+        ],
       ),
     );
   }
