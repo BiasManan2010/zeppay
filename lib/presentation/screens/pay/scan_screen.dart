@@ -27,6 +27,7 @@ class ScanScreen extends ConsumerStatefulWidget {
 
 class _ScanScreenState extends ConsumerState<ScanScreen>
     with WidgetsBindingObserver {
+  final _scanWindow = GlobalKey();
   MobileScannerController? _controller;
   var _locked = false;
   var _ready = false;
@@ -34,6 +35,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   var _torch = false;
   var _webCameraError = false;
   var _shatter = false;
+  var _webScanEpoch = 0;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
   PaymentDraft? _hit;
 
@@ -137,6 +139,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _hit = null;
     _shatter = false;
     _webCameraError = false;
+    _webScanEpoch++;
     setState(() {});
     if (!isWebApp) unawaited(_safeStart());
   }
@@ -273,28 +276,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     );
   }
 
-  Widget _webCamera() {
-    if (_webCameraError) {
-      return ColoredBox(
-        color: AppColors.baseAlt,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              'Allow Camera for this site in Safari Settings, then tap Try again.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.white),
-            ),
-          ),
-        ),
-      );
-    }
-    return WebQrScanner(
-      onDetect: _handleRaw,
-      onCameraError: () => setState(() => _webCameraError = true),
-    );
-  }
-
   Widget _hints() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -308,7 +289,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                   ? (isWebApp
                       ? 'Safari blocked the camera. Settings → Safari → Camera → Allow, then reopen Zep Pay.'
                       : 'Camera permission is off. Enable it to scan.')
-                  : 'UPI ID copies on lock. Then amount, then Phone (*99*1*3).',
+                  : 'Tap Start camera, then hold a UPI QR in the frame.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.white),
             ),
@@ -339,22 +320,52 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   Widget build(BuildContext context) {
     final reduce = MediaQuery.of(context).disableAnimations;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.base,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: isWebApp ? _webCamera() : _nativeCamera(),
-          ),
-          const Positioned.fill(
-            child: IgnorePointer(child: ScanIdleFrame()),
-          ),
+          if (!isWebApp)
+            Positioned.fill(child: _nativeCamera()),
+          if (!isWebApp)
+            const Positioned.fill(
+              child: IgnorePointer(child: ScanIdleFrame()),
+            ),
           SafeArea(
             child: Column(
               children: [
-                _toolbar(),
-                const Spacer(),
-                _hints(),
+                ColoredBox(
+                  color: AppColors.base,
+                  child: _toolbar(),
+                ),
+                Expanded(
+                  child: isWebApp
+                      ? Center(
+                          child: SizedBox(
+                            key: _scanWindow,
+                            width: 268,
+                            height: 268,
+                            child: const IgnorePointer(child: _WebScanFrame()),
+                          ),
+                        )
+                      : const SizedBox.expand(),
+                ),
+                ColoredBox(
+                  color: AppColors.base,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isWebApp)
+                        WebQrScanner(
+                          key: ValueKey(_webScanEpoch),
+                          scanWindowKey: _scanWindow,
+                          onDetect: _handleRaw,
+                          onCameraError: () =>
+                              setState(() => _webCameraError = true),
+                        ),
+                      _hints(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -371,4 +382,41 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       ),
     );
   }
+}
+
+class _WebScanFrame extends StatelessWidget {
+  const _WebScanFrame();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 268,
+      height: 268,
+      child: CustomPaint(painter: _WebFramePainter()),
+    );
+  }
+}
+
+class _WebFramePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const l = 28.0;
+    final p = Paint()
+      ..color = kScanCyanSoft
+      ..strokeWidth = 3.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    void corner(Offset o, double sx, double sy) {
+      canvas.drawLine(o, o.translate(sx * l, 0), p);
+      canvas.drawLine(o, o.translate(0, sy * l), p);
+    }
+
+    corner(Offset.zero, 1, 1);
+    corner(Offset(size.width, 0), -1, 1);
+    corner(Offset(0, size.height), 1, -1);
+    corner(Offset(size.width, size.height), -1, -1);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
