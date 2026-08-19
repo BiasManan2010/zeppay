@@ -14,6 +14,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
+import 'qr_image_scan.dart';
 import 'scan_lock_overlay.dart';
 import 'qr_scan_transition.dart';
 import 'web_qr_scanner.dart';
@@ -34,6 +35,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   var _denied = false;
   var _torch = false;
   var _webCameraError = false;
+  var _webCameraLive = false;
   var _shatter = false;
   var _webScanEpoch = 0;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -139,6 +141,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _hit = null;
     _shatter = false;
     _webCameraError = false;
+    _webCameraLive = false;
     _webScanEpoch++;
     setState(() {});
     if (!isWebApp) unawaited(_safeStart());
@@ -174,11 +177,26 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   Future<void> _fromGallery() async {
     final shot = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (shot == null) return;
-    final ctrl = isWebApp ? MobileScannerController() : _controller;
-    if (ctrl == null) return;
     try {
+      if (isWebApp) {
+        final raw = await decodeQrFromGallery(shot);
+        if (!mounted) return;
+        if (raw == null || raw.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Could not read a QR from that photo. Point the camera at it instead.',
+              ),
+            ),
+          );
+          return;
+        }
+        await _handleRaw(raw);
+        return;
+      }
+      final ctrl = _controller;
+      if (ctrl == null) return;
       final cap = await ctrl.analyzeImage(shot.path);
-      if (isWebApp) await ctrl.dispose();
       if (!mounted) return;
       if (cap == null || cap.barcodes.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,7 +210,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       }
       await _onDetect(cap);
     } catch (_) {
-      if (isWebApp) await ctrl.dispose();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo scan failed. Use the live camera.')),
@@ -319,8 +336,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.of(context).disableAnimations;
+    final webLive = isWebApp && _webCameraLive;
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: webLive ? Colors.transparent : AppColors.base,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -339,12 +357,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                 ),
                 Expanded(
                   child: isWebApp
-                      ? Center(
-                          child: SizedBox(
-                            key: _scanWindow,
-                            width: 268,
-                            height: 268,
-                            child: const IgnorePointer(child: _WebScanFrame()),
+                      ? ColoredBox(
+                          color: webLive ? Colors.transparent : AppColors.base,
+                          child: Center(
+                            child: SizedBox(
+                              key: _scanWindow,
+                              width: 268,
+                              height: 268,
+                              child: const IgnorePointer(child: _WebScanFrame()),
+                            ),
                           ),
                         )
                       : const SizedBox.expand(),
@@ -359,8 +380,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                           key: ValueKey(_webScanEpoch),
                           scanWindowKey: _scanWindow,
                           onDetect: _handleRaw,
-                          onCameraError: () =>
-                              setState(() => _webCameraError = true),
+                          onCameraStarted: () =>
+                              setState(() => _webCameraLive = true),
+                          onCameraStopped: () =>
+                              setState(() => _webCameraLive = false),
+                          onCameraError: () => setState(() {
+                            _webCameraError = true;
+                            _webCameraLive = false;
+                          }),
                         ),
                       _hints(),
                     ],

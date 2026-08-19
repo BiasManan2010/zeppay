@@ -6,18 +6,21 @@ import 'dart:js' as js;
 
 import 'package:flutter/material.dart';
 
-/// Live camera is an HTML overlay *on top of* Flutter.
-/// [HtmlElementView] and in-canvas video stay grey on iOS Safari PWAs.
+/// Full-screen HTML video *under* Flutter — small fixed overlays stay grey on iOS PWAs.
 class WebQrScanner extends StatefulWidget {
   const WebQrScanner({
     super.key,
     required this.onDetect,
     this.onCameraError,
+    this.onCameraStarted,
+    this.onCameraStopped,
     this.scanWindowKey,
   });
 
   final ValueChanged<String> onDetect;
   final VoidCallback? onCameraError;
+  final VoidCallback? onCameraStarted;
+  final VoidCallback? onCameraStopped;
   final GlobalKey? scanWindowKey;
 
   @override
@@ -31,6 +34,7 @@ class _WebQrScannerState extends State<WebQrScanner> {
   html.DivElement? _host;
   html.MediaStream? _stream;
   Timer? _timer;
+  Timer? _placeTimer;
   StreamSubscription<html.Event>? _resize;
   var _locked = false;
   var _started = false;
@@ -40,7 +44,7 @@ class _WebQrScannerState extends State<WebQrScanner> {
   @override
   void initState() {
     super.initState();
-    _resize = html.window.onResize.listen((_) => _placeHost());
+    _resize = html.window.onResize.listen((_) => _syncHost());
   }
 
   Future<void> _start() async {
@@ -73,9 +77,15 @@ class _WebQrScannerState extends State<WebQrScanner> {
       final video = _video!;
       video.srcObject = stream;
       await video.play();
+      await _waitForFrames(video);
       _started = true;
+      widget.onCameraStarted?.call();
+      html.document.body?.classes.add('zep-scanning');
+      _syncHost();
       _timer = Timer.periodic(const Duration(milliseconds: 280), (_) => _tick());
-      WidgetsBinding.instance.addPostFrameCallback((_) => _placeHost());
+      _placeTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
+        _syncHost();
+      });
       if (mounted) setState(() => _busy = false);
     } catch (_) {
       _removeHost();
@@ -88,50 +98,56 @@ class _WebQrScannerState extends State<WebQrScanner> {
     }
   }
 
+  Future<void> _waitForFrames(html.VideoElement video) async {
+    for (var i = 0; i < 40; i++) {
+      if (video.videoWidth > 1 && video.videoHeight > 1) return;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
   void _insertHost() {
-    _removeHost();
+    _removeHost(keepCallbacks: true);
     final host = html.DivElement()..id = _hostId;
     final video = html.VideoElement()
       ..autoplay = true
       ..muted = true
-      ..setAttribute('playsinline', 'true')
-      ..setAttribute('webkit-playsinline', 'true')
-      ..setAttribute('autoplay', 'true')
-      ..setAttribute('muted', 'true');
+      ..setAttribute('playsinline', '')
+      ..setAttribute('webkit-playsinline', '')
+      ..setAttribute('autoplay', '')
+      ..setAttribute('muted', '');
+    video.style
+      ..width = '100%'
+      ..height = '100%'
+      ..objectFit = 'cover'
+      ..backgroundColor = '#000'
+      ..display = 'block';
     host.append(video);
-    html.document.body?.append(host);
-    html.document.body?.classes.add('zep-scanning');
+    final body = html.document.body;
+    if (body != null) {
+      body.insertAdjacentElement('afterbegin', host);
+    }
     _host = host;
     _video = video;
-    _placeHost();
+    _syncHost();
   }
 
-  void _placeHost() {
+  void _syncHost() {
     final host = _host;
     if (host == null) return;
-    final ctx = widget.scanWindowKey?.currentContext;
-    final box = ctx?.findRenderObject() as RenderBox?;
-    if (box != null && box.hasSize && box.size.width > 8) {
-      final origin = box.localToGlobal(Offset.zero);
-      host.style
-        ..left = '${origin.dx}px'
-        ..top = '${origin.dy}px'
-        ..width = '${box.size.width}px'
-        ..height = '${box.size.height}px'
-        ..transform = 'none';
-      host.style.setProperty('-webkit-transform', 'none');
-      return;
-    }
     host.style
-      ..left = '50%'
-      ..top = '22%'
-      ..width = 'min(72vw, 280px)'
-      ..height = 'min(72vw, 280px)';
-    host.style.setProperty('transform', 'translateX(-50%) translateZ(0)');
-    host.style.setProperty(
-      '-webkit-transform',
-      'translateX(-50%) translateZ(0)',
-    );
+      ..position = 'fixed'
+      ..left = '0'
+      ..top = '0'
+      ..width = '100%'
+      ..height = '100%'
+      ..zIndex = '0'
+      ..overflow = 'hidden'
+      ..pointerEvents = 'none'
+      ..margin = '0'
+      ..padding = '0'
+      ..transform = 'none'
+      ..backgroundColor = '#000';
+    host.style.setProperty('-webkit-transform', 'none');
   }
 
   void _tick() {
@@ -150,13 +166,16 @@ class _WebQrScannerState extends State<WebQrScanner> {
     if (data == null || data.isEmpty) return;
     _locked = true;
     _timer?.cancel();
+    _placeTimer?.cancel();
     _removeHost();
     widget.onDetect(data);
   }
 
-  void _removeHost() {
+  void _removeHost({bool keepCallbacks = false}) {
     _timer?.cancel();
     _timer = null;
+    _placeTimer?.cancel();
+    _placeTimer = null;
     for (final track in _stream?.getTracks() ?? <html.MediaStreamTrack>[]) {
       track.stop();
     }
@@ -167,6 +186,10 @@ class _WebQrScannerState extends State<WebQrScanner> {
     _host = null;
     _video = null;
     html.document.body?.classes.remove('zep-scanning');
+    if (_started && !keepCallbacks) {
+      _started = false;
+      widget.onCameraStopped?.call();
+    }
   }
 
   @override
