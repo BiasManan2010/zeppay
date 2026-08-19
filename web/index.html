@@ -48,33 +48,34 @@
       margin: 0;
       background: #1C1C1E;
     }
-    flutter-view,
-    flt-glass-pane,
-    flt-scene-host {
-      z-index: 1;
-    }
+    /* Camera sits under Flutter; the scan window is a transparent hole. */
     #zep-cam-host {
-      display: none;
       position: fixed;
-      z-index: 2147483646;
+      inset: 0;
+      z-index: 0;
       overflow: hidden;
-      border-radius: 22px;
-      background: #111114;
+      margin: 0;
+      padding: 0;
+      background: #000;
       pointer-events: none;
-      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.55);
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
     }
     #zep-cam-host video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      background: #111114;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-    }
-    body.zep-scanning #zep-cam-host {
       display: block;
+      background: #000;
+    }
+    flutter-view,
+    flt-glass-pane,
+    flt-scene-host,
+    flt-semantics-host {
+      position: relative;
+      z-index: 1;
+      background: transparent !important;
+    }
+    body.zep-scanning {
+      background: #000;
     }
   </style>
 </head>
