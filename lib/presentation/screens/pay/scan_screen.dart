@@ -35,6 +35,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   var _denied = false;
   var _torch = false;
   var _webCameraError = false;
+  var _webCameraLive = false;
   var _shatter = false;
   var _webScanEpoch = 0;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -140,6 +141,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _hit = null;
     _shatter = false;
     _webCameraError = false;
+    _webCameraLive = false;
     _webScanEpoch++;
     setState(() {});
     if (!isWebApp) unawaited(_safeStart());
@@ -334,8 +336,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.of(context).disableAnimations;
+    final webLive = isWebApp && _webCameraLive;
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: webLive ? Colors.transparent : AppColors.base,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -354,12 +357,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                 ),
                 Expanded(
                   child: isWebApp
-                      ? Center(
-                          child: SizedBox(
-                            key: _scanWindow,
-                            width: 268,
-                            height: 268,
-                            child: const IgnorePointer(child: _WebScanFrame()),
+                      ? ColoredBox(
+                          color: webLive ? Colors.transparent : AppColors.base,
+                          child: Center(
+                            child: SizedBox(
+                              key: _scanWindow,
+                              width: 268,
+                              height: 268,
+                              child: const IgnorePointer(child: _WebScanFrame()),
+                            ),
                           ),
                         )
                       : const SizedBox.expand(),
@@ -374,8 +380,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                           key: ValueKey(_webScanEpoch),
                           scanWindowKey: _scanWindow,
                           onDetect: _handleRaw,
-                          onCameraError: () =>
-                              setState(() => _webCameraError = true),
+                          onCameraStarted: () =>
+                              setState(() => _webCameraLive = true),
+                          onCameraStopped: () =>
+                              setState(() => _webCameraLive = false),
+                          onCameraError: () => setState(() {
+                            _webCameraError = true;
+                            _webCameraLive = false;
+                          }),
                         ),
                       _hints(),
                     ],
