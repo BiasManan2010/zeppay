@@ -78,63 +78,29 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       setState(() => _txnId = refCode);
 
       if (isWebApp) {
-        final amount = (draft.amountPaise / 100).toStringAsFixed(2);
-        final who = draft.payeeName.isNotEmpty ? draft.payeeName : draft.vpa;
         await Clipboard.setData(ClipboardData(text: draft.vpa));
-        await audit.dialOpened(tx.id, RailEngine.upiUri(draft));
-
-        if (isIosWeb || rail == PaymentRail.upiIntent) {
-          setState(() {
-            _label = 'Opening your UPI app';
-            _detail =
-                'Pay ₹$amount to $who.\nUPI ID copied — paste if GPay / PhonePe asks.';
-          });
-          await Future<void>.delayed(const Duration(milliseconds: 450));
-          final uri = Uri.parse(RailEngine.upiUri(draft));
-          var opened = false;
-          try {
-            opened = await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-            );
-          } catch (_) {
-            opened = false;
-          }
-          if (!opened && mounted) {
-            setState(() {
-              _label = 'Pay in GPay or PhonePe';
-              _detail =
-                  'iPhone cannot dial *99#. Open your UPI app → Pay → UPI ID →\n'
-                  'paste ${draft.vpa} → enter ₹$amount → confirm with PIN.';
-            });
-            await Future<void>.delayed(const Duration(milliseconds: 1800));
-          }
-          if (mounted) context.go('/outcome');
-          return;
-        }
-
         setState(() {
           _label = 'Opening Phone…';
           _detail =
               'UPI ID copied. *99*1*3 is send-to-UPI. Paste if asked, then PIN.\nTxn $refCode';
         });
+        await audit.dialOpened(tx.id, dial);
         await Future<void>.delayed(const Duration(milliseconds: 500));
         await tel.dial(dial);
         setState(() {
           _label = 'Checking payment…';
-          _detail = 'Waiting until you return from Phone.';
+          _detail = 'Complete the USSD steps in Phone, then return here to confirm.';
         });
-        final away = await waitForDialerReturn();
-        final status = detectPaymentStatus(away);
-        ref.read(paymentSessionProvider.notifier).recordReturn(away);
-        await audit.dialReturned(tx.id, away, status);
+        try {
+          final away = await waitForDialerReturn();
+          final suggestion = detectPaymentStatus(away);
+          ref.read(paymentSessionProvider.notifier).recordReturn(away);
+          await audit.dialReturned(tx.id, away, suggestion);
+        } catch (_) {
+          ref.read(paymentSessionProvider.notifier).recordReturn(Duration.zero);
+        }
         if (!mounted) return;
-        setState(() {
-          _label = 'Txn $refCode';
-          _detail = suggestionLabel(status, away);
-        });
-        await Future<void>.delayed(const Duration(milliseconds: 700));
-        await _finish(status);
+        context.go('/outcome');
         return;
       }
 

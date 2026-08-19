@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeppay/data/services/payment_status_detector.dart';
 import 'package:zeppay/data/services/qr_parser.dart';
 import 'package:zeppay/data/services/split_math.dart';
 import 'package:zeppay/data/local/app_store.dart';
@@ -184,6 +185,13 @@ void main() {
 
   test('local payment refs are ZP-prefixed', () {
     expect(AppStore.payRef(), startsWith('ZP'));
+  });
+
+  test('dialer timing never marks two-minute idle as success', () {
+    expect(detectPaymentStatus(const Duration(seconds: 5)), TxStatus.failed);
+    expect(detectPaymentStatus(const Duration(seconds: 45)), TxStatus.success);
+    expect(detectPaymentStatus(const Duration(seconds: 120)), TxStatus.pending);
+    expect(detectPaymentStatus(const Duration(seconds: 150)), TxStatus.failed);
   });
 
   test('tx json keeps spending category', () {

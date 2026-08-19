@@ -110,11 +110,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       if (mounted && now.difference(_missAt) > const Duration(seconds: 3)) {
         _missAt = now;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              isIosWeb
-                  ? 'No UPI ID in this QR. On iPhone, try GPay / PhonePe scan instead.'
-                  : 'No UPI ID in this QR. Try FamPay / GPay / PhonePe pay QR.',
+              'No UPI ID in this QR. Try FamPay / GPay / PhonePe pay QR.',
             ),
           ),
         );
@@ -212,13 +210,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isIosWeb
-                ? 'Photo scan failed. Try GPay / PhonePe scan, or use the live camera.'
-                : 'Photo scan failed. Use the live camera.',
-          ),
-        ),
+        const SnackBar(content: Text('Photo scan failed. Use the live camera.')),
       );
     }
   }

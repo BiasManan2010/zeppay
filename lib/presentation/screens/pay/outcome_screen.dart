@@ -60,11 +60,9 @@ class OutcomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isIosWeb
-                  ? 'Zep Pay opened your UPI app (or copied the ID). Confirm what happened — we cannot read the bank.'
-                  : isWebApp
-                      ? 'Zep Pay watched you leave for Phone and come back. We cannot read the bank — you confirm the result.'
-                      : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
+              isWebApp
+                  ? 'Zep Pay cannot read the bank. Only tap Yes if your SMS or USSD receipt confirms payment.'
+                  : 'USSD and 123PAY run in the dialer. Tell us what happened so history stays honest.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (away != null) ...[
@@ -117,7 +115,7 @@ class OutcomeScreen extends ConsumerWidget {
             const Spacer(),
             GlowButton(
               label: suggestion == TxStatus.success
-                  ? 'YES, PAID'
+                  ? 'YES, PAID (LIKELY)'
                   : 'YES, PAID',
               onTap: () => _pick(context, ref, TxStatus.success),
             ),

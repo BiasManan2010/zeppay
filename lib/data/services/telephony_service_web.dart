@@ -2,20 +2,18 @@ import 'dart:async';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/platform_detect.dart';
 import 'call_visibility_web.dart';
 import 'network_info.dart';
 
-/// Web: Android browsers may open *99# via `tel:`; iPhone uses UPI apps instead.
+/// iPhone PWA: open Phone with *99# / 123PAY via `tel:` and watch return.
 class TelephonyService {
   Future<NetworkInfo> networkInfo() async {
-    final ios = platformIsIosWeb;
-    return NetworkInfo(
+    return const NetworkInfo(
       operator: 'mobile',
       isJio: false,
       networkType: 'cellular',
-      recommendedRail: ios ? 'upiIntent' : 'ussd',
-      ussdSupported: !ios,
+      recommendedRail: 'ussd',
+      ussdSupported: true,
       platform: 'web',
     );
   }
