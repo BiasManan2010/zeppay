@@ -48,17 +48,33 @@
       margin: 0;
       background: #1C1C1E;
     }
-    /* iOS Safari: keep platform views (camera video) visible under Flutter */
-    flt-glass-pane,
     flutter-view,
-    flt-scene-host,
-    flt-semantics-host {
-      background: transparent !important;
+    flt-glass-pane,
+    flt-scene-host {
+      z-index: 1;
     }
-    flt-platform-view,
-    flt-platform-view-slot,
-    flt-platform-view-slot canvas {
-      background: transparent !important;
+    #zep-cam-host {
+      display: none;
+      position: fixed;
+      z-index: 2147483646;
+      overflow: hidden;
+      border-radius: 22px;
+      background: #111114;
+      pointer-events: none;
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.55);
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    #zep-cam-host video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #111114;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+    body.zep-scanning #zep-cam-host {
+      display: block;
     }
   </style>
 </head>

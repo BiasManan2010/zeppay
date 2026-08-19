@@ -6,10 +6,12 @@ class WebQrScanner extends StatelessWidget {
     super.key,
     required this.onDetect,
     this.onCameraError,
+    this.scanWindowKey,
   });
 
   final ValueChanged<String> onDetect;
   final VoidCallback? onCameraError;
+  final GlobalKey? scanWindowKey;
 
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
