@@ -7,7 +7,6 @@ import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
-import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/payment_status_detector.dart';
