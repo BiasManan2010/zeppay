@@ -15,6 +15,8 @@ import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
 import 'scan_lock_overlay.dart';
+import 'qr_scan_transition.dart';
+import 'web_qr_scanner.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -25,37 +27,35 @@ class ScanScreen extends ConsumerStatefulWidget {
 
 class _ScanScreenState extends ConsumerState<ScanScreen>
     with WidgetsBindingObserver {
-  final _controller = MobileScannerController(
-    autoStart: true,
-    detectionSpeed: DetectionSpeed.normal,
-    detectionTimeoutMs: 800,
-    facing: CameraFacing.back,
-    formats: const [BarcodeFormat.qrCode],
-  );
+  MobileScannerController? _controller;
   var _locked = false;
   var _ready = false;
   var _denied = false;
   var _torch = false;
+  var _webCameraError = false;
+  var _shatter = false;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
   PaymentDraft? _hit;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _prepCamera();
+    if (!isWebApp) {
+      _controller = MobileScannerController(
+        autoStart: true,
+        detectionSpeed: DetectionSpeed.normal,
+        detectionTimeoutMs: 800,
+        facing: CameraFacing.back,
+        formats: const [BarcodeFormat.qrCode],
+      );
+      WidgetsBinding.instance.addObserver(this);
+      _prepCamera();
+    } else {
+      _ready = true;
+    }
   }
 
   Future<void> _prepCamera() async {
-    if (isWebApp) {
-      if (!mounted) return;
-      setState(() {
-        _denied = false;
-        _ready = true;
-      });
-      unawaited(_safeStart());
-      return;
-    }
     final status = await Permission.camera.request();
     if (!mounted) return;
     setState(() {
@@ -67,19 +67,19 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   Future<void> _safeStart() async {
     try {
-      await _controller.start();
+      await _controller?.start();
     } catch (_) {}
   }
 
   Future<void> _safeStop() async {
     try {
-      await _controller.stop();
+      await _controller?.stop();
     } catch (_) {}
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_ready || _locked) return;
+    if (isWebApp || !_ready || _locked) return;
     if (state == AppLifecycleState.resumed) {
       unawaited(_safeStart());
     } else if (state == AppLifecycleState.inactive ||
@@ -91,17 +91,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    unawaited(_safeStop());
-    _controller.dispose();
+    if (!isWebApp) {
+      WidgetsBinding.instance.removeObserver(this);
+      unawaited(_safeStop());
+      _controller?.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _onDetect(BarcodeCapture cap) async {
+  Future<void> _handleRaw(String raw) async {
     if (_locked) return;
-    if (cap.barcodes.isEmpty) return;
-    final raw = _payload(cap.barcodes.first);
-    if (raw == null || raw.isEmpty) return;
     final draft = QrParser.parse(raw);
     if (draft == null) {
       final now = DateTime.now();
@@ -119,17 +118,34 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     }
     _locked = true;
     HapticFeedback.mediumImpact();
-    setState(() => _hit = draft);
-    await _safeStop();
-    await Future<void>.delayed(const Duration(milliseconds: 280));
+    await Clipboard.setData(ClipboardData(text: draft.vpa));
+    setState(() {
+      _hit = draft;
+      _shatter = true;
+    });
+    if (!isWebApp) await _safeStop();
+  }
+
+  Future<void> _afterShatter() async {
     if (!mounted) return;
+    final draft = _hit;
+    if (draft == null) return;
     ref.read(paymentDraftProvider.notifier).state = draft;
     await context.push('/pay/amount');
     if (!mounted) return;
     _locked = false;
     _hit = null;
+    _shatter = false;
+    _webCameraError = false;
     setState(() {});
-    unawaited(_safeStart());
+    if (!isWebApp) unawaited(_safeStart());
+  }
+
+  Future<void> _onDetect(BarcodeCapture cap) async {
+    if (cap.barcodes.isEmpty) return;
+    final raw = _payload(cap.barcodes.first);
+    if (raw == null || raw.isEmpty) return;
+    await _handleRaw(raw);
   }
 
   String? _payload(Barcode b) {
@@ -155,8 +171,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   Future<void> _fromGallery() async {
     final shot = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (shot == null) return;
+    final ctrl = isWebApp ? MobileScannerController() : _controller;
+    if (ctrl == null) return;
     try {
-      final cap = await _controller.analyzeImage(shot.path);
+      final cap = await ctrl.analyzeImage(shot.path);
+      if (isWebApp) await ctrl.dispose();
       if (!mounted) return;
       if (cap == null || cap.barcodes.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -170,20 +189,17 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       }
       await _onDetect(cap);
     } catch (_) {
+      if (isWebApp) await ctrl.dispose();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Photo scan is limited here. Use the live camera on this QR.',
-          ),
-        ),
+        const SnackBar(content: Text('Photo scan failed. Use the live camera.')),
       );
     }
   }
 
   Future<void> _toggleTorch() async {
     try {
-      await _controller.toggleTorch();
+      await _controller?.toggleTorch();
       setState(() => _torch = !_torch);
     } catch (_) {}
   }
@@ -226,41 +242,56 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     );
   }
 
-  Widget _camera() {
+  Widget _nativeCamera() {
     if (!_ready) {
       return ColoredBox(
         color: AppColors.baseAlt,
         child: Center(
           child: Text(
-            _denied
-                ? 'Camera permission is off.'
-                : 'Starting camera…',
+            _denied ? 'Camera permission is off.' : 'Starting camera…',
             style: const TextStyle(color: AppColors.white),
           ),
         ),
       );
     }
     return MobileScanner(
-      controller: _controller,
+      controller: _controller!,
       onDetect: _onDetect,
       fit: BoxFit.cover,
       errorBuilder: (context, error) {
         return ColoredBox(
           color: AppColors.baseAlt,
           child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                isWebApp
-                    ? 'Allow camera for Zep Pay in Safari, then tap Try again.'
-                    : '$error',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.white),
-              ),
+            child: Text(
+              '$error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.white),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _webCamera() {
+    if (_webCameraError) {
+      return ColoredBox(
+        color: AppColors.baseAlt,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'Allow Camera for this site in Safari Settings, then tap Try again.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.white),
+            ),
+          ),
+        ),
+      );
+    }
+    return WebQrScanner(
+      onDetect: _handleRaw,
+      onCameraError: () => setState(() => _webCameraError = true),
     );
   }
 
@@ -273,15 +304,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
             MerchantLockCard(name: _hit!.payeeName, vpa: _hit!.vpa)
           else
             Text(
-              _denied
+              _denied || _webCameraError
                   ? (isWebApp
                       ? 'Safari blocked the camera. Settings → Safari → Camera → Allow, then reopen Zep Pay.'
                       : 'Camera permission is off. Enable it to scan.')
-                  : 'Hold the QR in the window. FamPay, GPay, PhonePe, Paytm all work.',
+                  : 'UPI ID copies on lock. Then amount, then Phone (*99*1*3).',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.white),
             ),
-          if (_denied) ...[
+          if (_denied || _webCameraError) ...[
             const SizedBox(height: 12),
             if (!isWebApp)
               TextButton(
@@ -289,7 +320,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                 child: const Text('OPEN SETTINGS'),
               ),
             TextButton(
-              onPressed: _prepCamera,
+              onPressed: () {
+                if (isWebApp) {
+                  setState(() => _webCameraError = false);
+                } else {
+                  _prepCamera();
+                }
+              },
               child: const Text('TRY AGAIN'),
             ),
           ],
@@ -300,50 +337,37 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.of(context).disableAnimations;
     return Scaffold(
-      backgroundColor: AppColors.base,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _toolbar(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: _locked
-                          ? AppColors.hero
-                          : AppColors.hero.withValues(alpha: 0.45),
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: isWebApp
-                        ? _camera()
-                        : Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              _camera(),
-                              IgnorePointer(
-                                child: Center(
-                                  child: PaytmScanFrame(
-                                    locked: _locked,
-                                    t: _locked ? 1 : 0.45,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: isWebApp ? _webCamera() : _nativeCamera(),
+          ),
+          const Positioned.fill(
+            child: IgnorePointer(child: ScanIdleFrame()),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _toolbar(),
+                const Spacer(),
+                _hints(),
+              ],
+            ),
+          ),
+          if (_shatter)
+            Positioned.fill(
+              child: QrScanTransition(
+                reducedMotion: reduce,
+                onComplete: () {
+                  unawaited(_afterShatter());
+                },
               ),
             ),
-            _hints(),
-          ],
-        ),
+        ],
       ),
     );
   }

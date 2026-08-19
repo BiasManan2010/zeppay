@@ -89,6 +89,15 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
             ).animate().fadeIn(delay: 120.ms),
             Text(who, style: Theme.of(context).textTheme.titleMedium),
             Text(vpa, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            if (refCode.isNotEmpty)
+              Text(
+                'Txn $refCode',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.hero,
+                      letterSpacing: 1.1,
+                    ),
+              ),
             const SizedBox(height: 18),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -186,6 +195,8 @@ class FailedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(paymentDraftProvider);
+    final id = ref.watch(pendingTxIdProvider);
+    final tx = ref.watch(appStoreProvider).transactions.where((t) => t.id == id).firstOrNull;
     return Scaffold(
       backgroundColor: AppColors.base,
       body: SafeArea(
@@ -207,6 +218,10 @@ class FailedScreen extends ConsumerWidget {
                 '₹${(draft?.amountRupees ?? 0).toStringAsFixed(2)} to ${draft?.payeeName.isNotEmpty == true ? draft!.payeeName : (draft?.vpa ?? '')}',
                 textAlign: TextAlign.center,
               ),
+              if ((tx?.refCode ?? '').isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('Txn ${tx!.refCode}'),
+              ],
               const SizedBox(height: 8),
               const Text(
                 'Nothing was taken in Zep Pay. Try again when the call or PIN prompt is ready.',
@@ -240,6 +255,12 @@ class PendingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(paymentDraftProvider);
+    final id = ref.watch(pendingTxIdProvider);
+    final tx = ref
+        .watch(appStoreProvider)
+        .transactions
+        .where((t) => t.id == id)
+        .firstOrNull;
     return Scaffold(
       backgroundColor: AppColors.base,
       body: SafeArea(
@@ -262,9 +283,13 @@ class PendingScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.displayMedium,
               ),
               const Text(
-                'Check SMS from your bank, or History in a minute. We will not mark this paid until you do.',
+                'Check SMS from your bank, or History in a minute.',
                 textAlign: TextAlign.center,
               ),
+              if ((tx?.refCode ?? '').isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('Txn ${tx!.refCode}'),
+              ],
               const Spacer(),
               GlowButton(
                 label: 'SEE HISTORY',

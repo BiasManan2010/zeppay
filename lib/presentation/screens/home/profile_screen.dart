@@ -11,6 +11,8 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/profile_media.dart';
+import '../../../data/services/providers.dart';
+import '../../../data/services/security_audit.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -279,7 +281,11 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             GlowButton(
               label: 'SIGN OUT',
-              onTap: () => ref.read(appStoreProvider.notifier).logout(),
+              onTap: () async {
+                final audit = await ref.read(securityAuditProvider.future);
+                await audit.logout();
+                await ref.read(appStoreProvider.notifier).logout();
+              },
             ),
           ],
         ),

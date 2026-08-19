@@ -304,7 +304,7 @@ class _HomeTab extends ConsumerWidget {
                   ),
                 ),
                 child: Text(
-                  'On iPhone: Safari → Share → Add to Home Screen. Zep Pay opens like an app. Camera scan needs Safari permission once.',
+                  'On iPhone: Add to Home Screen, allow Camera once, then pay via Phone (*99# / 123PAY).',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.heroSoft),
