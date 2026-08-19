@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/models.dart';
+import '../local/app_store.dart';
 import 'biometric_service.dart';
 import 'contacts_access.dart';
 import 'otp_service.dart';
@@ -63,4 +64,47 @@ Future<void> hapticTap() async {
 
 Future<void> hapticLock() async {
   await HapticFeedback.mediumImpact();
+}
+
+Future<void> applyPaymentResult(WidgetRef ref, TxStatus status) async {
+  final id = ref.read(pendingTxIdProvider);
+  if (id != null) {
+    await ref.read(appStoreProvider.notifier).resolveTransaction(id, status);
+    final audit = await ref.read(securityAuditProvider.future);
+    await audit.paymentResolved(id, status);
+  }
+  ref.read(paymentSessionProvider.notifier).clear();
+  final draft = ref.read(paymentDraftProvider);
+  if (status == TxStatus.success && draft?.requestId != null) {
+    await ref
+        .read(appStoreProvider.notifier)
+        .updateRequest(draft!.requestId!, RequestStatus.paid);
+  }
+  if (status == TxStatus.success &&
+      draft?.settleGroupId != null &&
+      draft?.settleFromId != null &&
+      draft?.settleToId != null) {
+    await ref.read(appStoreProvider.notifier).addSettlement(
+          Settlement(
+            id: AppStore.id(),
+            groupId: draft!.settleGroupId!,
+            fromId: draft.settleFromId!,
+            toId: draft.settleToId!,
+            amountPaise: draft.amountPaise,
+            createdAt: DateTime.now(),
+            method: 'in_app',
+          ),
+        );
+  }
+}
+
+String routeForTxStatus(TxStatus status) {
+  switch (status) {
+    case TxStatus.success:
+      return '/confirm';
+    case TxStatus.pending:
+      return '/pending';
+    case TxStatus.failed:
+      return '/failed';
+  }
 }

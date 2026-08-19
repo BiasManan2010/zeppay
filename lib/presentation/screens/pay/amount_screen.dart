@@ -23,6 +23,7 @@ class AmountScreen extends ConsumerStatefulWidget {
 
 class _AmountScreenState extends ConsumerState<AmountScreen> {
   var _raw = '';
+  final _terms = <double>[];
   var _category = 'food';
   final _note = TextEditingController();
 
@@ -53,17 +54,59 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
     super.dispose();
   }
 
-  int get _paise {
+  double get _entryValue => double.tryParse(_raw) ?? 0;
+
+  double get _totalRupees =>
+      _terms.fold<double>(0, (a, b) => a + b) + _entryValue;
+
+  int get _paise => (_totalRupees * 100).round();
+
+  String get _breakdown {
+    final parts = <String>[
+      ..._terms.map(_fmtTerm),
+      if (_raw.isNotEmpty) _raw,
+    ];
+    return parts.join('+');
+  }
+
+  String _fmtTerm(double n) {
+    if (n == n.roundToDouble()) return n.toStringAsFixed(0);
+    return n.toStringAsFixed(2);
+  }
+
+  String get _totalLabel {
+    if (_paise <= 0) return '₹0';
+    final r = _totalRupees;
+    if (r == r.roundToDouble()) return '₹${r.toStringAsFixed(0)}';
+    return '₹${r.toStringAsFixed(2)}';
+  }
+
+  void _plus() {
+    HapticFeedback.selectionClick();
+    if (_raw.isEmpty) return;
     final n = double.tryParse(_raw);
-    if (n == null) return 0;
-    return (n * 100).round();
+    if (n == null || n <= 0) return;
+    setState(() {
+      _terms.add(n);
+      _raw = '';
+    });
   }
 
   void _key(String k) {
+    if (k == '+') {
+      _plus();
+      return;
+    }
     HapticFeedback.selectionClick();
     setState(() {
       if (k == '⌫') {
-        if (_raw.isNotEmpty) _raw = _raw.substring(0, _raw.length - 1);
+        if (_raw.isNotEmpty) {
+          _raw = _raw.substring(0, _raw.length - 1);
+          return;
+        }
+        if (_terms.isEmpty) return;
+        final last = _terms.removeLast();
+        _raw = _fmtTerm(last);
         return;
       }
       if (k == '.' && _raw.contains('.')) return;
@@ -80,7 +123,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
       return const Scaffold(body: Center(child: Text('No payee selected')));
     }
     final who = draft.payeeName.isEmpty ? draft.vpa : draft.payeeName;
-    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '0', '⌫'];
     return Scaffold(
       appBar: AppBar(title: const Text('Enter amount')),
       body: SafeArea(
@@ -89,25 +132,37 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             const SizedBox(height: 8),
             Text('Paying $who', style: Theme.of(context).textTheme.titleMedium),
             Text(draft.vpa, style: Theme.of(context).textTheme.bodyMedium),
+            if (isWebApp)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'UPI ID is on the clipboard. Pay opens *99*1*3 in Phone.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
             const Spacer(),
             SoftSwitcher(
               child: Column(
-                key: ValueKey(_raw),
+                key: ValueKey(_totalLabel),
                 children: [
                   Text(
-                    '₹1,00,000',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.textDim,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                  Text(
-                    _raw.isEmpty ? '₹0' : '₹$_raw',
+                    _totalLabel,
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                       fontSize: 52,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (_terms.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        _breakdown,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppColors.heroSoft,
+                            ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -126,7 +181,10 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                   .map(
                     (n) => ActionChip(
                       label: Text('₹$n'),
-                      onPressed: () => setState(() => _raw = '$n'),
+                      onPressed: () => setState(() {
+                        _terms.clear();
+                        _raw = '$n';
+                      }),
                     ),
                   )
                   .toList(),
@@ -177,12 +235,20 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: keys
                   .map(
-                    (k) => HapticScale(
-                      onTap: () => _key(k),
-                      child: Center(
-                        child: Text(
-                          k,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                    (k) => GestureDetector(
+                      onLongPress: k == '0' ? () => _key('.') : null,
+                      child: HapticScale(
+                        onTap: () => _key(k),
+                        child: Center(
+                          child: Text(
+                            k,
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  color: k == '+'
+                                      ? AppColors.hero
+                                      : AppColors.textPrimary,
+                                ),
+                          ),
                         ),
                       ),
                     ),
@@ -192,7 +258,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: GlowButton(
-                label: _paise <= 0 ? 'PAY' : 'PAY ₹$_raw',
+                label: _paise <= 0 ? 'PAY' : 'PAY ${_totalLabel.replaceFirst('₹', '₹')}',
                 onTap: _paise <= 0
                     ? null
                     : () async {

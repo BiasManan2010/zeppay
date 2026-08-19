@@ -12,7 +12,6 @@ import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/payment_status_detector.dart';
 import '../../../data/services/providers.dart';
-import '../../../data/services/security_audit.dart';
 
 class OutcomeScreen extends ConsumerWidget {
   const OutcomeScreen({super.key});
@@ -24,32 +23,9 @@ class OutcomeScreen extends ConsumerWidget {
   ) async {
     final id = ref.read(pendingTxIdProvider);
     if (id != null) {
-      await ref.read(appStoreProvider.notifier).resolveTransaction(id, status);
-      final audit = await ref.read(securityAuditProvider.future);
-      await audit.paymentResolved(id, status);
-    }
-    ref.read(paymentSessionProvider.notifier).clear();
-    final draft = ref.read(paymentDraftProvider);
-    if (status == TxStatus.success && draft?.requestId != null) {
-      await ref
-          .read(appStoreProvider.notifier)
-          .updateRequest(draft!.requestId!, RequestStatus.paid);
-    }
-    if (status == TxStatus.success &&
-        draft?.settleGroupId != null &&
-        draft?.settleFromId != null &&
-        draft?.settleToId != null) {
-      await ref.read(appStoreProvider.notifier).addSettlement(
-            Settlement(
-              id: AppStore.id(),
-              groupId: draft!.settleGroupId!,
-              fromId: draft.settleFromId!,
-              toId: draft.settleToId!,
-              amountPaise: draft.amountPaise,
-              createdAt: DateTime.now(),
-              method: 'in_app',
-            ),
-          );
+      await applyPaymentResult(ref, status);
+    } else {
+      ref.read(paymentSessionProvider.notifier).clear();
     }
     if (!context.mounted) return;
     if (status == TxStatus.success) {
