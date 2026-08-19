@@ -304,9 +304,7 @@ class _HomeTab extends ConsumerWidget {
                   ),
                 ),
                 child: Text(
-                  isIosWeb
-                      ? 'On iPhone: scan a QR, enter amount, then pay in GPay or PhonePe. *99# does not work on iOS.'
-                      : 'On Android browser: scan, amount, then *99# / 123PAY in Phone.',
+                  'On iPhone: scan, amount, then Phone (*99*1*3). UPI ID is copied — paste in the USSD menu.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.heroSoft),
