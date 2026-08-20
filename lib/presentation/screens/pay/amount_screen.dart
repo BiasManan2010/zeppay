@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
@@ -142,29 +141,9 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
                 ),
               ),
             const Spacer(),
-            SoftSwitcher(
-              child: Column(
-                key: ValueKey(_totalLabel),
-                children: [
-                  Text(
-                    _totalLabel,
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      fontSize: 52,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (_terms.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        _breakdown,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppColors.heroSoft,
-                            ),
-                      ),
-                    ),
-                ],
-              ),
+            AmountTotalDisplay(
+              totalLabel: _totalLabel,
+              breakdown: _terms.isNotEmpty ? _breakdown : null,
             ),
             if (_paise > 0)
               Padding(
@@ -297,6 +276,56 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Snappy Paytm-style pop when the summed total changes.
+class AmountTotalDisplay extends StatelessWidget {
+  const AmountTotalDisplay({
+    super.key,
+    required this.totalLabel,
+    this.breakdown,
+  });
+
+  final String totalLabel;
+  final String? breakdown;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 150),
+      switchInCurve: Curves.easeOutBack,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1).animate(anim),
+          child: child,
+        ),
+      ),
+      child: Column(
+        key: ValueKey('$totalLabel|$breakdown'),
+        children: [
+          Text(
+            totalLabel,
+            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 52,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          if (breakdown != null && breakdown!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                breakdown!,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.heroSoft,
+                    ),
+              ),
+            ),
+        ],
       ),
     );
   }

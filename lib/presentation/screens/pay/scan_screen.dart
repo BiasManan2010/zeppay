@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,8 +16,9 @@ import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/qr_parser.dart';
 import 'qr_image_scan.dart';
-import 'scan_lock_overlay.dart';
 import 'qr_scan_transition.dart';
+import 'scan_lock_overlay.dart';
+import 'scan_viewfinder.dart';
 import 'web_qr_scanner.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -27,23 +29,29 @@ class ScanScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanScreenState extends ConsumerState<ScanScreen>
-    with WidgetsBindingObserver {
-  final _scanWindow = GlobalKey();
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   MobileScannerController? _controller;
+  late final AnimationController _scanAnim;
+
   var _locked = false;
   var _ready = false;
   var _denied = false;
   var _torch = false;
   var _webCameraError = false;
   var _webCameraLive = false;
-  var _shatter = false;
   var _webScanEpoch = 0;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
   PaymentDraft? _hit;
 
+  static const _frameSize = 284.0;
+
   @override
   void initState() {
     super.initState();
+    _scanAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
     if (!isWebApp) {
       _controller = MobileScannerController(
         autoStart: true,
@@ -53,7 +61,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
         formats: const [BarcodeFormat.qrCode],
       );
       WidgetsBinding.instance.addObserver(this);
-      _prepCamera();
+      unawaited(_prepCamera());
     } else {
       _ready = true;
     }
@@ -95,6 +103,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   @override
   void dispose() {
+    _scanAnim.dispose();
     if (!isWebApp) {
       WidgetsBinding.instance.removeObserver(this);
       unawaited(_safeStop());
@@ -123,28 +132,44 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _locked = true;
     HapticFeedback.mediumImpact();
     await Clipboard.setData(ClipboardData(text: draft.vpa));
-    setState(() {
-      _hit = draft;
-      _shatter = true;
-    });
+    _hit = draft;
     if (!isWebApp) await _safeStop();
+    if (!mounted) return;
+    _playShatterTransition(draft);
   }
 
-  Future<void> _afterShatter() async {
-    if (!mounted) return;
-    final draft = _hit;
-    if (draft == null) return;
-    ref.read(paymentDraftProvider.notifier).state = draft;
-    await context.push('/pay/amount');
-    if (!mounted) return;
-    _locked = false;
-    _hit = null;
-    _shatter = false;
-    _webCameraError = false;
-    _webCameraLive = false;
-    _webScanEpoch++;
-    setState(() {});
-    if (!isWebApp) unawaited(_safeStart());
+  void _playShatterTransition(PaymentDraft draft) {
+    final reduce = MediaQuery.of(context).disableAnimations;
+    final frame = _frameFor(context);
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    var navigated = false;
+
+    entry = OverlayEntry(
+      builder: (_) => QrScanTransition(
+        frameSize: frame,
+        reducedMotion: reduce,
+        onReveal: () {
+          if (navigated || !mounted) return;
+          navigated = true;
+          ref.read(paymentDraftProvider.notifier).state = draft;
+          context.push('/pay/amount');
+        },
+        onComplete: () {
+          entry.remove();
+          if (!mounted) return;
+          setState(() {
+            _locked = false;
+            _hit = null;
+            _webCameraError = false;
+            _webCameraLive = false;
+            _webScanEpoch++;
+          });
+          if (!isWebApp) unawaited(_safeStart());
+        },
+      ),
+    );
+    overlay.insert(entry);
   }
 
   Future<void> _onDetect(BarcodeCapture cap) async {
@@ -224,26 +249,33 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     } catch (_) {}
   }
 
+  double _frameFor(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    return math.min(_frameSize, w - 48);
+  }
+
   Widget _toolbar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
       child: Row(
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.close, color: AppColors.white),
+            icon: const Icon(Icons.close_rounded, color: AppColors.white),
           ),
           const Spacer(),
           Text(
-            _locked ? 'LOCKED' : 'SCAN QR',
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge
-                ?.copyWith(color: AppColors.white),
+            _locked ? 'LOCKED' : 'SCAN & PAY',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: AppColors.white,
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           const Spacer(),
           IconButton(
             onPressed: _fromGallery,
+            tooltip: 'Gallery',
             icon: const Icon(
               Icons.photo_library_outlined,
               color: AppColors.white,
@@ -252,6 +284,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
           if (!isWebApp)
             IconButton(
               onPressed: _toggleTorch,
+              tooltip: 'Torch',
               icon: Icon(
                 _torch ? Icons.flash_on_rounded : Icons.flash_off_rounded,
                 color: AppColors.white,
@@ -263,13 +296,24 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   }
 
   Widget _nativeCamera() {
-    if (!_ready) {
-      return ColoredBox(
+    if (_denied) {
+      return const ColoredBox(
         color: AppColors.baseAlt,
         child: Center(
           child: Text(
-            _denied ? 'Camera permission is off.' : 'Starting camera…',
-            style: const TextStyle(color: AppColors.white),
+            'Camera permission is off.',
+            style: TextStyle(color: AppColors.white),
+          ),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const ColoredBox(
+        color: AppColors.baseAlt,
+        child: Center(
+          child: Text(
+            'Starting camera…',
+            style: TextStyle(color: AppColors.white),
           ),
         ),
       );
@@ -278,37 +322,80 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       controller: _controller!,
       onDetect: _onDetect,
       fit: BoxFit.cover,
-      errorBuilder: (context, error) {
-        return ColoredBox(
-          color: AppColors.baseAlt,
-          child: Center(
-            child: Text(
-              '$error',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.white),
-            ),
+      errorBuilder: (context, error) => ColoredBox(
+        color: AppColors.baseAlt,
+        child: Center(
+          child: Text(
+            '$error',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _scanWindow(double frame) {
+    final hunting = !_locked;
+    final beamOn = hunting && (isWebApp ? _webCameraLive : _ready);
+    return AnimatedBuilder(
+      animation: _scanAnim,
+      builder: (context, _) {
+        return SizedBox(
+          width: frame,
+          height: frame,
+          child: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: [
+              if (isWebApp)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: WebQrScanner(
+                    key: ValueKey(_webScanEpoch),
+                    onDetect: _handleRaw,
+                    onCameraStarted: () =>
+                        setState(() => _webCameraLive = true),
+                    onCameraStopped: () =>
+                        setState(() => _webCameraLive = false),
+                    onCameraError: () => setState(() {
+                      _webCameraError = true;
+                      _webCameraLive = false;
+                    }),
+                  ),
+                ),
+              if (hunting || _locked)
+                IgnorePointer(
+                  child: ScanViewfinder(
+                    t: _scanAnim.value,
+                    locked: _locked,
+                    showBeam: beamOn,
+                  ),
+                ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _hints() {
+  Widget _bottomHints() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_hit != null)
             MerchantLockCard(name: _hit!.payeeName, vpa: _hit!.vpa)
           else
             Text(
-              _denied || _webCameraError
-                  ? (isWebApp
-                      ? 'Safari blocked the camera. Settings → Safari → Camera → Allow, then reopen Zep Pay.'
-                      : 'Camera permission is off. Enable it to scan.')
-                  : 'Tap Start camera, then hold a UPI QR in the frame.',
+              _hintText(),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.white),
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                height: 1.45,
+                fontSize: 14,
+              ),
             ),
           if (_denied || _webCameraError) ...[
             const SizedBox(height: 12),
@@ -320,7 +407,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
             TextButton(
               onPressed: () {
                 if (isWebApp) {
-                  setState(() => _webCameraError = false);
+                  setState(() {
+                    _webCameraError = false;
+                    _webScanEpoch++;
+                  });
                 } else {
                   _prepCamera();
                 }
@@ -333,117 +423,51 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     );
   }
 
+  String _hintText() {
+    if (_denied) {
+      return isWebApp
+          ? 'Safari blocked the camera. Settings → Safari → Camera → Allow.'
+          : 'Camera permission is off. Enable it to scan.';
+    }
+    if (_webCameraError) {
+      return 'Camera blocked. Allow camera access, then tap START CAMERA again.';
+    }
+    if (isWebApp && !_webCameraLive) {
+      return 'Align any UPI QR inside the frame. Tap START CAMERA when ready.';
+    }
+    return 'Hold a UPI QR steady inside the glowing frame.';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final reduce = MediaQuery.of(context).disableAnimations;
-    final webLive = isWebApp && _webCameraLive;
+    final frame = _frameFor(context);
+
     return Scaffold(
-      backgroundColor: webLive ? Colors.transparent : AppColors.base,
+      backgroundColor: AppColors.base,
       body: Stack(
         fit: StackFit.expand,
         children: [
+          if (!isWebApp) Positioned.fill(child: _nativeCamera()),
           if (!isWebApp)
-            Positioned.fill(child: _nativeCamera()),
-          if (!isWebApp)
-            const Positioned.fill(
-              child: IgnorePointer(child: ScanIdleFrame()),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: ScanDimOverlay(frameSize: frame),
+              ),
             ),
           SafeArea(
             child: Column(
               children: [
-                ColoredBox(
-                  color: AppColors.base,
-                  child: _toolbar(),
-                ),
-                Expanded(
-                  child: isWebApp
-                      ? ColoredBox(
-                          color: webLive ? Colors.transparent : AppColors.base,
-                          child: Center(
-                            child: SizedBox(
-                              key: _scanWindow,
-                              width: 268,
-                              height: 268,
-                              child: const IgnorePointer(child: _WebScanFrame()),
-                            ),
-                          ),
-                        )
-                      : const SizedBox.expand(),
-                ),
-                ColoredBox(
-                  color: AppColors.base,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isWebApp)
-                        WebQrScanner(
-                          key: ValueKey(_webScanEpoch),
-                          scanWindowKey: _scanWindow,
-                          onDetect: _handleRaw,
-                          onCameraStarted: () =>
-                              setState(() => _webCameraLive = true),
-                          onCameraStopped: () =>
-                              setState(() => _webCameraLive = false),
-                          onCameraError: () => setState(() {
-                            _webCameraError = true;
-                            _webCameraLive = false;
-                          }),
-                        ),
-                      _hints(),
-                    ],
-                  ),
-                ),
+                _toolbar(),
+                const Spacer(),
+                _scanWindow(frame),
+                const SizedBox(height: 28),
+                const Spacer(),
+                _bottomHints(),
               ],
             ),
           ),
-          if (_shatter)
-            Positioned.fill(
-              child: QrScanTransition(
-                reducedMotion: reduce,
-                onComplete: () {
-                  unawaited(_afterShatter());
-                },
-              ),
-            ),
         ],
       ),
     );
   }
-}
-
-class _WebScanFrame extends StatelessWidget {
-  const _WebScanFrame();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 268,
-      height: 268,
-      child: CustomPaint(painter: _WebFramePainter()),
-    );
-  }
-}
-
-class _WebFramePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    const l = 28.0;
-    final p = Paint()
-      ..color = kScanCyanSoft
-      ..strokeWidth = 3.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    void corner(Offset o, double sx, double sy) {
-      canvas.drawLine(o, o.translate(sx * l, 0), p);
-      canvas.drawLine(o, o.translate(0, sy * l), p);
-    }
-
-    corner(Offset.zero, 1, 1);
-    corner(Offset(size.width, 0), -1, 1);
-    corner(Offset(0, size.height), 1, -1);
-    corner(Offset(size.width, size.height), -1, -1);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
