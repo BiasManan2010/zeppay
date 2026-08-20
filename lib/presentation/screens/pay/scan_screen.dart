@@ -30,6 +30,7 @@ class ScanScreen extends ConsumerStatefulWidget {
 
 class _ScanScreenState extends ConsumerState<ScanScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
+  final _scanFrameKey = GlobalKey();
   MobileScannerController? _controller;
   late final AnimationController _scanAnim;
 
@@ -342,26 +343,28 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       animation: _scanAnim,
       builder: (context, _) {
         return SizedBox(
+          key: _scanFrameKey,
           width: frame,
           height: frame,
           child: Stack(
             clipBehavior: Clip.none,
             fit: StackFit.expand,
             children: [
-              if (isWebApp)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: WebQrScanner(
-                    key: ValueKey(_webScanEpoch),
-                    onDetect: _handleRaw,
-                    onCameraStarted: () =>
-                        setState(() => _webCameraLive = true),
-                    onCameraStopped: () =>
-                        setState(() => _webCameraLive = false),
-                    onCameraError: () => setState(() {
-                      _webCameraError = true;
-                      _webCameraLive = false;
-                    }),
+              if (isWebApp && !_webCameraLive)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A0A0B),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.qr_code_scanner_rounded,
+                      size: 64,
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                 ),
               if (hunting || _locked)
@@ -460,7 +463,21 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                 _toolbar(),
                 const Spacer(),
                 _scanWindow(frame),
-                const SizedBox(height: 28),
+                if (isWebApp)
+                  WebQrScanner(
+                    key: ValueKey(_webScanEpoch),
+                    scanWindowKey: _scanFrameKey,
+                    onDetect: _handleRaw,
+                    onCameraStarted: () =>
+                        setState(() => _webCameraLive = true),
+                    onCameraStopped: () =>
+                        setState(() => _webCameraLive = false),
+                    onCameraError: () => setState(() {
+                      _webCameraError = true;
+                      _webCameraLive = false;
+                    }),
+                  ),
+                const SizedBox(height: 12),
                 const Spacer(),
                 _bottomHints(),
               ],
