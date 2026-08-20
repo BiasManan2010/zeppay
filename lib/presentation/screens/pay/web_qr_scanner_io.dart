@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Native camera preview is web-only.
+/// Native camera preview is handled by [MobileScanner] in [ScanScreen].
 class WebQrScanner extends StatelessWidget {
   const WebQrScanner({
     super.key,
@@ -8,15 +8,13 @@ class WebQrScanner extends StatelessWidget {
     this.onCameraError,
     this.onCameraStarted,
     this.onCameraStopped,
-    this.scanWindowKey,
   });
 
   final ValueChanged<String> onDetect;
   final VoidCallback? onCameraError;
   final VoidCallback? onCameraStarted;
   final VoidCallback? onCameraStopped;
-  final GlobalKey? scanWindowKey;
 
   @override
-  Widget build(BuildContext context) => const SizedBox.expand();
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
