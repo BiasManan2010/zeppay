@@ -75,18 +75,25 @@ class _TileSpec {
   final double delay;
 }
 
-/// Lock-on glow → mosaic shatter → whiteout. Then [onComplete].
+/// Lock-on glow → mosaic shatter → whiteout → fade out. Then [onComplete].
+///
+/// [onReveal] fires when the screen is fully white so the payment screen can
+/// mount underneath before the white overlay fades away.
 class QrScanTransition extends StatefulWidget {
   const QrScanTransition({
     super.key,
     required this.onComplete,
+    this.onReveal,
     this.brand = 'Zep Pay',
     this.reducedMotion = false,
+    this.frameSize = 284,
   });
 
   final VoidCallback onComplete;
+  final VoidCallback? onReveal;
   final String brand;
   final bool reducedMotion;
+  final double frameSize;
 
   @override
   State<QrScanTransition> createState() => _QrScanTransitionState();
@@ -97,27 +104,37 @@ class _QrScanTransitionState extends State<QrScanTransition>
   late final AnimationController _c;
   late final List<_TileSpec> _tiles;
   var _done = false;
+  var _revealed = false;
+
+  static const _lockEnd = 0.15;
+  static const _shatterEnd = 0.74;
+  static const _holdEnd = 0.84;
+  static const _tileCount = 45;
 
   @override
   void initState() {
     super.initState();
     final rng = math.Random(7);
-    _tiles = List.generate(42, (i) {
-      final dist = rng.nextDouble();
+    _tiles = List.generate(_tileCount, (_) {
+      final nx = 0.06 + rng.nextDouble() * 0.88;
+      final ny = 0.06 + rng.nextDouble() * 0.88;
+      final dx = nx - 0.5;
+      final dy = ny - 0.5;
+      final dist = math.sqrt(dx * dx + dy * dy);
       return _TileSpec(
-        nx: 0.12 + rng.nextDouble() * 0.76,
-        ny: 0.12 + rng.nextDouble() * 0.76,
-        w: 22 + rng.nextDouble() * 68,
-        h: 22 + rng.nextDouble() * 68,
-        delay: 0.16 + dist * 0.42 + rng.nextDouble() * 0.08,
+        nx: nx,
+        ny: ny,
+        w: 20 + rng.nextDouble() * 70,
+        h: 20 + rng.nextDouble() * 70,
+        delay: _lockEnd + dist * 0.42 + rng.nextDouble() * 0.06,
       );
     });
     _c = AnimationController(
       vsync: this,
       duration: widget.reducedMotion
-          ? const Duration(milliseconds: 280)
-          : const Duration(milliseconds: 1180),
-    )..addStatusListener((s) {
+          ? const Duration(milliseconds: 320)
+          : const Duration(milliseconds: 1320),
+    )..addListener(_onTick)..addStatusListener((s) {
         if (s == AnimationStatus.completed && !_done) {
           _done = true;
           widget.onComplete();
@@ -126,8 +143,18 @@ class _QrScanTransitionState extends State<QrScanTransition>
     _c.forward();
   }
 
+  void _onTick() {
+    if (_revealed || widget.onReveal == null) return;
+    final threshold = widget.reducedMotion ? 0.35 : _shatterEnd;
+    if (_c.value >= threshold) {
+      _revealed = true;
+      widget.onReveal!();
+    }
+  }
+
   @override
   void dispose() {
+    _c.removeListener(_onTick);
     _c.dispose();
     super.dispose();
   }
@@ -138,93 +165,117 @@ class _QrScanTransitionState extends State<QrScanTransition>
       animation: _c,
       builder: (context, _) {
         final t = _c.value;
-        final glow = widget.reducedMotion
-            ? 1.0
-            : Curves.easeOut.transform((t / 0.22).clamp(0.0, 1.0));
-        final pulse = widget.reducedMotion
-            ? 1.0
-            : 1 + 0.02 * math.sin((t / 0.22).clamp(0.0, 1.0) * math.pi);
-        final white = widget.reducedMotion
-            ? Curves.easeOut.transform(t)
-            : ((t - 0.78) / 0.22).clamp(0.0, 1.0);
-        final brandT = widget.reducedMotion
-            ? t
-            : ((t - 0.28) / 0.4).clamp(0.0, 1.0);
+        final rm = widget.reducedMotion;
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Transform.scale(
-                scale: pulse,
-                child: Container(
-                  width: 276,
-                  height: 276,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: kScanCyan.withValues(alpha: 0.35 + 0.65 * glow),
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kScanCyan.withValues(alpha: 0.55 * glow),
-                        blurRadius: 8 + 22 * glow,
-                        spreadRadius: 2 * glow,
+        final glow = rm
+            ? 1.0
+            : Curves.easeOut.transform((t / _lockEnd).clamp(0.0, 1.0));
+        final pulse = rm
+            ? 1.0
+            : 1 +
+                0.02 *
+                    math.sin(
+                      (t / _lockEnd).clamp(0.0, 1.0) * math.pi,
+                    );
+
+        final brandT = rm
+            ? t
+            : ((t - 0.22) / 0.48).clamp(0.0, 1.0);
+
+        final whiteOpacity = rm
+            ? (t < 0.55
+                ? Curves.easeOut.transform(t / 0.55)
+                : 1 - Curves.easeIn.transform(((t - 0.55) / 0.45).clamp(0.0, 1.0)))
+            : _whiteOpacity(t);
+
+        return Material(
+          color: Colors.transparent,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Center(
+                child: Transform.scale(
+                  scale: pulse,
+                  child: Container(
+                    width: widget.frameSize + 8,
+                    height: widget.frameSize + 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: kScanCyan.withValues(alpha: 0.35 + 0.65 * glow),
+                        width: 3,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Opacity(
-              opacity: brandT,
-              child: Transform.scale(
-                scale: 0.92 + 0.08 * brandT,
-                child: Center(
-                  child: Text(
-                    widget.brand,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.4,
-                      shadows: [
-                        Shadow(color: Colors.black54, blurRadius: 12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kScanCyan.withValues(alpha: 0.55 * glow),
+                          blurRadius: 12 + 24 * glow,
+                          spreadRadius: 2 + 4 * glow,
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
-            if (!widget.reducedMotion)
-              ..._tiles.map((tile) {
-                final local = ((t - tile.delay) / 0.28).clamp(0.0, 1.0);
-                final appear = Curves.easeOut.transform(local);
-                return Positioned(
-                  left: MediaQuery.sizeOf(context).width * tile.nx - tile.w / 2,
-                  top: MediaQuery.sizeOf(context).height * tile.ny - tile.h / 2,
-                  child: Opacity(
-                    opacity: appear,
-                    child: Transform.scale(
-                      scale: 0.6 + 0.4 * appear,
-                      child: Container(
-                        width: tile.w,
-                        height: tile.h,
+              Opacity(
+                opacity: brandT,
+                child: Transform.scale(
+                  scale: 0.92 + 0.08 * brandT,
+                  child: Center(
+                    child: Text(
+                      widget.brand,
+                      style: const TextStyle(
                         color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
+                        shadows: [
+                          Shadow(color: Colors.black54, blurRadius: 12),
+                        ],
                       ),
                     ),
                   ),
-                );
-              }),
-            IgnorePointer(
-              child: ColoredBox(
-                color: Colors.white.withValues(alpha: white),
+                ),
               ),
-            ),
-          ],
+              if (!rm)
+                ..._tiles.map((tile) {
+                  final local = ((t - tile.delay) / 0.30).clamp(0.0, 1.0);
+                  final appear = Curves.easeOut.transform(local);
+                  return Positioned(
+                    left: MediaQuery.sizeOf(context).width * tile.nx - tile.w / 2,
+                    top: MediaQuery.sizeOf(context).height * tile.ny - tile.h / 2,
+                    child: Opacity(
+                      opacity: appear,
+                      child: Transform.scale(
+                        scale: 0.6 + 0.4 * appear,
+                        child: Container(
+                          width: tile.w,
+                          height: tile.h,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              IgnorePointer(
+                child: ColoredBox(
+                  color: Colors.white.withValues(alpha: whiteOpacity),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
+  }
+
+  double _whiteOpacity(double t) {
+    if (t < _shatterEnd) {
+      return ((t - 0.58) / 0.22).clamp(0.0, 1.0);
+    }
+    if (t < _holdEnd) return 1;
+    return 1 -
+        Curves.easeInOut.transform(
+          ((t - _holdEnd) / (1 - _holdEnd)).clamp(0.0, 1.0),
+        );
   }
 }

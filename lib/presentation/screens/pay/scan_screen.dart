@@ -39,7 +39,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   var _torch = false;
   var _webCameraError = false;
   var _webCameraLive = false;
-  var _shatter = false;
   var _webScanEpoch = 0;
   DateTime _missAt = DateTime.fromMillisecondsSinceEpoch(0);
   PaymentDraft? _hit;
@@ -133,28 +132,44 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _locked = true;
     HapticFeedback.mediumImpact();
     await Clipboard.setData(ClipboardData(text: draft.vpa));
-    setState(() {
-      _hit = draft;
-      _shatter = true;
-    });
+    _hit = draft;
     if (!isWebApp) await _safeStop();
+    if (!mounted) return;
+    _playShatterTransition(draft);
   }
 
-  Future<void> _afterShatter() async {
-    if (!mounted) return;
-    final draft = _hit;
-    if (draft == null) return;
-    ref.read(paymentDraftProvider.notifier).state = draft;
-    await context.push('/pay/amount');
-    if (!mounted) return;
-    _locked = false;
-    _hit = null;
-    _shatter = false;
-    _webCameraError = false;
-    _webCameraLive = false;
-    _webScanEpoch++;
-    setState(() {});
-    if (!isWebApp) unawaited(_safeStart());
+  void _playShatterTransition(PaymentDraft draft) {
+    final reduce = MediaQuery.of(context).disableAnimations;
+    final frame = _frameFor(context);
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    var navigated = false;
+
+    entry = OverlayEntry(
+      builder: (_) => QrScanTransition(
+        frameSize: frame,
+        reducedMotion: reduce,
+        onReveal: () {
+          if (navigated || !mounted) return;
+          navigated = true;
+          ref.read(paymentDraftProvider.notifier).state = draft;
+          context.push('/pay/amount');
+        },
+        onComplete: () {
+          entry.remove();
+          if (!mounted) return;
+          setState(() {
+            _locked = false;
+            _hit = null;
+            _webCameraError = false;
+            _webCameraLive = false;
+            _webScanEpoch++;
+          });
+          if (!isWebApp) unawaited(_safeStart());
+        },
+      ),
+    );
+    overlay.insert(entry);
   }
 
   Future<void> _onDetect(BarcodeCapture cap) async {
@@ -321,7 +336,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   }
 
   Widget _scanWindow(double frame) {
-    final hunting = !_locked && !_shatter;
+    final hunting = !_locked;
     final beamOn = hunting && (isWebApp ? _webCameraLive : _ready);
     return AnimatedBuilder(
       animation: _scanAnim,
@@ -425,7 +440,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    final reduce = MediaQuery.of(context).disableAnimations;
     final frame = _frameFor(context);
 
     return Scaffold(
@@ -452,13 +466,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
               ],
             ),
           ),
-          if (_shatter)
-            Positioned.fill(
-              child: QrScanTransition(
-                reducedMotion: reduce,
-                onComplete: () => unawaited(_afterShatter()),
-              ),
-            ),
         ],
       ),
     );
