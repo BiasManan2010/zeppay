@@ -758,30 +758,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Auto USSD mode'),
               subtitle: Text(
                 _ussdReady
-                    ? 'Zep Pay overlay on carrier dialogs (Accessibility + overlay).'
+                    ? 'Overlay on carrier USSD or 123PAY IVR — Jio supported.'
                     : 'Enable Zep Pay USSD Assistant in Accessibility, then allow overlay.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               value: _ussdAuto,
               onChanged: (v) async {
-                if (v) {
-                  final info = await ref.read(telephonyServiceProvider).networkInfo();
-                  if (info.isJio || !info.ussdSupported) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Auto USSD is not supported on Jio. Use Manual mode or 123PAY IVR.',
-                          ),
-                        ),
-                      );
-                    }
-                    return;
-                  }
-                  if (!_ussdReady) {
-                    await UssdBridge.openAccessibilitySettings();
-                    return;
-                  }
+                if (v && !_ussdReady) {
+                  await UssdBridge.openAccessibilitySettings();
+                  return;
                 }
                 await UxPrefs.saveUssdAutoMode(v);
                 if (mounted) setState(() => _ussdAuto = v);

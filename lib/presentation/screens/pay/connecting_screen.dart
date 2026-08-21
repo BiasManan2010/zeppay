@@ -13,6 +13,7 @@ import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/dial_return.dart';
+import '../../../data/services/network_info.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/payment_tracker.dart';
 import '../../../data/services/providers.dart';
@@ -47,13 +48,13 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
     required String refCode,
     required SecurityAudit audit,
     required dynamic tel,
+    required NetworkInfo info,
   }) async {
     final session = ref.read(paymentSessionProvider.notifier);
     var autoActive = false;
     if (isAndroidDevice && !isWebApp) {
       final autoMode = await UxPrefs.ussdAutoMode();
-      final info = await tel.networkInfo();
-      if (autoMode && info.ussdSupported) {
+      if (autoMode && (info.ussdSupported || info.isJio)) {
         final ready = await UssdBridge.isAutoReady();
         if (ready) {
           await UssdBridge.init();
@@ -69,8 +70,12 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       setState(() {
         _label = autoActive ? 'Auto USSD…' : 'Opening Phone…';
         _detail = autoActive
-            ? 'Zep Pay overlay collects your PIN — not the carrier popup.\nTxn $refCode'
-            : 'UPI ID copied. *99*1*3 is send-to-UPI. Paste if asked, then PIN.\nTxn $refCode';
+            ? (info.isJio
+                ? 'Zep Pay overlay guides 123PAY IVR on Jio.\nTxn $refCode'
+                : 'Zep Pay overlay collects your PIN — not the carrier popup.\nTxn $refCode')
+            : info.isJio
+                ? '123PAY IVR opens for Jio. Follow voice prompts, then PIN.\nTxn $refCode'
+                : 'UPI ID copied. *99*1*3 is send-to-UPI. Paste if asked, then PIN.\nTxn $refCode';
       });
       await audit.dialOpened(txId, dial);
       await session.markDialOpened(dial);
@@ -115,7 +120,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
     try {
       await tel.requestPermissions();
       final info = await tel.networkInfo();
-      final rail = RailEngine.select(info);
+      final rail = isIosWeb ? PaymentRail.upiIntent : RailEngine.select(info);
       ref.read(lastRailProvider.notifier).state = rail;
       final dial = RailEngine.dialFor(rail, draft);
       final refCode = AppStore.payRef();
@@ -143,23 +148,15 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
           );
       setState(() => _txnId = refCode);
 
-      if (isWebApp || rail == PaymentRail.ussd || rail == PaymentRail.ivr) {
-        await _runOfflineDial(
-          draft: draft,
-          dial: dial,
-          txId: tx.id,
-          refCode: refCode,
-          audit: audit,
-          tel: tel,
-        );
-        return;
-      }
-
-      if (!isAndroidDevice) {
+      if (rail == PaymentRail.upiIntent) {
         setState(() {
           _label = 'Opening your UPI app';
-          _detail = RailEngine.upiUri(draft);
+          _detail = info.isJio
+              ? 'Jio: pay in GPay / PhonePe with your UPI PIN.\nTxn $refCode'
+              : 'Complete payment in your UPI app.\nTxn $refCode';
         });
+        await Clipboard.setData(ClipboardData(text: draft.vpa));
+        await ref.read(paymentSessionProvider.notifier).markUpiCopied();
         await Future<void>.delayed(const Duration(milliseconds: 400));
         final uri = Uri.parse(RailEngine.upiUri(draft));
         var opened = false;
@@ -187,6 +184,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
         refCode: refCode,
         audit: audit,
         tel: tel,
+        info: info,
       );
     } catch (e) {
       setState(() => _error = e.toString());

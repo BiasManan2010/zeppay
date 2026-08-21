@@ -66,7 +66,7 @@ jobs:
       - name: Enable web
         run: flutter config --enable-web
 
-      - name: Build PWA
+      - name: Build Android web app
         env:
           TWILIO_VERIFY_URL: ${{ secrets.TWILIO_VERIFY_URL }}
         run: |
@@ -74,34 +74,72 @@ jobs:
             --base-href /zeppay/ \
             --dart-define=TWILIO_VERIFY_URL=${TWILIO_VERIFY_URL:-https://zeppay.onrender.com}
 
-      - name: Upload PWA artifact
+      - name: Upload Android web artifact
         uses: actions/upload-artifact@v4
         with:
           name: zeppay-pwa
           path: build/web
           if-no-files-found: error
 
-  pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [pwa]
+  ios-web:
     runs-on: ubuntu-latest
     steps:
-      - name: Download PWA
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: zeppay-pwa/package-lock.json
+
+      - name: Install and build iOS website
+        working-directory: zeppay-pwa
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload iOS website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeppay-ios-web
+          path: zeppay-pwa/dist
+          if-no-files-found: error
+
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [pwa, ios-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Android web
         uses: actions/download-artifact@v4
         with:
           name: zeppay-pwa
-          path: public
+          path: site/zeppay
+
+      - name: Download iOS website
+        uses: actions/download-artifact@v4
+        with:
+          name: zeppay-ios-web
+          path: site/ios
+
+      - name: Add site root redirect
+        run: cp gh-pages-root/index.html site/index.html
 
       - name: Publish GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: public
+          publish_dir: site
           force_orphan: true
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [apk, pwa]
+    needs: [apk, pwa, ios-web]
     runs-on: ubuntu-latest
     steps:
       - name: Download APK
@@ -116,12 +154,15 @@ jobs:
           tag_name: app-${{ github.run_number }}
           name: Zep Pay ${{ github.run_number }}
           body: |
-            **Android:** download `app-release.apk` → allow unknown sources → install.
+            **Android APK:** download `app-release.apk` → allow unknown sources → install.
 
-            **iPhone:** open the PWA (no IPA):
-            https://biasmanan2010.github.io/zeppay/
+            **iPhone (website, not Flutter PWA):**
+            https://biasmanan2010.github.io/ios/
+            Safari → Share → **Add to Home Screen**
 
-            Safari → Share → **Add to Home Screen**. Offline `*99#` / 123PAY is Android-only.
+            **Android browser:** https://biasmanan2010.github.io/zeppay/
+
+            Jio: 123PAY IVR on Android APK · UPI app on iPhone.
 
             OTP: live Twilio if configured, otherwise **123456**.
           files: |
