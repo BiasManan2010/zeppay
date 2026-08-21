@@ -15,11 +15,11 @@ Cross-platform Flutter UPI app: one QR scan + biometric confirmation, then Andro
 GitHub Actions builds the Android APK, an **Android web app**, and a separate **iPhone website** (React — not the Flutter PWA).
 
 - **Actions artifacts:** [github.com/BiasManan2010/zeppay/actions](https://github.com/BiasManan2010/zeppay/actions) → `zeppay-apk`, `zeppay-pwa`, `zeppay-ios-web`
-- **iPhone (Safari):** [biasmanan2010.github.io/ios/](https://biasmanan2010.github.io/ios/) → Share → **Add to Home Screen** (UPI app handoff — works on Jio)
+- **iPhone (Safari):** [biasmanan2010.github.io/zeppay/ios/](https://biasmanan2010.github.io/zeppay/ios/) → Share → **Add to Home Screen** (UPI app handoff — works on Jio)
 - **Android browser:** [biasmanan2010.github.io/zeppay/](https://biasmanan2010.github.io/zeppay/)
 - **Android APK:** [github.com/BiasManan2010/zeppay/releases](https://github.com/BiasManan2010/zeppay/releases)
 
-Opening the old Flutter URL on iPhone redirects to `/ios/` automatically.
+Opening the old Flutter URL on iPhone redirects to `/zeppay/ios/` automatically.
 
 Onboarding on the APK includes a **permissions step** (camera + phone) before the app is ready to pay. Jio uses **123PAY IVR** on Android; iPhone uses **UPI apps** (GPay / PhonePe).
 
