@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/platform.dart';
+import '../../../core/ios_web_redirect.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
@@ -11,6 +12,7 @@ import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/services/profile_media.dart';
 import '../../../data/services/providers.dart';
+import 'onboarding_permissions.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -27,6 +29,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _step = 0;
   var _busy = false;
   var _upiTouched = false;
+  var _permissionsReady = false;
   String? _error;
 
   static const _banks = ['SBI', 'HDFC', 'ICICI', 'Axis', 'Kotak', 'Other'];
@@ -34,6 +37,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
+    if (isIosWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        redirectIosToPaySite();
+      });
+    }
     final p = ref.read(appStoreProvider).profile;
     if (p != null && p.name.isNotEmpty && p.name.toLowerCase() != 'you') {
       _name.text = p.name;
@@ -101,6 +109,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       });
       return;
     }
+    if (_step == 2) {
+      if (!_permissionsReady && !isIosWeb) {
+        setState(() => _error = 'Allow the required permissions to continue.');
+        return;
+      }
+      setState(() {
+        _step = 3;
+        _error = null;
+      });
+      return;
+    }
     setState(() => _busy = true);
     final bio = ref.read(biometricServiceProvider);
     final available = await bio.isAvailable();
@@ -128,13 +147,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['Put your name on it.', 'Handle + bank.', 'Lock the phone.'];
+    if (isIosWeb) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            'Opening Zep Pay for iPhone…',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+        ),
+      );
+    }
+
+    final titles = [
+      'Put your name on it.',
+      'Handle + bank.',
+      'Permissions.',
+      'Lock the phone.',
+    ];
     final bodies = [
       'This is what people see on your QR. Tap the photo to change it.',
-      'Most people pay from SBI / HDFC / ICICI. We parked SBI. Change it if that’s not you.',
+      'Most people pay from SBI / HDFC / ICICI. Jio works via 123PAY on Android and UPI apps on iPhone.',
+      'Camera and phone access are required before your first payment.',
       isWebApp
-          ? 'On iPhone this is your last step. Next screens open GPay / PhonePe for the UPI PIN.'
-          : 'Without this, anyone with the phone can fire *99#. You’re one confirm from sealing it.',
+          ? 'Last step — seal the wallet on this device.'
+          : 'Without this, anyone with the phone can fire *99# or 123PAY.',
     ];
     return AuthBackdrop(
       child: Padding(
@@ -144,11 +180,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           children: [
             GoalBar(
               done: 2 + _step,
-              total: 4,
+              total: 5,
               label: 'Number already in · finish your card',
             ),
             const SizedBox(height: 16),
-            StepPills(count: 3, index: _step),
+            StepPills(count: 4, index: _step),
             const SizedBox(height: 20),
             Text(titles[_step], style: Theme.of(context).textTheme.displayMedium)
                 .animate(key: ValueKey(_step))
@@ -160,130 +196,138 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
             const SizedBox(height: 16),
-            ZepCardPreview(
-              name: _name.text,
-              handle: _upi.text,
-              bank: _bank.text,
-            ),
-            const SizedBox(height: 14),
+            if (_step < 2)
+              ZepCardPreview(
+                name: _name.text,
+                handle: _upi.text,
+                bank: _bank.text,
+              ),
+            if (_step < 2) const SizedBox(height: 14),
             Expanded(
               child: SingleChildScrollView(
                 child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                child: _step == 0
-                    ? GlassPanel(
-                        key: const ValueKey('you'),
-                        child: Column(
-                          children: [
-                            HapticScale(
-                              onTap: () async {
-                                final path = await ProfileMedia.pick();
-                                if (path == null) return;
-                                final p = ref.read(appStoreProvider).profile;
-                                if (p == null) return;
-                                await ref
-                                    .read(appStoreProvider.notifier)
-                                    .updateProfile(p.copyWith(photoPath: path));
-                                if (mounted) setState(() {});
-                              },
-                              child: ProfileAvatar(
-                                name: _name.text,
-                                photoPath: ref
-                                        .watch(appStoreProvider)
-                                        .profile
-                                        ?.photoPath ??
-                                    '',
-                                size: 84,
-                                showEdit: true,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _name,
-                              textCapitalization: TextCapitalization.words,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                              ),
-                              decoration: const InputDecoration(
-                                labelText: 'YOUR NAME',
-                                hintText: 'Manan',
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _step == 1
-                        ? GlassPanel(
-                            key: const ValueKey('upi'),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextField(
-                                  controller: _upi,
-                                  onChanged: (_) {
-                                    _upiTouched = true;
-                                    setState(() {});
-                                  },
-                                  decoration: const InputDecoration(
-                                    labelText: 'UPI ID',
-                                    hintText: 'you@okaxis',
-                                  ),
+                  duration: const Duration(milliseconds: 280),
+                  child: _step == 0
+                      ? GlassPanel(
+                          key: const ValueKey('you'),
+                          child: Column(
+                            children: [
+                              HapticScale(
+                                onTap: () async {
+                                  final path = await ProfileMedia.pick();
+                                  if (path == null) return;
+                                  final p = ref.read(appStoreProvider).profile;
+                                  if (p == null) return;
+                                  await ref
+                                      .read(appStoreProvider.notifier)
+                                      .updateProfile(p.copyWith(photoPath: path));
+                                  if (mounted) setState(() {});
+                                },
+                                child: ProfileAvatar(
+                                  name: _name.text,
+                                  photoPath: ref
+                                          .watch(appStoreProvider)
+                                          .profile
+                                          ?.photoPath ??
+                                      '',
+                                  size: 84,
+                                  showEdit: true,
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'BANK',
-                                  style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _name,
+                                textCapitalization: TextCapitalization.words,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                const SizedBox(height: 8),
-                                ChoicePills(
-                                  selected: _banks.contains(_bank.text)
-                                      ? _bank.text
-                                      : 'Other',
-                                  onPick: (id) {
-                                    _bank.text = id == 'Other' ? '' : id;
-                                    setState(() {});
-                                  },
-                                  options: [
-                                    for (final b in _banks) (b, b),
-                                  ],
+                                decoration: const InputDecoration(
+                                  labelText: 'YOUR NAME',
+                                  hintText: 'Manan',
                                 ),
-                                if (_bank.text.isEmpty ||
-                                    !_banks.contains(_bank.text)) ...[
-                                  const SizedBox(height: 8),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _step == 1
+                          ? GlassPanel(
+                              key: const ValueKey('upi'),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   TextField(
-                                    controller: _bank,
+                                    controller: _upi,
+                                    onChanged: (_) {
+                                      _upiTouched = true;
+                                      setState(() {});
+                                    },
                                     decoration: const InputDecoration(
-                                      labelText: 'BANK NAME',
+                                      labelText: 'UPI ID',
+                                      hintText: 'you@okaxis',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'BANK',
+                                    style: Theme.of(context).textTheme.labelLarge,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ChoicePills(
+                                    selected: _banks.contains(_bank.text)
+                                        ? _bank.text
+                                        : 'Other',
+                                    onPick: (id) {
+                                      _bank.text = id == 'Other' ? '' : id;
+                                      setState(() {});
+                                    },
+                                    options: [
+                                      for (final b in _banks) (b, b),
+                                    ],
+                                  ),
+                                  if (_bank.text.isEmpty ||
+                                      !_banks.contains(_bank.text)) ...[
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      controller: _bank,
+                                      decoration: const InputDecoration(
+                                        labelText: 'BANK NAME',
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: _last4,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 4,
+                                    decoration: const InputDecoration(
+                                      labelText: 'ACCOUNT LAST 4 (OPTIONAL)',
+                                      counterText: '',
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _last4,
-                                  keyboardType: TextInputType.number,
-                                  maxLength: 4,
-                                  decoration: const InputDecoration(
-                                    labelText: 'ACCOUNT LAST 4 (OPTIONAL)',
-                                    counterText: '',
-                                  ),
+                              ),
+                            )
+                          : _step == 2
+                              ? OnboardingPermissionsPanel(
+                                  key: const ValueKey('perms'),
+                                  onReadyChanged: (ready) {
+                                    setState(() => _permissionsReady = ready);
+                                  },
+                                )
+                              : const Center(
+                                  key: ValueKey('face'),
+                                  child: FaceGlow(),
                                 ),
-                              ],
-                            ),
-                          )
-                        : const Center(
-                            key: ValueKey('face'),
-                            child: FaceGlow(),
-                          ),
-              ),
+                ),
               ),
             ),
             if (_error != null) ...[
               Text(_error!, style: const TextStyle(color: AppColors.danger)),
               const SizedBox(height: 8),
             ],
-            if (_step == 2)
+            if (_step == 3)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: LossNote(
@@ -293,13 +337,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
             GlowButton(
-              label: _step == 0
-                  ? 'THAT’S ME'
-                  : _step == 1
-                      ? 'LOCK THE HANDLE'
-                      : isWebApp
-                          ? 'FINISH'
-                          : 'SEAL WITH FACE',
+              label: switch (_step) {
+                0 => 'THAT’S ME',
+                1 => 'LOCK THE HANDLE',
+                2 => 'PERMISSIONS OK',
+                _ => isWebApp ? 'FINISH' : 'SEAL WITH FACE',
+              },
               onTap: _busy ? null : _next,
               busy: _busy,
             ),
