@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/chrome.dart';
+import '../../core/platform.dart';
+import '../../core/ios_web_redirect.dart';
 import '../../data/local/app_store.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -36,6 +38,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _go() {
     if (!mounted) return;
+    if (isIosWeb) {
+      redirectIosToPaySite();
+      return;
+    }
     final app = ref.read(appStoreProvider);
     if (app.sessionPhone != null && app.profile?.onboarded == true) {
       context.go('/home');
