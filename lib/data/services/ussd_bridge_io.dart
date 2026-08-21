@@ -38,7 +38,7 @@ class UssdBridge {
   }
 
   static Future<bool> isAutoReady() async {
-    return isAccessibilityEnabled() && canDrawOverlays();
+    return await isAccessibilityEnabled() && await canDrawOverlays();
   }
 
   static Future<void> openAccessibilitySettings() =>
