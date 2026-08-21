@@ -7,8 +7,11 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
+import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../data/local/ux_prefs.dart';
+import '../../../data/services/ussd_bridge.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
@@ -674,6 +677,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _url = TextEditingController();
   final _name = TextEditingController();
   String _status = '';
+  var _ussdAuto = false;
+  var _ussdReady = false;
 
   @override
   void initState() {
@@ -682,6 +687,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ref.read(otpServiceProvider).resolveUrl().then((v) {
       if (mounted) _url.text = v;
     });
+    UxPrefs.ussdAutoMode().then((v) {
+      if (mounted) setState(() => _ussdAuto = v);
+    });
+    if (isAndroidDevice) {
+      UssdBridge.isAutoReady().then((v) {
+        if (mounted) setState(() => _ussdReady = v);
+      });
+    }
   }
 
   @override
@@ -739,6 +752,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          if (isAndroidDevice) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Auto USSD mode'),
+              subtitle: Text(
+                _ussdReady
+                    ? 'Zep Pay overlay on carrier dialogs (Accessibility + overlay).'
+                    : 'Enable Zep Pay USSD Assistant in Accessibility, then allow overlay.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              value: _ussdAuto,
+              onChanged: (v) async {
+                if (v) {
+                  final info = await ref.read(telephonyServiceProvider).networkInfo();
+                  if (info.isJio || !info.ussdSupported) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Auto USSD is not supported on Jio. Use Manual mode or 123PAY IVR.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  if (!_ussdReady) {
+                    await UssdBridge.openAccessibilitySettings();
+                    return;
+                  }
+                }
+                await UxPrefs.saveUssdAutoMode(v);
+                if (mounted) setState(() => _ussdAuto = v);
+              },
+            ),
+            if (!_ussdReady)
+              TextButton(
+                onPressed: () async {
+                  await UssdBridge.openAccessibilitySettings();
+                  await UssdBridge.openOverlaySettings();
+                  final ready = await UssdBridge.isAutoReady();
+                  if (mounted) setState(() => _ussdReady = ready);
+                },
+                child: const Text('OPEN ACCESSIBILITY & OVERLAY SETTINGS'),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Android 13+: Settings → Apps → Zep Pay → ⋮ → Allow restricted settings, then enable the USSD Assistant.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+              ),
+            ),
+          ],
           if (_status.isNotEmpty)
             Text(_status, style: const TextStyle(color: AppColors.hero)),
           const SizedBox(height: 20),

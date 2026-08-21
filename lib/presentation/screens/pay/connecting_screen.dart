@@ -11,12 +11,14 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/dial_return.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/payment_tracker.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/rail_engine.dart';
 import '../../../data/services/security_audit.dart';
+import '../../../data/services/ussd_bridge.dart';
 import '../../../presentation/widgets/payment_track_card.dart';
 
 class ConnectingScreen extends ConsumerStatefulWidget {
@@ -47,37 +49,59 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
     required dynamic tel,
   }) async {
     final session = ref.read(paymentSessionProvider.notifier);
-    await Clipboard.setData(ClipboardData(text: draft.vpa));
-    await session.markUpiCopied();
-    if (!mounted) return;
-    setState(() {
-      _label = 'Opening Phone…';
-      _detail =
-          'UPI ID copied. *99*1*3 is send-to-UPI. Paste if asked, then PIN.\nTxn $refCode';
-    });
-    await audit.dialOpened(txId, dial);
-    await session.markDialOpened(dial);
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    await tel.dial(dial);
-    await session.markInPhone();
-    if (!mounted) return;
-    setState(() {
-      _label = 'Tracking payment…';
-      _detail = 'Complete USSD in Phone, then return here to confirm.';
-    });
-    try {
-      final report = await waitForDialerReturn();
-      await session.recordDialSession(report);
-      await audit.dialReturned(
-        txId,
-        report.longestStint,
-        null,
-      );
-    } catch (_) {
-      await session.markAwaitingConfirm();
+    var autoActive = false;
+    if (isAndroidDevice && !isWebApp) {
+      final autoMode = await UxPrefs.ussdAutoMode();
+      final info = await tel.networkInfo();
+      if (autoMode && info.ussdSupported) {
+        final ready = await UssdBridge.isAutoReady();
+        if (ready) {
+          await UssdBridge.init();
+          await UssdBridge.startSession();
+          autoActive = true;
+        }
+      }
     }
-    if (!mounted) return;
-    context.go('/outcome');
+    try {
+      await Clipboard.setData(ClipboardData(text: draft.vpa));
+      await session.markUpiCopied();
+      if (!mounted) return;
+      setState(() {
+        _label = autoActive ? 'Auto USSD…' : 'Opening Phone…';
+        _detail = autoActive
+            ? 'Zep Pay overlay collects your PIN — not the carrier popup.\nTxn $refCode'
+            : 'UPI ID copied. *99*1*3 is send-to-UPI. Paste if asked, then PIN.\nTxn $refCode';
+      });
+      await audit.dialOpened(txId, dial);
+      await session.markDialOpened(dial);
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await tel.dial(dial);
+      await session.markInPhone();
+      if (!mounted) return;
+      setState(() {
+        _label = 'Tracking payment…';
+        _detail = autoActive
+            ? 'Follow the Zep Pay overlay for each USSD step.'
+            : 'Complete USSD in Phone, then return here to confirm.';
+      });
+      try {
+        final report = await waitForDialerReturn();
+        await session.recordDialSession(report);
+        await audit.dialReturned(
+          txId,
+          report.longestStint,
+          null,
+        );
+      } catch (_) {
+        await session.markAwaitingConfirm();
+      }
+      if (!mounted) return;
+      context.go('/outcome');
+    } finally {
+      if (autoActive) {
+        await UssdBridge.endSession();
+      }
+    }
   }
 
   Future<void> _run() async {
