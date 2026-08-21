@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/ios/',
+  base: '/zeppay/ios/',
   plugins: [
     react(),
     VitePWA({
@@ -17,7 +17,7 @@ export default defineConfig({
         background_color: '#1C1C1E',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: '/zeppay/ios/',
         icons: [
           {
             src: 'icons/icon-192.png',

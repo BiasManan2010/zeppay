@@ -119,16 +119,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: zeppay-pwa
-          path: site/zeppay
+          path: site
 
       - name: Download iOS website
         uses: actions/download-artifact@v4
         with:
           name: zeppay-ios-web
           path: site/ios
-
-      - name: Add site root redirect
-        run: cp gh-pages-root/index.html site/index.html
 
       - name: Publish GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -157,7 +154,7 @@ jobs:
             **Android APK:** download `app-release.apk` → allow unknown sources → install.
 
             **iPhone (website, not Flutter PWA):**
-            https://biasmanan2010.github.io/ios/
+            https://biasmanan2010.github.io/zeppay/ios/
             Safari → Share → **Add to Home Screen**
 
             **Android browser:** https://biasmanan2010.github.io/zeppay/
