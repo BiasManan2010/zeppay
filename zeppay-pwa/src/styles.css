@@ -1,0 +1,105 @@
+:root {
+  --base: #1c1c1e;
+  --surface: #2c2c2e;
+  --accent: #3ba3ff;
+  --accent-soft: #7ec4ff;
+  --text: #f2f2f7;
+  --muted: #aeaeb2;
+  --danger: #c45c4a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  color: var(--text);
+  background: var(--base);
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: radial-gradient(circle at top, #323236 0%, var(--base) 55%);
+}
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 20px 16px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 8px 0 24px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid #4a4a4e;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.btn-primary {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #4a4a4e;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #4a4a4e;
+  background: #242426;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spacer {
+  flex: 1;
+}
