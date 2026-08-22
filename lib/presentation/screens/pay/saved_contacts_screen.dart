@@ -100,7 +100,7 @@ class _SavedContactsScreenState extends ConsumerState<SavedContactsScreen> {
                               child: Text(
                                 label.characters.first.toUpperCase(),
                                 style: const TextStyle(
-                                  color: AppColors.accentDeep,
+                                  color: AppColors.heroDeep,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),

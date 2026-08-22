@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'data/local/app_store.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
@@ -64,10 +65,13 @@ class _ZepPayAppState extends ConsumerState<ZepPayApp> {
   Widget build(BuildContext context) {
     ref.watch(appStoreProvider);
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Zeppay',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

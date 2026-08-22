@@ -9,6 +9,7 @@ import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/ussd_bridge.dart';
@@ -745,6 +746,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
           ),
           const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Dark mode'),
+            subtitle: Text(
+              ref.watch(themeModeProvider) == ThemeMode.dark
+                  ? 'Grey-black surfaces, blue buttons'
+                  : 'Light grey surfaces, blue buttons',
+            ),
+            value: ref.watch(themeModeProvider) == ThemeMode.dark,
+            activeThumbColor: AppColors.hero,
+            onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _url,
             decoration: const InputDecoration(
@@ -870,7 +884,7 @@ class AnalyticsScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.forestCard,
+                gradient: AppColors.brandCard,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(

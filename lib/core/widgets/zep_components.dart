@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/zep_palette.dart';
 
 /// Reusable Zep Pay UI components (4/8px spacing scale).
 class ZepHeaderBar extends StatefulWidget {
@@ -42,18 +43,20 @@ class _ZepHeaderBarState extends State<ZepHeaderBar> {
 
   @override
   Widget build(BuildContext context) {
-    final greeting = widget.name.isEmpty ? 'there' : widget.name.split(' ').first;
+    final zep = context.zep;
+    final greeting =
+        widget.name.isEmpty ? 'there' : widget.name.split(' ').first;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: AppColors.cardDark,
+            backgroundColor: zep.surfaceElevated,
             child: Text(
               greeting.isNotEmpty ? greeting[0].toUpperCase() : 'Z',
               style: const TextStyle(
-                color: AppColors.accent,
+                color: AppColors.hero,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -85,7 +88,7 @@ class _ZepHeaderBarState extends State<ZepHeaderBar> {
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                         size: 18,
-                        color: AppColors.textOnCreamMuted,
+                        color: zep.textMuted,
                       ),
                       onPressed: () => setState(() => _maskVpa = !_maskVpa),
                     ),
@@ -94,8 +97,7 @@ class _ZepHeaderBarState extends State<ZepHeaderBar> {
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.copy_rounded, size: 18),
-                        color: AppColors.textOnCreamMuted,
+                        icon: Icon(Icons.copy_rounded, size: 18, color: zep.textMuted),
                         onPressed: () {
                           Clipboard.setData(
                             ClipboardData(text: widget.upiId),
@@ -115,8 +117,9 @@ class _ZepHeaderBarState extends State<ZepHeaderBar> {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                color: AppColors.textOnCream,
-                onPressed: widget.onNotifications ?? () => context.push('/inbox'),
+                color: zep.textPrimary,
+                onPressed:
+                    widget.onNotifications ?? () => context.push('/inbox'),
               ),
               if (widget.unreadCount > 0)
                 Positioned(
@@ -126,7 +129,7 @@ class _ZepHeaderBarState extends State<ZepHeaderBar> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: AppColors.accent,
+                      color: AppColors.hero,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -158,8 +161,15 @@ class ZepBankCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.forestCard,
+        gradient: AppColors.brandCard,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.hero.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,6 +235,7 @@ class ZepQuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -245,7 +256,7 @@ class ZepQuickAction extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textOnCream,
+                  color: zep.textPrimary,
                   fontSize: 11,
                 ),
             maxLines: 2,
@@ -270,13 +281,21 @@ class ZepDarkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Material(
-      color: AppColors.cardDark,
+      color: zep.card,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(padding: padding, child: child),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: zep.border.withValues(alpha: 0.7)),
+          ),
+          padding: padding,
+          child: child,
+        ),
       ),
     );
   }
@@ -306,7 +325,7 @@ class ZepSectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.accent,
+                color: AppColors.hero,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -347,6 +366,7 @@ class ZepPromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ZepDarkCard(
@@ -360,8 +380,8 @@ class ZepPromoBanner extends StatelessWidget {
                 children: [
                   Text(
                     headline,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: zep.promoText,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                     ),
@@ -369,14 +389,14 @@ class ZepPromoBanner extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtext,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: zep.promoSubtext, fontSize: 13),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accent,
+                      color: AppColors.hero,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -391,8 +411,8 @@ class ZepPromoBanner extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.white38, size: 16),
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: zep.textMuted, size: 16),
           ],
         ),
       ),
@@ -417,7 +437,7 @@ class ZepOrangeFab extends StatelessWidget {
           gradient: AppColors.scanOrb,
           boxShadow: [
             BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.45),
+              color: AppColors.hero.withValues(alpha: 0.45),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
