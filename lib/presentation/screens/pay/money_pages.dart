@@ -753,6 +753,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           if (isAndroidDevice) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.nfc_rounded, color: AppColors.accent),
+              title: const Text('Set up My Zep Card'),
+              subtitle: const Text('Write your VPA to an NFC card (Challenge 1)'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/zep-card-setup'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.point_of_sale_rounded,
+                  color: AppColors.accent),
+              title: const Text('Merchant Mode'),
+              subtitle: const Text('Turn this phone into a tap-to-pay terminal'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/merchant-mode'),
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Auto USSD mode'),
@@ -826,13 +843,63 @@ class AnalyticsScreen extends ConsumerWidget {
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value.value))
         .toList();
+    final total = txs.fold<int>(0, (a, t) => a + t.amountPaise);
     return ZepPage(
       title: 'Spending',
       subtitle: 'Successful payments only, from this device.',
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: AppColors.forestCard,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.show_chart_rounded, color: Colors.white70),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          DateFormat('MMM yyyy').format(DateTime.now()),
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '₹${(total / 100).toStringAsFixed(0)}',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  Text(
+                    txs.isEmpty
+                        ? 'No successful payments yet'
+                        : '${txs.length} payments logged locally',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             GlowButton(
               label: 'BY CATEGORY',
               onTap: () => context.push('/categories'),
@@ -850,7 +917,7 @@ class AnalyticsScreen extends ConsumerWidget {
                           LineChartBarData(
                             spots: spots,
                             isCurved: true,
-                            color: AppColors.hero,
+                            color: AppColors.accent,
                             barWidth: 3,
                             dotData: const FlDotData(show: false),
                           ),

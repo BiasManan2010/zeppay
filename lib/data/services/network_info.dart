@@ -6,6 +6,7 @@ class NetworkInfo {
     required this.recommendedRail,
     required this.ussdSupported,
     required this.platform,
+    this.manufacturer = '',
   });
 
   final String operator;
@@ -14,6 +15,7 @@ class NetworkInfo {
   final String recommendedRail;
   final bool ussdSupported;
   final String platform;
+  final String manufacturer;
 
   factory NetworkInfo.unknown() => const NetworkInfo(
         operator: 'unknown',
@@ -31,5 +33,6 @@ class NetworkInfo {
         recommendedRail: m['recommendedRail'] as String? ?? 'ivr',
         ussdSupported: m['ussdSupported'] as bool? ?? false,
         platform: m['platform'] as String? ?? 'android',
+        manufacturer: m['manufacturer'] as String? ?? '',
       );
 }

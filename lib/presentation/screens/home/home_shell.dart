@@ -9,11 +9,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
+import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/providers.dart';
-import '../pay/money_pages.dart';
+import '../pay/payment_services_hub.dart';
+import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
 import 'profile_screen.dart';
 
@@ -33,8 +35,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final pages = [
       _HomeTab(onOpenTab: _go),
-      const SendHubScreen(),
-      const SplitHomeScreen(),
+      const PaymentServicesHubScreen(embedded: true),
+      const HistoryScreen(),
       const ProfileScreen(),
     ];
     return Scaffold(
@@ -97,15 +99,15 @@ class _DockedNav extends StatelessWidget {
                       onTap: () => onTab(0),
                     ),
                     _NavItem(
-                      icon: Icons.swap_horiz_rounded,
-                      label: 'Send',
+                      icon: Icons.grid_view_rounded,
+                      label: 'Pay',
                       selected: tab == 1,
                       onTap: () => onTab(1),
                     ),
                     const SizedBox(width: 72),
                     _NavItem(
-                      icon: Icons.groups_rounded,
-                      label: 'Split',
+                      icon: Icons.history_rounded,
+                      label: 'History',
                       selected: tab == 2,
                       onTap: () => onTab(2),
                     ),
@@ -124,7 +126,7 @@ class _DockedNav extends StatelessWidget {
             top: -22,
             left: 0,
             right: 0,
-            child: Center(child: ScanOrbButton(size: 68, onTap: onScan)),
+            child: Center(child: ZepOrangeFab(onTap: onScan)),
           ),
         ],
       ),
@@ -160,7 +162,7 @@ class _NavItem extends StatelessWidget {
                 curve: AppMotion.out,
                 child: Icon(
                   icon,
-                  color: selected ? AppColors.hero : AppColors.textDim,
+                  color: selected ? AppColors.accent : AppColors.textDim,
                   size: 24,
                 ),
               ),
@@ -169,7 +171,7 @@ class _NavItem extends StatelessWidget {
                 duration: AppMotion.fast,
                 style:
                     Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? AppColors.hero : AppColors.textDim,
+                      color: selected ? AppColors.accent : AppColors.textDim,
                       letterSpacing: 0.2,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ) ??
@@ -197,101 +199,54 @@ class _HomeTab extends ConsumerWidget {
       resumePendingPaymentTrack(ref);
     }
     final profile = app.profile;
-    final first = (profile?.name ?? '').trim().split(' ').first;
-    final greeting = first.isEmpty ? 'there' : first;
     final me = app.sessionPhone ?? '';
     final pending = app.requests
         .where((r) => r.status == RequestStatus.pending && r.toPhone == me)
         .length;
+    final unread = app.notifications.where((n) => !n.read).length;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment(0, -0.85),
-          radius: 1.15,
-          colors: [AppColors.homeWash, AppColors.base],
-        ),
-      ),
+    return ColoredBox(
+      color: AppColors.cream,
       child: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 140),
           children: [
-            RiseIn(
-              child: Row(
-                children: [
-                  HapticScale(
-                    onTap: () => onOpenTab(3),
-                    child: ProfileAvatar(
-                      name: profile?.name ?? '',
-                      photoPath: profile?.photoPath ?? '',
-                      size: 48,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hello, $greeting',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleLarge?.copyWith(fontSize: 20),
-                        ),
-                        Text(
-                          profile?.upiId.isNotEmpty == true
-                              ? profile!.upiId
-                              : 'Add your UPI ID in Profile',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  RoundIconButton(
-                    icon: Icons.qr_code_2_rounded,
-                    onTap: () => context.push('/receive'),
-                  ),
-                  const SizedBox(width: 8),
-                  RoundIconButton(
-                    icon: Icons.notifications_none_rounded,
-                    badge: pending > 0,
-                    onTap: () => context.push('/inbox'),
-                  ),
-                  const SizedBox(width: 8),
-                  RoundIconButton(
-                    icon: Icons.search_rounded,
-                    onTap: () => context.push('/search'),
-                  ),
-                  const SizedBox(width: 8),
-                  RoundIconButton(
-                    icon: Icons.help_outline_rounded,
-                    onTap: () => context.push('/help'),
-                  ),
-                ],
-              ),
+            ZepHeaderBar(
+              name: profile?.name ?? '',
+              upiId: profile?.upiId ?? '',
+              unreadCount: unread,
+              onNotifications: () => context.push('/inbox'),
             ),
-            const SizedBox(height: 18),
-            RiseIn(
-              delay: const Duration(milliseconds: 50),
+            const SizedBox(height: 8),
+            ZepBankCard(
+              bankName: profile?.bankName ?? '',
+              accountLast4: profile?.accountLast4 ?? '',
+              balancePaise: profile?.balancePaise ?? 0,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Expanded(
-                    child: _HomeAction(
-                      icon: Icons.qr_code_scanner_rounded,
-                      label: 'Scan',
-                      hint: 'Pay',
-                      onTap: () => context.push('/scan'),
-                    ),
+                  ZepQuickAction(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Scan',
+                    tint: AppColors.accent,
+                    onTap: () => context.push('/scan'),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _HomeAction(
-                      icon: Icons.qr_code_2_rounded,
-                      label: 'My QR',
-                      hint: 'Share',
-                      onTap: () => context.push('/receive'),
-                    ),
+                  ZepQuickAction(
+                    icon: Icons.send_rounded,
+                    label: 'Send',
+                    tint: const Color(0xFF5B8DEF),
+                    onTap: () => onOpenTab(1),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.call_split_rounded,
+                    label: 'Split',
+                    tint: const Color(0xFF2D8A5E),
+                    onTap: () => context.push('/split'),
                   ),
                 ],
               ),
@@ -346,89 +301,106 @@ class _HomeTab extends ConsumerWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 14),
-            if (isWebApp)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceHigh,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.hero.withValues(alpha: 0.45),
+            if (pending > 0) ...[
+              ZepSectionHeader(
+                title: 'Action needed',
+                badge: pending,
+                onViewAll: () => context.push('/requests'),
+              ),
+              ...app.requests
+                  .where(
+                    (r) =>
+                        r.status == RequestStatus.pending && r.toPhone == me,
+                  )
+                  .take(3)
+                  .map(
+                    (r) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: ZepDarkCard(
+                        onTap: () => context.push('/requests'),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    r.fromName.isEmpty
+                                        ? r.fromPhone
+                                        : r.fromName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₹${(r.amountPaise / 100).toStringAsFixed(0)} requested',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.accent,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              onPressed: () => context.push('/requests'),
+                              child: Text(
+                                'Pay ₹${(r.amountPaise / 100).toStringAsFixed(0)}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+            ],
+            const SizedBox(height: 8),
+            ZepPromoBanner(
+              headline: 'Zep Card — tap to pay',
+              subtext: 'NFC identity card for our closed-loop network (Challenge 1)',
+              chip: 'Set up card',
+              onTap: () => context.push('/zep-card-setup'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: 'ZepCoins & Shop',
+              subtext: 'Earn coins on every payment — redeem demo offers',
+              chip: '${app.zepCoinBalance} coins',
+              onTap: () => context.push('/coins'),
+            ),
+            const SizedBox(height: 16),
+            if (isWebApp)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'On iPhone: scan, amount, then Phone (*99*1*3). UPI ID is copied — paste in the USSD menu.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.heroSoft),
+                  'iOS offline rails have a lower ceiling than Android — paste VPA in Phone when asked.',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               )
             else if (isIosDevice)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceHigh,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.45),
-                  ),
-                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Offline *99# / 123PAY is Android-only. On iOS, Zep Pay opens the online UPI intent instead of silently failing.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
+                  'Offline *99# / 123PAY is strongest on Android. iOS uses UPI app handoff.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.warning,
+                      ),
                 ),
               ),
-            RiseIn(
-              delay: const Duration(milliseconds: 90),
-              child: ScanHeroCard(onTap: () => context.push('/scan')),
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             const _PeopleRow(),
-            const SizedBox(height: 22),
-            SectionHeader(title: 'Send Money', onAction: () => onOpenTab(1)),
-            ActionTileRow(
-              tiles: [
-                ActionTile(
-                  icon: Icons.phone_iphone_rounded,
-                  label: 'To Mobile',
-                  onTap: () => context.push('/pay/mobile'),
-                ),
-                ActionTile(
-                  icon: Icons.alternate_email_rounded,
-                  label: 'To UPI ID',
-                  onTap: () => context.push('/pay/upi'),
-                ),
-                if (supportsDeviceContacts)
-                  ActionTile(
-                    icon: Icons.contacts_rounded,
-                    label: 'To Contacts',
-                    onTap: () => context.push('/pay/contacts'),
-                  ),
-                ActionTile(
-                  icon: Icons.call_received_rounded,
-                  label: 'Receive',
-                  onTap: () => context.push('/receive'),
-                ),
-                if (isWebApp)
-                  ActionTile(
-                    icon: Icons.account_balance_rounded,
-                    label: 'To Bank',
-                    onTap: () => context.push('/pay/bank'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            SectionHeader(
-              title: 'Split & Settle',
-              onAction: () => onOpenTab(2),
-            ),
+            const SizedBox(height: 16),
+            SectionHeader(title: 'Split & Settle', onAction: () => context.push('/split')),
             ActionTileRow(
               tiles: [
                 ActionTile(

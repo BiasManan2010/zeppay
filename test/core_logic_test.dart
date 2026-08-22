@@ -8,6 +8,7 @@ import 'package:zeppay/data/local/app_store.dart';
 import 'package:zeppay/data/models/models.dart';
 import 'package:zeppay/data/services/csv_export_service.dart';
 import 'package:zeppay/data/services/ocr_service.dart';
+import 'package:zeppay/data/models/zep_card.dart';
 import 'package:zeppay/data/services/rail_engine.dart';
 import 'package:zeppay/data/services/telephony_service.dart';
 
@@ -139,17 +140,60 @@ void main() {
       ussdSupported: false,
       platform: 'android',
     );
-    expect(RailEngine.select(info), PaymentRail.ivr);
+    expect(RailEngine.resolve(info).rail, PaymentRail.ivr);
   });
 
-  test('123PAY dial string includes amount DTMF', () {
+  test('Android resolve never returns upiIntent', () {
+    const info = NetworkInfo(
+      operator: 'Airtel',
+      isJio: false,
+      networkType: 'lte',
+      recommendedRail: 'ussd',
+      ussdSupported: true,
+      platform: 'android',
+    );
+    expect(RailEngine.resolve(info).rail, isNot(PaymentRail.upiIntent));
+
+    const jio = NetworkInfo(
+      operator: 'Jio',
+      isJio: true,
+      networkType: 'lte',
+      recommendedRail: 'ivr',
+      ussdSupported: false,
+      platform: 'android',
+    );
+    expect(RailEngine.resolve(jio).rail, isNot(PaymentRail.upiIntent));
+  });
+
+  test('unknown platform returns error not upiIntent on Android path', () {
+    final r = RailEngine.resolve(NetworkInfo.unknown());
+    expect(r.rail, isNull);
+    expect(r.error, isNotNull);
+  });
+
+  test('USSD embeds full amount for large values', () {
+    const draft = PaymentDraft(
+      vpa: 'merchant@okicici',
+      amountPaise: 123456789,
+      payeeName: 'Big',
+    );
+    final dial = RailEngine.ussdString(
+      vpa: draft.vpa,
+      amountPaise: draft.amountPaise,
+    );
+    expect(dial, contains('*1234568#'));
+    expect(dial, isNot(contains('*1234567#')));
+  });
+
+  test('123PAY dial uses semicolon wait on default OEMs', () {
     const draft = PaymentDraft(
       vpa: 'tea@okicici',
       amountPaise: 15000,
       payeeName: 'Tea',
     );
-    expect(RailEngine.ivrString(draft), contains('150'));
-    expect(RailEngine.ivrScript(draft).toLowerCase(), contains('tea@okicici'));
+    expect(RailEngine.ivrString(draft), '18008913333;150');
+    expect(RailEngine.ivrString(draft, manufacturer: 'samsung'),
+        '18008913333,,,150');
   });
 
   test('balance enquiry uses NPCI *99*3#', () {
@@ -252,5 +296,26 @@ void main() {
       category: 'food',
     );
     expect(TxRecord.fromJson(tx.toJson()).category, 'food');
+  });
+
+  test('Zep Card codec round-trips profile URIs', () {
+    const profile = ZepCardProfile(vpa: 'rahul@upi', name: 'Rahul Shah');
+    final app = ZepCardCodec.appUri(vpa: profile.vpa, name: profile.name);
+    final web = ZepCardCodec.webUri(vpa: profile.vpa, name: profile.name);
+    expect(ZepCardCodec.parseUri(app)?.vpa, profile.vpa);
+    expect(ZepCardCodec.parseUri(app)?.name, profile.name);
+    expect(ZepCardCodec.parseUri(web)?.vpa, profile.vpa);
+    expect(profile.initials, 'RS');
+  });
+
+  test('Zep Card codec rejects malformed VPAs', () {
+    final injected = ZepCardCodec.appUri(
+      vpa: 'payee@upi&am=9999',
+      name: 'Attacker',
+    );
+    expect(ZepCardCodec.parseUri(injected), isNull);
+
+    final badLocal = ZepCardCodec.appUri(vpa: 'bad@vpa@upi', name: 'X');
+    expect(ZepCardCodec.parseUri(badLocal), isNull);
   });
 }

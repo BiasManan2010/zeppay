@@ -95,17 +95,50 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(appStoreProvider).profile;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         bottom: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
           children: [
-            RiseIn(
-              child: Text(
-                'You',
-                style: Theme.of(context).textTheme.headlineMedium,
+            Row(
+              children: [
+                Text(
+                  profile?.name.isNotEmpty == true ? profile!.name : 'Profile',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.qr_code_2_rounded),
+                  onPressed: () => context.push('/receive'),
+                  tooltip: 'Receive money',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_balance_outlined),
+              title: Text(profile?.bankName.isNotEmpty == true
+                  ? profile!.bankName
+                  : 'Payment methods'),
+              subtitle: Text(
+                profile?.accountLast4.isNotEmpty == true
+                    ? '•••• ${profile!.accountLast4}'
+                    : 'Link in onboarding',
               ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/settings'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () => context.push('/receive'),
+              icon: const Icon(Icons.qr_code_rounded),
+              label: const Text('Download / Share QR'),
             ),
             const SizedBox(height: 24),
             RiseIn(
