@@ -16,6 +16,9 @@ import '../../presentation/screens/pay/confirm_screen.dart';
 import '../../presentation/screens/pay/connecting_screen.dart';
 import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
+import '../../presentation/screens/coins/coins_screen.dart';
+import '../../presentation/screens/shop/shop_screen.dart';
+import '../../presentation/screens/pay/payment_services_hub.dart';
 import '../../presentation/screens/pay/money_pages.dart';
 import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
@@ -101,6 +104,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/help', () => const HelpScreen()),
       fadeRoute('/search', () => const SearchScreen()),
       fadeRoute('/categories', () => const CategorySpendScreen()),
+      fadeRoute('/coins', () => const CoinsScreen()),
+      fadeRoute('/shop', () => const ShopScreen()),
+      fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
       fadeRouteState(
         '/history/:id',
         (s) => TxDetailScreen(txId: s.pathParameters['id']!),
