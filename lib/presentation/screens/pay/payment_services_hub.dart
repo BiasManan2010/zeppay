@@ -13,10 +13,16 @@ class PaymentServicesHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       (
-        Icons.account_balance_wallet_outlined,
-        'Check balance',
-        () => context.push('/balance'),
+        Icons.nfc_rounded,
+        'Zep Card',
+        () => context.push('/zep-card-setup'),
         const Color(0xFF5B8DEF),
+      ),
+      (
+        Icons.point_of_sale_rounded,
+        'Merchant Mode',
+        () => context.push('/merchant-mode'),
+        const Color(0xFF2D8A5E),
       ),
       (
         Icons.send_rounded,

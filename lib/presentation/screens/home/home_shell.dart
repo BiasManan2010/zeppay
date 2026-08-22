@@ -366,6 +366,13 @@ class _HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             ZepPromoBanner(
+              headline: 'Zep Card — tap to pay',
+              subtext: 'NFC identity card for our closed-loop network (Challenge 1)',
+              chip: 'Set up card',
+              onTap: () => context.push('/zep-card-setup'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'ZepCoins & Shop',
               subtext: 'Earn coins on every payment — redeem demo offers',
               chip: '${app.zepCoinBalance} coins',
