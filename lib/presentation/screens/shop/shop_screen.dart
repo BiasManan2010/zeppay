@@ -119,10 +119,24 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final balance = ref.watch(appStoreProvider).zepCoinBalance;
     final brands = PartnerShop.byCategory(_tab);
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(title: const Text('Zep Shop')),
+      appBar: AppBar(
+        title: const Text('Zep Shop'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text(
+                '$balance coins',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SingleChildScrollView(

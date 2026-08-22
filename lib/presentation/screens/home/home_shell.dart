@@ -373,6 +373,13 @@ class _HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             ZepPromoBanner(
+              headline: 'My Live State',
+              subtext: 'See your real counts and balances right now — tap to refresh',
+              chip: 'Live',
+              onTap: () => context.push('/live-state'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'Zep Card — tap to pay',
               subtext: 'Physical NFC card with live chip tracking inside',
               chip: 'My Card',

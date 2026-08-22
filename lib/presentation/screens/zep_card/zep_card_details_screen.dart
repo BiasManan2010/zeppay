@@ -29,6 +29,23 @@ class _ZepCardDetailsScreenState extends ConsumerState<ZepCardDetailsScreen> {
   var _savingName = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(userCardProvider);
+    });
+  }
+
+  Future<void> _refreshChip(String? chipId) async {
+    ref.invalidate(userCardProvider);
+    if (chipId != null) {
+      ref.invalidate(chipDetailProvider(chipId));
+      ref.invalidate(chipTransactionsProvider(chipId));
+    }
+    await ref.read(userCardProvider.future);
+  }
+
+  @override
   void dispose() {
     _nameEdit.dispose();
     super.dispose();
@@ -80,8 +97,14 @@ class _ZepCardDetailsScreenState extends ConsumerState<ZepCardDetailsScreen> {
           }
 
           final chipAsync = ref.watch(userCardChipIdProvider);
-          return ListView(
+          return RefreshIndicator(
+            onRefresh: () async {
+              final chipId = await ref.read(userCardChipIdProvider.future);
+              await _refreshChip(chipId);
+            },
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(0, 0, 0, 120),
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
               ZepPhysicalCard(
                 cardholderName: card.cardName,
@@ -192,6 +215,7 @@ class _ZepCardDetailsScreenState extends ConsumerState<ZepCardDetailsScreen> {
                 },
               ),
             ],
+          ),
           );
         },
       ),
