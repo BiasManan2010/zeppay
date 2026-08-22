@@ -658,6 +658,7 @@ class _PeopleRow extends ConsumerWidget {
       if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
       out.add(
         SavedPayee(
+          id: tx.vpa,
           vpa: tx.vpa,
           name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
         ),
@@ -676,9 +677,7 @@ class _PeopleRow extends ConsumerWidget {
       children: [
         SectionHeader(
           title: 'People',
-          onAction: () => context.push(
-            supportsDeviceContacts ? '/pay/contacts' : '/pay/upi',
-          ),
+          onAction: () => context.push('/pay/saved-contacts'),
         ),
         SizedBox(
           height: 92,

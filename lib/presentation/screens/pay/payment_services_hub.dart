@@ -13,6 +13,18 @@ class PaymentServicesHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       (
+        Icons.qr_code_scanner_rounded,
+        'Scan to pay',
+        () => context.push('/scan'),
+        AppColors.accent,
+      ),
+      (
+        Icons.contacts_rounded,
+        'Contacts',
+        () => context.push('/pay/saved-contacts'),
+        const Color(0xFF5B8DEF),
+      ),
+      (
         Icons.nfc_rounded,
         'Zep Card',
         () => context.push('/zep-card-setup'),
@@ -27,7 +39,7 @@ class PaymentServicesHubScreen extends StatelessWidget {
       (
         Icons.send_rounded,
         'Send to self',
-        () => context.push('/pay/upi'),
+        () => context.push('/pay/self'),
         const Color(0xFFE87B3A),
       ),
       (
@@ -51,19 +63,19 @@ class PaymentServicesHubScreen extends StatelessWidget {
       (
         Icons.favorite_outline_rounded,
         'Donate',
-        () => context.push('/pay/upi'),
+        () => context.push('/pay/donate'),
         const Color(0xFFC45C4A),
       ),
       (
         Icons.call_received_rounded,
         'Request money',
-        () => context.push('/requests'),
+        () => context.push('/request-money'),
         const Color(0xFF5B8DEF),
       ),
       (
         Icons.receipt_long_outlined,
         'My Bills',
-        () => context.push('/history'),
+        () => context.push('/bills-recharge'),
         const Color(0xFFE87B3A),
       ),
     ];

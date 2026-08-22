@@ -18,12 +18,15 @@ import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
 import '../../presentation/screens/coins/coins_screen.dart';
 import '../../presentation/screens/shop/shop_screen.dart';
+import '../../presentation/screens/pay/bills_recharge_screen.dart';
+import '../../presentation/screens/pay/saved_contacts_screen.dart';
 import '../../presentation/screens/pay/payment_services_hub.dart';
 import '../../presentation/screens/pay/money_pages.dart';
 import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/receive_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
+import '../../presentation/screens/pay/request_money_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
@@ -92,6 +95,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/pay/mobile', () => const PayMobileScreen()),
       fadeRoute('/pay/upi', () => const PayUpiScreen()),
       fadeRoute('/pay/contacts', () => const PayContactsScreen()),
+      fadeRoute('/pay/saved-contacts', () => const SavedContactsScreen()),
+      fadeRoute('/pay/self', () => const SelfTransferScreen()),
+      fadeRoute('/pay/donate', () => const DonateScreen()),
+      fadeRoute('/bills-recharge', () => const BillsRechargeHubScreen()),
+      fadeRoute('/request-money', () => const RequestMoneyScreen()),
+      fadeRouteState(
+        '/bills-recharge/:categoryId',
+        (s) => BillRechargeFormScreen(
+          categoryId: s.pathParameters['categoryId']!,
+        ),
+      ),
       fadeRoute('/pay/bank', () => const PayBankScreen()),
       fadeRoute('/history', () => const HistoryScreen()),
       fadeRoute('/requests', () => const RequestsScreen()),

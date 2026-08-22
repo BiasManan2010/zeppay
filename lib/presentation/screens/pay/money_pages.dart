@@ -965,7 +965,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   child: SurfaceCard(
                     onTap: () {
                       final t = n.title.toLowerCase();
-                      if (t.contains('autopay')) {
+                      if (t.contains('payment succeeded') ||
+                          t.contains('zepcoins')) {
+                        context.push('/history');
+                      } else if (t.contains('autopay')) {
                         context.push('/autopay');
                       } else if (t.contains('split')) {
                         context.push('/split-activity');
