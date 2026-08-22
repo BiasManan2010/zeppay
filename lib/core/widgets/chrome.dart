@@ -7,6 +7,7 @@ import '../media_image.dart';
 import '../motion/app_motion.dart';
 import '../platform.dart';
 import '../theme/app_colors.dart';
+import '../theme/zep_palette.dart';
 import 'brand.dart';
 import 'illustrations.dart';
 
@@ -679,8 +680,9 @@ class ZepPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: zep.background,
       appBar: AppBar(title: Text(title)),
       body: Column(
         children: [

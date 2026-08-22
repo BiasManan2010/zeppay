@@ -16,7 +16,7 @@ class PaymentServicesHubScreen extends StatelessWidget {
         Icons.qr_code_scanner_rounded,
         'Scan to pay',
         () => context.push('/scan'),
-        AppColors.accent,
+        AppColors.hero,
       ),
       (
         Icons.contacts_rounded,
@@ -40,7 +40,7 @@ class PaymentServicesHubScreen extends StatelessWidget {
         Icons.send_rounded,
         'Send to self',
         () => context.push('/pay/self'),
-        const Color(0xFFE87B3A),
+        AppColors.heroDeep,
       ),
       (
         Icons.event_repeat_rounded,
@@ -76,12 +76,12 @@ class PaymentServicesHubScreen extends StatelessWidget {
         Icons.receipt_long_outlined,
         'My Bills',
         () => context.push('/bills-recharge'),
-        const Color(0xFFE87B3A),
+        AppColors.heroSoft,
       ),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       appBar: embedded
           ? null
           : AppBar(
