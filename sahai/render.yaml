@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: sahai-backend
+    runtime: python
+    rootDir: sahai/backend
+    buildCommand: pip install -r ../requirements.txt && pip install matplotlib
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: PYTHONPATH
+        value: /opt/render/project/src/sahai/backend
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TWILIO_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      - key: SUPERVISOR_PHONE
+        sync: false
+      - key: SIMULATE_SMS
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        sync: false
