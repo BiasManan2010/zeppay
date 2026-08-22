@@ -258,6 +258,22 @@ input:focus {
   font-size: 1.1rem;
 }
 
+.defer-box {
+  background: #fff3e0;
+  color: #e65100;
+  padding: 16px;
+  border-radius: var(--radius);
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.defer-detail {
+  font-weight: 400;
+  font-size: 0.9rem;
+  margin: 8px 0 0;
+}
+
 .case-list {
   display: flex;
   flex-direction: column;

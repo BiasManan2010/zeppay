@@ -46,6 +46,16 @@ export async function escalateCase(payload) {
   return res.json()
 }
 
+export async function assessTriage(data) {
+  const res = await fetch(`${API_BASE}/api/triage/assess`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 export async function fetchDashboard() {
   const res = await fetch(`${API_BASE}/api/dashboard`)
   if (!res.ok) throw new Error(await res.text())

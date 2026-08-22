@@ -22,7 +22,8 @@ export default function ResultScreen() {
     )
   }
 
-  const { risk_level, confidence, top_factors, escalation_status, mother_name } = caseData
+  const { risk_level, confidence, top_factors, escalation_status, mother_name,
+    should_defer, triage_action, fused_confidence, decision_reason } = caseData
   const badgeClass = BADGE_CLASS[risk_level] || 'badge-mid'
 
   return (
@@ -58,7 +59,19 @@ export default function ResultScreen() {
         </section>
       )}
 
-      {risk_level === 'high' && (
+      {should_defer && (
+        <div className="defer-box">
+          Defer to nurse — system is not confident enough to decide alone
+          {decision_reason && <p className="defer-detail">{decision_reason}</p>}
+        </div>
+      )}
+
+      {fused_confidence != null && (
+        <p className="confidence">Pipeline confidence: {(fused_confidence * 100).toFixed(0)}%</p>
+      )}
+
+      {!should_defer && (triage_action === 'escalate' || risk_level === 'high') &&
+        escalation_status && escalation_status !== 'none' && (
         <div className="alert-box">
           Nurse has been notified
           {escalation_status && (

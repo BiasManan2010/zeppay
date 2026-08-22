@@ -1,0 +1,82 @@
+[
+  {
+    "id": "S001",
+    "script": "Mother has heavy bleeding and fever since yesterday",
+    "language": "en",
+    "noise_condition": "clean",
+    "gold_risk": "high",
+    "gold_escalate": true,
+    "vitals": {
+      "age": 28,
+      "systolic_bp": 130,
+      "diastolic_bp": 85,
+      "blood_sugar": 12,
+      "body_temp": 99,
+      "heart_rate": 95
+    }
+  },
+  {
+    "id": "S002",
+    "script": "Sab theek hai, koi problem nahi",
+    "language": "hi-en",
+    "noise_condition": "clean",
+    "gold_risk": "low",
+    "gold_escalate": false,
+    "vitals": {
+      "age": 25,
+      "systolic_bp": 90,
+      "diastolic_bp": 60,
+      "blood_sugar": 7,
+      "body_temp": 98,
+      "heart_rate": 72
+    }
+  },
+  {
+    "id": "S003",
+    "script": "Severe headache with blurred vision and high BP feeling",
+    "language": "en",
+    "noise_condition": "moderate",
+    "gold_risk": "high",
+    "gold_escalate": true,
+    "vitals": {
+      "age": 32,
+      "systolic_bp": 145,
+      "diastolic_bp": 95,
+      "blood_sugar": 11,
+      "body_temp": 98,
+      "heart_rate": 88
+    }
+  },
+  {
+    "id": "S004",
+    "script": "Thoda bukhar hai lekin bleeding nahi",
+    "language": "hi",
+    "noise_condition": "moderate",
+    "gold_risk": "mid",
+    "gold_escalate": false,
+    "vitals": {
+      "age": 27,
+      "systolic_bp": 110,
+      "diastolic_bp": 70,
+      "blood_sugar": 9,
+      "body_temp": 99,
+      "heart_rate": 80
+    }
+  },
+  {
+    "id": "S005",
+    "script": "Breathing fast, chest pain, very weak",
+    "language": "en",
+    "noise_condition": "high",
+    "gold_risk": "high",
+    "gold_escalate": true,
+    "vitals": {
+      "age": 30,
+      "systolic_bp": 135,
+      "diastolic_bp": 88,
+      "blood_sugar": 14,
+      "body_temp": 100,
+      "heart_rate": 110
+    }
+  }
+]

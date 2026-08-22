@@ -17,6 +17,9 @@ from app.models.schemas import (
     EscalateRequest,
     EscalateResponse,
     TopFactor,
+    TriageAssessRequest,
+    TriageAssessResponse,
+    UncertaintySignalsResponse,
     VitalsRequest,
     VitalsResponse,
     VoiceResponse,
@@ -25,6 +28,8 @@ from app.services.escalation_service import send_escalation
 from app.services.rag_chat_service import get_demo_response, get_llm_response
 from app.services.risk_service import predict_risk
 from app.services.stt_service import transcribe_audio
+from app.services.triage_service import assess_triage
+from app.services.uncertainty_fusion import EscalationPolicy
 
 load_dotenv()
 
@@ -140,6 +145,67 @@ async def post_voice(audio: UploadFile = File(...)):
     return VoiceResponse(
         transcript=result["transcript"],
         detected_language=result["detected_language"],
+        asr_confidence=result.get("asr_confidence"),
+    )
+
+
+@app.post("/api/triage/assess", response_model=TriageAssessResponse)
+def post_triage_assess(body: TriageAssessRequest):
+    """Full pipeline with uncertainty fusion — research Direction 1 endpoint."""
+    case_id = str(uuid.uuid4())
+    policy = None
+    if body.policy:
+        for p in EscalationPolicy:
+            if p.value == body.policy.lower():
+                policy = p
+                break
+
+    result = assess_triage(
+        age=body.age,
+        systolic_bp=body.systolic_bp,
+        diastolic_bp=body.diastolic_bp,
+        blood_sugar=body.blood_sugar,
+        body_temp=body.body_temp,
+        heart_rate=body.heart_rate,
+        transcript=body.transcript,
+        asr_confidence=body.asr_confidence,
+        mother_name=body.mother_name,
+        case_id=case_id,
+        policy=policy,
+    )
+
+    vitals_dict = {
+        "systolic_bp": body.systolic_bp,
+        "diastolic_bp": body.diastolic_bp,
+        "blood_sugar": body.blood_sugar,
+        "body_temp": body.body_temp,
+        "heart_rate": body.heart_rate,
+    }
+
+    db.insert_case(
+        case_id=case_id,
+        mother_name=body.mother_name,
+        age=body.age,
+        vitals=vitals_dict,
+        transcript=body.transcript,
+        risk_level=result["risk_level"],
+        confidence=result["confidence"],
+        escalation_status=result.get("escalation_status") or "none",
+    )
+
+    return TriageAssessResponse(
+        case_id=case_id,
+        risk_level=result["risk_level"],
+        confidence=result["confidence"],
+        top_factors=[TopFactor(**f) for f in result["top_factors"]],
+        triage_action=result["triage_action"],
+        should_defer=result["should_defer"],
+        fused_confidence=result["fused_confidence"],
+        policy=result["policy"],
+        decision_reason=result["decision_reason"],
+        uncertainty=UncertaintySignalsResponse(**result["uncertainty"]),
+        symptom_flags=result["symptom_flags"],
+        escalation_status=result.get("escalation_status"),
     )
 
 

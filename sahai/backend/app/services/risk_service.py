@@ -70,4 +70,5 @@ def predict_risk(
         "risk_level": risk_level,
         "confidence": confidence,
         "top_factors": top_factors,
+        "class_probabilities": [float(p) for p in proba],
     }

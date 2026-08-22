@@ -27,6 +27,43 @@ class VitalsResponse(BaseModel):
 class VoiceResponse(BaseModel):
     transcript: str
     detected_language: str
+    asr_confidence: float | None = None
+
+
+class TriageAssessRequest(BaseModel):
+    age: int = Field(..., ge=10, le=70)
+    systolic_bp: int = Field(..., ge=70, le=200)
+    diastolic_bp: int = Field(..., ge=40, le=150)
+    blood_sugar: float = Field(..., ge=6, le=25)
+    body_temp: float = Field(..., ge=95, le=105)
+    heart_rate: int = Field(..., ge=40, le=180)
+    mother_name: str = "Unknown"
+    transcript: str | None = None
+    asr_confidence: float | None = None
+    policy: str | None = None  # b1_no_uncertainty | b2_* | b3_fused
+
+
+class UncertaintySignalsResponse(BaseModel):
+    asr_confidence: float | None = None
+    classifier_confidence: float | None = None
+    classifier_entropy: float | None = None
+    llm_uncertainty: float | None = None
+    retrieval_margin: float | None = None
+
+
+class TriageAssessResponse(BaseModel):
+    case_id: str
+    risk_level: str
+    confidence: float
+    top_factors: list[TopFactor]
+    triage_action: str
+    should_defer: bool
+    fused_confidence: float
+    policy: str
+    decision_reason: str
+    uncertainty: UncertaintySignalsResponse
+    symptom_flags: dict
+    escalation_status: str | None = None
 
 
 class ChatRequest(BaseModel):
