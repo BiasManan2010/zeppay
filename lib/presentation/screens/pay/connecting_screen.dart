@@ -83,7 +83,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                 ? 'Step 2: Enter your UPI PIN when prompted.'
                 : 'Step 1: Amount $_amountDisplay sent',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.cream,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -118,7 +118,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
@@ -142,15 +142,12 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
           const SizedBox(height: 12),
           Text(
             "If it doesn't auto-fill",
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textOnCreamMuted,
-                ),
+            style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 4),
           Text(
             _amountDisplay,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: AppColors.textOnCream,
                   fontWeight: FontWeight.w800,
                 ),
           ),
@@ -435,7 +432,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
     final steps = track == null ? const <PaymentTrackStep>[] : trackSteps(track);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Column(
           children: [
@@ -453,10 +450,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                           _label,
                           key: ValueKey(_label),
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    color: AppColors.textOnCream,
-                                  ),
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -465,9 +459,7 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
                           _detail.isEmpty ? 'Preparing offline rail…' : _detail,
                           key: ValueKey(_detail),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textOnCreamMuted,
-                              ),
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
                       if (_txnId != null) ...[

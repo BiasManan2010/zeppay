@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/zep_palette.dart';
 
 /// Masked real UPI ID with eye toggle and copy — same VPA as Profile.
 class UpiRevealRow extends StatefulWidget {
@@ -34,9 +35,10 @@ class _UpiRevealRowState extends State<UpiRevealRow> {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     final hasVpa = widget.upiId.contains('@');
     final textStyle = TextStyle(
-      color: widget.dense ? AppColors.textOnCream : Colors.white70,
+      color: widget.dense ? zep.textPrimary : AppColors.heroSoft,
       fontSize: widget.dense ? 13 : 14,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.3,
@@ -52,7 +54,7 @@ class _UpiRevealRowState extends State<UpiRevealRow> {
           Icon(
             Icons.account_balance_rounded,
             size: 18,
-            color: widget.dense ? AppColors.textOnCreamMuted : AppColors.heroSoft,
+            color: widget.dense ? zep.textMuted : AppColors.heroSoft,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -72,9 +74,7 @@ class _UpiRevealRowState extends State<UpiRevealRow> {
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 size: 20,
-                color: widget.dense
-                    ? AppColors.textOnCreamMuted
-                    : AppColors.textMuted,
+                color: zep.textMuted,
               ),
               onPressed: () => setState(() => _revealed = !_revealed),
             ),
@@ -83,13 +83,7 @@ class _UpiRevealRowState extends State<UpiRevealRow> {
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                icon: Icon(
-                  Icons.copy_rounded,
-                  size: 18,
-                  color: widget.dense
-                      ? AppColors.textOnCreamMuted
-                      : AppColors.textMuted,
-                ),
+                icon: Icon(Icons.copy_rounded, size: 18, color: zep.textMuted),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: widget.upiId.trim()));
                   ScaffoldMessenger.of(context).showSnackBar(
