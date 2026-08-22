@@ -373,6 +373,14 @@ class _HomeTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
+              headline: 'Chip shortage tracker',
+              subtext:
+                  'Tap NFC batch tags — live stock math from usage (Challenge 2)',
+              chip: 'Inventory',
+              onTap: () => context.push('/inventory'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'ZepCoins & Shop',
               subtext: 'Earn coins on every payment — redeem demo offers',
               chip: '${app.zepCoinBalance} coins',

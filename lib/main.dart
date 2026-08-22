@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'data/local/semiconductor_db_init.dart';
 import 'data/local/app_store.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('notifications init failed: $e');
   }
+  await initSemiconductorDatabase();
   runApp(const ProviderScope(child: ZepPayApp()));
 }
 

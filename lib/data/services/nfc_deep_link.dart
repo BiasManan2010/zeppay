@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/chip_tag_codec.dart';
 import '../models/zep_card.dart';
 
 final appLinksProvider = Provider<AppLinks>((_) => AppLinks());
@@ -28,6 +29,13 @@ class NfcDeepLinkListener {
   }
 
   void _route(Uri? uri) {
+    final chipNfcId = ChipTagCodec.parseUri(uri);
+    if (chipNfcId != null) {
+      _router.go(
+        '/inventory/nfc/${Uri.encodeComponent(chipNfcId)}',
+      );
+      return;
+    }
     final profile = ZepCardCodec.parseUri(uri);
     if (profile == null) return;
     _router.go(
