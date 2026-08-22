@@ -12,9 +12,9 @@ export default defineConfig({
       manifest: {
         name: 'Zep Pay',
         short_name: 'Zep Pay',
-        description: 'Prepare UPI payments and hand off to your UPI app.',
-        theme_color: '#3BA3FF',
-        background_color: '#1C1C1E',
+        description: 'Offline UPI on iPhone — scan QR, copy ID, dial *99# in Phone.',
+        theme_color: '#E87B3A',
+        background_color: '#FDECD9',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/zeppay/ios/',

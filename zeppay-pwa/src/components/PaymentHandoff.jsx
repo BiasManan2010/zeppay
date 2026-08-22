@@ -1,77 +1,85 @@
 import { useEffect, useState } from 'react';
+import { copyText } from '../lib/clipboard';
+import { buildPaymentSummary } from '../lib/upiLink';
+import { CopyVpaChip } from './ScanScreen';
 
-export function PaymentHandoff({
-  link,
-  mode = 'upi',
-  vpa,
-  amount,
-  onFallback,
-  onDone,
-  onReturn,
-}) {
-  const [status, setStatus] = useState('launching');
+export function PaymentHandoff({ telLink, draft, onReturn }) {
   const [phase, setPhase] = useState(1);
+  const [returned, setReturned] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    let returned = false;
-    const onShow = () => {
-      if (document.visibilityState !== 'visible' || returned) return;
-      returned = true;
-      setStatus('returned');
-      onReturn?.();
-    };
-    document.addEventListener('visibilitychange', onShow);
+    let seenAway = false;
 
-    if (mode === 'ussd' && vpa) {
-      navigator.clipboard?.writeText(vpa).catch(() => {});
+    async function launch() {
+      const ok = await copyText(draft.vpa);
+      setCopied(ok);
+      setPhase(2);
+      window.setTimeout(() => {
+        window.location.href = telLink;
+        setPhase(3);
+      }, 600);
     }
 
-    window.location.href = link;
+    launch();
 
-    const timer = setTimeout(() => {
-      if (!returned && mode === 'upi') {
-        setStatus('no-app');
-        onFallback();
+    const onShow = () => {
+      if (document.visibilityState !== 'visible') {
+        seenAway = true;
+        return;
       }
-    }, 1500);
-
-    const phaseTimer = setTimeout(() => setPhase(2), 1200);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(phaseTimer);
-      document.removeEventListener('visibilitychange', onShow);
+      if (seenAway) {
+        setReturned(true);
+        onReturn?.();
+      }
     };
-  }, [link, mode, vpa, onFallback, onReturn]);
+    document.addEventListener('visibilitychange', onShow);
+    return () => document.removeEventListener('visibilitychange', onShow);
+  }, [telLink, draft.vpa, onReturn]);
+
+  async function copySummary() {
+    await copyText(buildPaymentSummary(draft));
+  }
+
+  function openPhone() {
+    window.location.href = telLink;
+  }
 
   return (
     <div className="card stack handoff">
-      {mode === 'ussd' ? (
-        <>
-          <p className="handoff-phase">
-            {phase === 1
-              ? `Step 1: Dialing *99# — amount ₹${amount}`
-              : 'Step 2: Paste VPA if asked (copied), then enter your PIN in Phone.'}
-          </p>
-          <p className="handoff-note">
-            iOS offline-rail support has a lower ceiling than Android — the OS owns
-            the whole USSD session with no return-path API.
-          </p>
-        </>
-      ) : (
-        <p>{status === 'launching' ? 'Opening your UPI app…' : 'Complete payment in your UPI app.'}</p>
-      )}
-      {status === 'returned' && (
-        <p>Welcome back — tell us how the payment went on the next screen.</p>
-      )}
-      {status === 'no-app' && mode === 'upi' && (
-        <>
-          <p>No UPI app opened. Install GPay, PhonePe, or BHIM, or copy the payment details.</p>
-          <button type="button" className="btn-ghost" onClick={onFallback}>
-            Copy payment details
-          </button>
-        </>
-      )}
+      <div className="handoff-status">
+        <span className="pulse-dot" aria-hidden />
+        <strong>{returned ? 'Welcome back' : 'Opening Phone…'}</strong>
+      </div>
+
+      <CopyVpaChip vpa={draft.vpa} />
+
+      <div className="step-list">
+        <Step done={copied} active={phase >= 1} label="UPI ID copied to clipboard" />
+        <Step done={phase >= 3} active={phase >= 2} label={`Dialing *99*1*3# for ₹${draft.amount}`} />
+        <Step active={phase >= 3} label="Paste ID if asked, enter PIN in Phone" />
+      </div>
+
+      <p className="muted small">
+        iOS runs the full USSD menu in Phone — Zep Pay cannot read the result.
+        You will confirm success on the next screen.
+      </p>
+
+      <button type="button" className="btn-secondary" onClick={openPhone}>
+        Open Phone again
+      </button>
+      <button type="button" className="btn-ghost" onClick={copySummary}>
+        Copy payment summary
+      </button>
+    </div>
+  );
+}
+
+function Step({ label, done = false, active = false }) {
+  return (
+    <div className={`step-row ${active ? 'active' : ''} ${done ? 'done' : ''}`}>
+      <span className="step-bullet">{done ? '✓' : '•'}</span>
+      <span>{label}</span>
     </div>
   );
 }

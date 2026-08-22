@@ -88,14 +88,15 @@
       document.getElementById('name').textContent = name;
       document.getElementById('vpa').textContent = vpa;
       document.getElementById('initials').textContent = initials;
-      const upi = `upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(name)}&cu=INR`;
+      const upi = `${location.origin}/zeppay/profile/?vpa=${encodeURIComponent(vpa)}&name=${encodeURIComponent(name)}`;
       if (vpa.includes('@')) {
         QRCode.toCanvas(document.getElementById('qr'), upi, { width: 220, margin: 1 });
       }
       document.getElementById('copy').onclick = () => navigator.clipboard.writeText(vpa);
       document.getElementById('pay').onclick = () => {
+        const ios = `/zeppay/ios/?vpa=${encodeURIComponent(vpa)}&name=${encodeURIComponent(name)}`;
         location.href = `zeppay://profile?vpa=${encodeURIComponent(vpa)}&name=${encodeURIComponent(name)}`;
-        setTimeout(() => { location.href = upi; }, 600);
+        setTimeout(() => { location.href = ios; }, 600);
       };
     </script>
   </body>
