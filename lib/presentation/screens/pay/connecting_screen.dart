@@ -51,7 +51,6 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
 
   Future<void> _showVpaCopiedToast() async {
     if (!mounted) return;
-    setState(() => _showVpaToast = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('VPA copied — paste now if the dialer asks'),
@@ -355,7 +354,6 @@ class _ConnectingScreenState extends ConsumerState<ConnectingScreen> {
       );
 
       ref.read(lastRailProvider.notifier).state = rail;
-      _rail = rail;
       final dial = RailEngine.dialFor(
         rail,
         draft,
