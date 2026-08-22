@@ -16,6 +16,11 @@ class ZepCardProfile {
   }
 }
 
+/// Standard UPI handle: local part [a-zA-Z0-9._-]+ @ PSP handle [a-zA-Z0-9]+
+final RegExp _upiVpaPattern = RegExp(r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$');
+
+bool isValidUpiVpa(String vpa) => _upiVpaPattern.hasMatch(vpa.trim());
+
 /// Static NDEF payload: custom scheme + HTTPS fallback for phones without the app.
 abstract final class ZepCardCodec {
   static const profileScheme = 'zeppay';
@@ -40,7 +45,7 @@ abstract final class ZepCardCodec {
   static ZepCardProfile? parseUri(Uri? uri) {
     if (uri == null) return null;
     final vpa = uri.queryParameters['vpa']?.trim() ?? '';
-    if (!vpa.contains('@')) return null;
+    if (!isValidUpiVpa(vpa)) return null;
     final name = uri.queryParameters['name']?.trim() ?? '';
     final path = uri.path;
     final isProfile = uri.host == profileHost ||

@@ -136,96 +136,110 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const ConfettiBurst(),
-            const PaymentSuccessBurst(),
-            const SizedBox(height: 12),
-            Text(
-              'Payment Successful',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: amount / 100),
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) => Text(
-                '₹${value.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.displayMedium,
-              ),
-            ),
-            Text(who, style: Theme.of(context).textTheme.titleMedium),
-            if (coins > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: InkWell(
-                  onTap: () => context.push('/coins'),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '+$coins ZepCoins earned →',
-                      style: const TextStyle(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w700,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const ConfettiBurst(),
+                    const PaymentSuccessBurst(),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Payment Successful',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ).animate().fadeIn(delay: 200.ms),
+                    const SizedBox(height: 8),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: amount / 100),
+                      duration: const Duration(milliseconds: 700),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) => Text(
+                        '₹${value.toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.displayMedium,
                       ),
                     ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _row('Paid to', who),
-                      _row('UPI ID', vpa),
-                      _row('Zep Pay ID', refCode),
-                      _row('On', DateFormat('d MMM y, h:mm a').format(when)),
-                      if ((tx?.note ?? draft?.note ?? '').isNotEmpty)
-                        _row('Note', tx?.note ?? draft?.note ?? ''),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (showSplit)
-                    _PostAction(
-                      icon: Icons.call_split_rounded,
-                      label: 'Split this expense',
-                      onTap: () => _openSplitPicker(tx, amount, who, category),
+                    Text(who, style: Theme.of(context).textTheme.titleMedium),
+                    if (coins > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: InkWell(
+                          onTap: () => context.push('/coins'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '+$coins ZepCoins earned →',
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _row('Paid to', who),
+                              _row('UPI ID', vpa),
+                              _row('Zep Pay ID', refCode),
+                              _row(
+                                'On',
+                                DateFormat('d MMM y, h:mm a').format(when),
+                              ),
+                              if ((tx?.note ?? draft?.note ?? '').isNotEmpty)
+                                _row('Note', tx?.note ?? draft?.note ?? ''),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  _PostAction(
-                    icon: Icons.ios_share_rounded,
-                    label: 'Share screenshot',
-                    onTap: tx == null ? null : () => ReceiptShare.share(tx),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          if (showSplit)
+                            _PostAction(
+                              icon: Icons.call_split_rounded,
+                              label: 'Split this expense',
+                              onTap: () =>
+                                  _openSplitPicker(tx, amount, who, category),
+                            ),
+                          _PostAction(
+                            icon: Icons.ios_share_rounded,
+                            label: 'Share screenshot',
+                            onTap:
+                                tx == null ? null : () => ReceiptShare.share(tx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ZepPromoBanner(
+                      headline: 'Spend ZepCoins in the Shop',
+                      subtext: 'Demo partner offers — invented for the pitch',
+                      chip: '${app.zepCoinBalance} coins',
+                      onTap: () => context.push('/shop'),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            ZepPromoBanner(
-              headline: 'Spend ZepCoins in the Shop',
-              subtext: 'Demo partner offers — invented for the pitch',
-              chip: '${app.zepCoinBalance} coins',
-              onTap: () => context.push('/shop'),
-            ),
-            const Spacer(),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Row(
