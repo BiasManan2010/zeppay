@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { ScanScreen } from './components/ScanScreen';
 import { RecipientEntry } from './components/RecipientEntry';
@@ -6,9 +6,35 @@ import { AmountEntry } from './components/AmountEntry';
 import { ConfirmPayment } from './components/ConfirmPayment';
 import { PaymentHandoff } from './components/PaymentHandoff';
 import { History } from './components/History';
+import { CoinsScreen } from './components/CoinsScreen';
+import { ShopScreen } from './components/ShopScreen';
+import { RequestsScreen, RequestCompose } from './components/RequestsScreen';
+import { SplitScreen } from './components/SplitScreen';
+import { ProfileScreen } from './components/ProfileScreen';
+import { SpendingScreen } from './components/SpendingScreen';
+import { OutcomeScreen } from './components/OutcomeScreen';
+import { parseAmount } from './lib/amount';
 import { buildBalanceTelLink, buildUssdTelLink } from './lib/upiLink';
 import { isValidVpa } from './lib/qrParser';
-import { loadHistory, loadRecents, logPayment, saveRecent } from './lib/localStore';
+import {
+  addExpense,
+  addRequest,
+  loadCoinBalance,
+  loadCoinLedger,
+  loadExpenses,
+  loadGroups,
+  loadHistory,
+  loadProfile,
+  loadRecents,
+  loadRequests,
+  logPayment,
+  redeemPartner,
+  saveGroup,
+  saveProfile,
+  saveRecent,
+  spendingSummary,
+  updateRequest,
+} from './lib/localStore';
 
 const SCREENS = {
   home: 'home',
@@ -19,6 +45,13 @@ const SCREENS = {
   handoff: 'handoff',
   outcome: 'outcome',
   history: 'history',
+  coins: 'coins',
+  shop: 'shop',
+  requests: 'requests',
+  requestCompose: 'requestCompose',
+  split: 'split',
+  profile: 'profile',
+  spending: 'spending',
 };
 
 export default function App() {
@@ -28,7 +61,19 @@ export default function App() {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [history, setHistory] = useState(() => loadHistory());
+  const [coinBalance, setCoinBalance] = useState(() => loadCoinBalance());
+  const [coinLedger, setCoinLedger] = useState(() => loadCoinLedger());
+  const [requests, setRequests] = useState(() => loadRequests());
+  const [groups, setGroups] = useState(() => loadGroups());
+  const [expenses, setExpenses] = useState(() => loadExpenses());
+  const [profile, setProfile] = useState(() => loadProfile());
+  const [outcome, setOutcome] = useState(null);
+  const [splitPrefill, setSplitPrefill] = useState(null);
+  const [lockedAmount, setLockedAmount] = useState(null);
+
   const recents = useMemo(() => loadRecents(), [history, screen]);
+  const parsedAmount = useMemo(() => parseAmount(amount), [amount]);
+  const activeAmount = lockedAmount ?? parsedAmount;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -41,8 +86,20 @@ export default function App() {
     setScreen(SCREENS.amount);
   }, []);
 
-  const draft = { vpa, name, amount, note };
-  const ussdLink = buildUssdTelLink({ vpa, amount });
+  const draft = useMemo(
+    () => ({
+      vpa,
+      name,
+      amount: activeAmount != null ? String(activeAmount) : amount,
+      note,
+    }),
+    [vpa, name, amount, activeAmount, note],
+  );
+
+  const ussdLink = useMemo(() => {
+    if (activeAmount == null || !vpa) return '';
+    return buildUssdTelLink({ vpa, amount: activeAmount });
+  }, [vpa, activeAmount]);
 
   const titles = {
     [SCREENS.home]: 'Zep Pay',
@@ -53,20 +110,37 @@ export default function App() {
     [SCREENS.handoff]: 'Dial *99#',
     [SCREENS.outcome]: 'Payment status',
     [SCREENS.history]: 'History',
+    [SCREENS.coins]: 'ZepCoins',
+    [SCREENS.shop]: 'Shop',
+    [SCREENS.requests]: 'Requests',
+    [SCREENS.requestCompose]: 'New request',
+    [SCREENS.split]: 'Split bill',
+    [SCREENS.profile]: 'Profile',
+    [SCREENS.spending]: 'Spending',
   };
+
+  const refreshStore = useCallback(() => {
+    setHistory(loadHistory());
+    setCoinBalance(loadCoinBalance());
+    setCoinLedger(loadCoinLedger());
+    setRequests(loadRequests());
+    setGroups(loadGroups());
+    setExpenses(loadExpenses());
+  }, []);
 
   function resetDraft() {
     setVpa('');
     setName('');
     setAmount('');
     setNote('');
+    setLockedAmount(null);
   }
 
   function applyDraft(parsed) {
     setVpa(parsed.vpa);
     setName(parsed.name || '');
     setNote(parsed.note || '');
-    if (parsed.amount && Number(parsed.amount) > 0) {
+    if (parsed.amount && parseAmount(String(parsed.amount))) {
       setAmount(String(parsed.amount));
       setScreen(SCREENS.confirm);
     } else {
@@ -75,38 +149,79 @@ export default function App() {
     }
   }
 
-  function recordPayment(status) {
-    saveRecent({ vpa, name: name || vpa });
-    logPayment({ vpa, name, amount, note, status, rail: 'ussd' });
-    setHistory(loadHistory());
-  }
-
-  function goHome() {
+  const goHome = useCallback(() => {
     resetDraft();
+    setOutcome(null);
+    setSplitPrefill(null);
     setScreen(SCREENS.home);
-  }
+  }, []);
+
+  const recordPayment = useCallback(
+    (status) => {
+      saveRecent({ vpa, name: name || vpa });
+      const row = logPayment({ vpa, name, amount: draft.amount, note, status, rail: 'ussd' });
+      refreshStore();
+      return row;
+    },
+    [vpa, name, draft.amount, note, refreshStore],
+  );
+
+  const handleConfirmed = useCallback(
+    async (status) => {
+      const row = recordPayment(status);
+      setOutcome(row);
+      setScreen(SCREENS.outcome);
+    },
+    [recordPayment],
+  );
+
+  const handlePendingTimeout = useCallback(() => {
+    const row = recordPayment('pending');
+    setOutcome(row);
+    setScreen(SCREENS.outcome);
+  }, [recordPayment]);
+
+  const handlePayStart = useCallback((confirmedAmount) => {
+    setLockedAmount(confirmedAmount);
+    setAmount(String(confirmedAmount));
+    setScreen(SCREENS.handoff);
+  }, []);
 
   function openBalance() {
     window.location.href = buildBalanceTelLink();
   }
 
+  function handleBack() {
+    if (screen === SCREENS.handoff) return;
+    if (screen === SCREENS.confirm) setScreen(SCREENS.amount);
+    else if (screen === SCREENS.amount) setScreen(vpa ? SCREENS.recipient : SCREENS.scan);
+    else if (screen === SCREENS.recipient || screen === SCREENS.scan) setScreen(SCREENS.home);
+    else if (screen === SCREENS.requestCompose) setScreen(SCREENS.requests);
+    else if (screen === SCREENS.shop) setScreen(SCREENS.coins);
+    else goHome();
+  }
+
+  const spending = useMemo(() => spendingSummary(), [history]);
+
+  const expenseRows = useMemo(
+    () =>
+      expenses.map((e) => {
+        const group = groups.find((g) => g.id === e.groupId);
+        const members = group?.members?.length || 1;
+        return {
+          ...e,
+          groupName: group?.name || 'Group',
+          perPerson: (Number(e.amount) / members).toFixed(2),
+        };
+      }),
+    [expenses, groups],
+  );
+
   return (
     <div className="app-shell">
       <header className="top-bar">
         {screen !== SCREENS.home ? (
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="Back"
-            onClick={() => {
-              if (screen === SCREENS.handoff) setScreen(SCREENS.confirm);
-              else if (screen === SCREENS.confirm) setScreen(SCREENS.amount);
-              else if (screen === SCREENS.amount) setScreen(vpa ? SCREENS.recipient : SCREENS.scan);
-              else if (screen === SCREENS.recipient || screen === SCREENS.scan) setScreen(SCREENS.home);
-              else if (screen === SCREENS.history || screen === SCREENS.outcome) setScreen(SCREENS.home);
-              else setScreen(SCREENS.home);
-            }}
-          >
+          <button type="button" className="icon-btn" aria-label="Back" onClick={handleBack}>
             ‹
           </button>
         ) : (
@@ -120,10 +235,16 @@ export default function App() {
         {screen === SCREENS.home && (
           <HomeScreen
             recents={recents}
+            coinBalance={coinBalance}
             onScan={() => setScreen(SCREENS.scan)}
             onPayUpi={() => setScreen(SCREENS.recipient)}
             onBalance={openBalance}
             onHistory={() => setScreen(SCREENS.history)}
+            onCoins={() => setScreen(SCREENS.coins)}
+            onRequests={() => setScreen(SCREENS.requests)}
+            onSplit={() => setScreen(SCREENS.split)}
+            onProfile={() => setScreen(SCREENS.profile)}
+            onSpending={() => setScreen(SCREENS.spending)}
             onRecent={(r) => {
               setVpa(r.vpa);
               setName(r.name || '');
@@ -135,10 +256,7 @@ export default function App() {
         )}
 
         {screen === SCREENS.scan && (
-          <ScanScreen
-            onResult={applyDraft}
-            onBack={() => setScreen(SCREENS.home)}
-          />
+          <ScanScreen onResult={applyDraft} onBack={() => setScreen(SCREENS.home)} />
         )}
 
         {screen === SCREENS.recipient && (
@@ -157,70 +275,145 @@ export default function App() {
             payee={name || vpa}
             onAmount={setAmount}
             onNote={setNote}
-            onNext={() => setScreen(SCREENS.confirm)}
-            onBack={() =>
-              setScreen(vpa && !name ? SCREENS.recipient : SCREENS.home)
-            }
+            onNext={(parsed) => {
+              setLockedAmount(parsed);
+              setAmount(String(parsed));
+              setScreen(SCREENS.confirm);
+            }}
+            onBack={() => setScreen(vpa && !name ? SCREENS.recipient : SCREENS.home)}
           />
         )}
 
-        {screen === SCREENS.confirm && (
+        {screen === SCREENS.confirm && parsedAmount != null && (
           <ConfirmPayment
             draft={draft}
-            onPay={() => setScreen(SCREENS.handoff)}
+            onPay={handlePayStart}
             onBack={() => setScreen(SCREENS.amount)}
           />
         )}
 
-        {screen === SCREENS.handoff && (
+        {screen === SCREENS.handoff && ussdLink && (
           <PaymentHandoff
             telLink={ussdLink}
             draft={draft}
-            onReturn={() => setScreen(SCREENS.outcome)}
+            onConfirmed={handleConfirmed}
+            onPendingTimeout={handlePendingTimeout}
           />
         )}
 
-        {screen === SCREENS.outcome && (
-          <div className="card stack outcome">
-            <h2>How did *99# go?</h2>
-            <p className="muted">
-              Zep Pay cannot read the Phone dialer. Log what you saw so your
-              history stays honest.
-            </p>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => {
-                recordPayment('success-user');
-                goHome();
-              }}
-            >
-              Payment succeeded
-            </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => {
-                recordPayment('failed-user');
-                goHome();
-              }}
-            >
-              Failed or cancelled
-            </button>
-            <button type="button" className="btn-ghost" onClick={goHome}>
-              Home
-            </button>
-          </div>
+        {screen === SCREENS.outcome && outcome && (
+          <OutcomeScreen
+            result={outcome}
+            onHome={goHome}
+            onSplit={() => {
+              setSplitPrefill(outcome);
+              setScreen(SCREENS.split);
+            }}
+          />
         )}
 
         {screen === SCREENS.history && (
           <>
             <History items={history} />
-            <button type="button" className="btn-ghost" onClick={() => setScreen(SCREENS.home)}>
+            <button type="button" className="btn-ghost" onClick={goHome}>
               Back home
             </button>
           </>
         )}
+
+        {screen === SCREENS.coins && (
+          <CoinsScreen
+            balance={coinBalance}
+            ledger={coinLedger}
+            onShop={() => setScreen(SCREENS.shop)}
+          />
+        )}
+
+        {screen === SCREENS.shop && (
+          <ShopScreen
+            balance={coinBalance}
+            onRedeemed={(brand) => {
+              const code = redeemPartner(brand);
+              refreshStore();
+              return code;
+            }}
+          />
+        )}
+
+        {screen === SCREENS.requests && (
+          <RequestsScreen
+            requests={requests}
+            onCreate={() => setScreen(SCREENS.requestCompose)}
+            onPay={(r) => {
+              setVpa(r.fromVpa);
+              setName(r.fromName);
+              setAmount(String(r.amount));
+              setNote(r.note || '');
+              updateRequest(r.id, 'accepted');
+              refreshStore();
+              setScreen(SCREENS.confirm);
+            }}
+            onDismiss={(id) => {
+              updateRequest(id, 'dismissed');
+              refreshStore();
+            }}
+          />
+        )}
+
+        {screen === SCREENS.requestCompose && (
+          <RequestCompose
+            onSave={(req) => {
+              addRequest(req);
+              refreshStore();
+              setScreen(SCREENS.requests);
+            }}
+            onCancel={() => setScreen(SCREENS.requests)}
+          />
+        )}
+
+        {screen === SCREENS.split && (
+          <SplitScreen
+            groups={groups}
+            expenses={expenseRows}
+            prefill={splitPrefill}
+            onCreateGroup={() => {
+              const group = {
+                id: `g-${Date.now()}`,
+                name: `Trip ${groups.length + 1}`,
+                members: ['You', 'Friend A', 'Friend B'],
+              };
+              saveGroup(group);
+              refreshStore();
+            }}
+            onSplit={({ groupId, title, amount: total }) => {
+              const group = groups.find((g) => g.id === groupId);
+              const members = group?.members?.length || 1;
+              addExpense({
+                groupId,
+                title,
+                amount: total,
+                perPersonShare: (total / members).toFixed(2),
+              });
+              refreshStore();
+              if (splitPrefill) {
+                setSplitPrefill(null);
+                goHome();
+              }
+            }}
+          />
+        )}
+
+        {screen === SCREENS.profile && (
+          <ProfileScreen
+            profile={profile}
+            onSave={(next) => {
+              saveProfile(next);
+              setProfile(next);
+            }}
+          />
+        )}
+
+        {screen === SCREENS.spending && <SpendingScreen summary={spending} />}
       </main>
 
       {screen === SCREENS.home ? (
