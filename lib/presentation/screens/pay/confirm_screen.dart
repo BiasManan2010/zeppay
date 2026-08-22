@@ -44,6 +44,37 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
           ),
         );
       }
+      final draft = ref.read(paymentDraftProvider);
+      final claim = ref.read(zepCardClaimOutcomeProvider);
+      if (!mounted || draft?.zepCardPurchase != true) return;
+      if (claim == ZepCardClaimOutcome.claimed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your Zep Card is linked — opening Card Details.'),
+          ),
+        );
+        ref.read(zepCardClaimOutcomeProvider.notifier).state = null;
+        _clear();
+        context.go('/my-zep-card');
+      } else if (claim == ZepCardClaimOutcome.noInventory) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment received, but no unclaimed Zep Cards are available right now. Contact support.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      } else if (claim == ZepCardClaimOutcome.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment succeeded but card linking failed. Try claiming manually with your NFC ID.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      }
     });
   }
 

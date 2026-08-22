@@ -12,6 +12,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/ussd_bridge.dart';
+import '../zep_card/zep_card_navigation.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
@@ -753,6 +754,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           if (isAndroidDevice) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.credit_card_rounded, color: AppColors.hero),
+              title: const Text('My Zep Card'),
+              subtitle: const Text('View card, UPI reveal, and chip tracking'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => openMyZepCard(context, ref),
+            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.nfc_rounded, color: AppColors.accent),

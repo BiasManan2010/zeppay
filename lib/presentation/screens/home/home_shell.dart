@@ -17,6 +17,7 @@ import '../../../data/services/providers.dart';
 import '../pay/payment_services_hub.dart';
 import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
+import '../zep_card/zep_card_navigation.dart';
 import 'profile_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -248,6 +249,12 @@ class _HomeTab extends ConsumerWidget {
                     tint: const Color(0xFF2D8A5E),
                     onTap: () => context.push('/split'),
                   ),
+                  ZepQuickAction(
+                    icon: Icons.credit_card_rounded,
+                    label: 'My Card',
+                    tint: const Color(0xFF3BA3FF),
+                    onTap: () => openMyZepCard(context, ref),
+                  ),
                 ],
               ),
             ),
@@ -367,9 +374,9 @@ class _HomeTab extends ConsumerWidget {
             const SizedBox(height: 8),
             ZepPromoBanner(
               headline: 'Zep Card — tap to pay',
-              subtext: 'NFC identity card for our closed-loop network (Challenge 1)',
-              chip: 'Set up card',
-              onTap: () => context.push('/zep-card-setup'),
+              subtext: 'Physical NFC card with live chip tracking inside',
+              chip: 'My Card',
+              onTap: () => openMyZepCard(context, ref),
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
