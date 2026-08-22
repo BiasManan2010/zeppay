@@ -1,17 +1,23 @@
-export function AmountEntry({ amount, note, onAmount, onNote, onNext, onBack }) {
+export function AmountEntry({ amount, note, payee, onAmount, onNote, onNext, onBack }) {
   return (
     <div className="stack">
-      <label>
+      <div className="card payee-pill">
+        <div className="muted">To</div>
+        <strong>{payee}</strong>
+      </div>
+
+      <label className="field-label">
         Amount (₹)
         <input
-          className="field"
+          className="field field-amount"
           inputMode="decimal"
           placeholder="0"
           value={amount}
           onChange={(e) => onAmount(e.target.value)}
         />
       </label>
-      <label>
+
+      <label className="field-label">
         Note (optional)
         <input
           className="field"
@@ -20,13 +26,14 @@ export function AmountEntry({ amount, note, onAmount, onNote, onNext, onBack }) 
           onChange={(e) => onNote(e.target.value)}
         />
       </label>
+
       <button
         type="button"
         className="btn-primary"
         onClick={onNext}
         disabled={!amount || Number(amount) <= 0}
       >
-        Review
+        Review payment
       </button>
       <button type="button" className="btn-ghost" onClick={onBack}>
         Back
