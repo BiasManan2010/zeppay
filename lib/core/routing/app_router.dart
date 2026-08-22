@@ -57,7 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/welcome' ||
           loc == '/verify-setup' ||
           loc.startsWith('/nfc/profile') ||
-          loc.startsWith('/inventory/nfc');
+          loc.startsWith('/chip/nfc');
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
@@ -118,16 +118,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
       fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
       fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
-      fadeRoute('/inventory', () => const InventoryOverviewScreen()),
+      fadeRoute('/inventory-overview', () => const InventoryOverviewScreen()),
       fadeRoute('/chip-tag-setup', () => const ChipTagSetupScreen()),
       fadeRouteState(
-        '/inventory/nfc/:nfcId',
+        '/chip/nfc/:nfcId',
         (s) => ChipNfcRouteScreen(
           nfcId: Uri.decodeComponent(s.pathParameters['nfcId'] ?? ''),
         ),
       ),
       fadeRouteState(
-        '/inventory/:chipId',
+        '/chip/:chipId',
         (s) => ChipDetailScreen(
           chipId: s.pathParameters['chipId']!,
           fromNfcTap: s.uri.queryParameters['nfc'] == '1',

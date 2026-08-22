@@ -19,14 +19,13 @@ class InventoryOverviewScreen extends ConsumerWidget {
     return ZepPage(
       title: 'Chip shortage tracker',
       subtitle:
-          'Challenge 2 — live stock from our NFC supply ledger (offline, no cloud)',
+          'Challenge 2 — live stock from Supabase, synced after every transaction',
       child: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Text('Could not load inventory: $e'),
         data: (snapshots) {
-          final high = snapshots.where((s) => s.risk == StockRiskLevel.high);
-          final medium =
-              snapshots.where((s) => s.risk == StockRiskLevel.medium);
+          final high =
+              snapshots.where((s) => s.risk == StockRiskLevel.high).length;
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
@@ -36,25 +35,16 @@ class InventoryOverviewScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Shortage summary',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                      '$high at HIGH risk',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: high > 0 ? AppColors.danger : Colors.white,
+                            fontWeight: FontWeight.w800,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
-                      '${high.length} HIGH · ${medium.length} MEDIUM · '
-                      '${snapshots.length - high.length - medium.length} other',
+                      '${snapshots.length} tracked batches · sorted by shortage risk',
                       style: const TextStyle(color: AppColors.textMuted),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Counts are calculated from usage right now — not stored.',
-                      style: TextStyle(
-                        color: AppColors.textDim,
-                        fontSize: 12,
-                      ),
                     ),
                   ],
                 ),
@@ -65,7 +55,7 @@ class InventoryOverviewScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _ChipRow(
                     snapshot: s,
-                    onTap: () => context.push('/inventory/${s.chip.chipId}'),
+                    onTap: () => context.push('/chip/${s.chip.chipId}'),
                   ),
                 ),
               ),
@@ -165,22 +155,20 @@ class RiskBadge extends StatelessWidget {
 }
 
 String riskLabel(ChipLiveSnapshot snapshot) {
-  if (!snapshot.hasUsageData) return 'NO DATA';
   return switch (snapshot.risk) {
     StockRiskLevel.high => 'HIGH',
     StockRiskLevel.medium => 'MEDIUM',
     StockRiskLevel.low => 'LOW',
-    null => '—',
+    StockRiskLevel.insufficientData => 'NO DATA',
   };
 }
 
 Color riskColor(ChipLiveSnapshot snapshot) {
-  if (!snapshot.hasUsageData) return AppColors.textMuted;
   return switch (snapshot.risk) {
     StockRiskLevel.high => AppColors.danger,
     StockRiskLevel.medium => AppColors.warning,
     StockRiskLevel.low => AppColors.success,
-    null => AppColors.textMuted,
+    StockRiskLevel.insufficientData => AppColors.textMuted,
   };
 }
 
@@ -191,5 +179,5 @@ String formatTxn(InventoryTransaction t) {
     InventoryTxnType.used => 'Used',
     InventoryTxnType.transferred => 'Transferred',
   };
-  return '$type ${t.quantity} · ${fmt.format(t.timestamp)}';
+  return '$type ${t.displayQuantity} · ${fmt.format(t.timestamp)}';
 }

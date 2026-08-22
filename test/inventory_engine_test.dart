@@ -10,43 +10,45 @@ void main() {
     expect(ChipTagCodec.parseUri(uri), id);
   });
 
-  test('current stock is sum of ledger rows only', () {
+  test('net stock is sum of quantity_delta rows', () {
     final txns = [
       InventoryTransaction(
         txnId: '1',
         chipId: 'C1',
         type: InventoryTxnType.received,
-        quantity: 100,
+        quantityDelta: 100,
         timestamp: DateTime(2026, 1, 1),
       ),
       InventoryTransaction(
         txnId: '2',
         chipId: 'C1',
         type: InventoryTxnType.used,
-        quantity: 30,
+        quantityDelta: -30,
         timestamp: DateTime(2026, 1, 2),
       ),
       InventoryTransaction(
         txnId: '3',
         chipId: 'C1',
         type: InventoryTxnType.transferred,
-        quantity: 10,
+        quantityDelta: -10,
         timestamp: DateTime(2026, 1, 3),
       ),
     ];
-    expect(InventoryEngine.currentStock(txns, chipId: 'C1'), 60);
+    expect(InventoryEngine.netStockFromDeltas(txns, chipId: 'C1'), 60);
   });
 
   test('risk HIGH when stockout before supplier lead time', () {
-    const chip = SemiconductorChip(
+    final chip = SemiconductorChip(
       chipId: 'C1',
       partNumber: 'X',
       manufacturer: 'Y',
       category: 'MCU',
+      quantity: 50,
       minimumStock: 10,
       supplierId: 'S1',
       batchId: 'B1',
       location: 'Shelf',
+      riskLevel: StockRiskLevel.high,
     );
     const supplier = Supplier(
       supplierId: 'S1',
@@ -61,7 +63,7 @@ void main() {
         txnId: 'r1',
         chipId: 'C1',
         type: InventoryTxnType.received,
-        quantity: 200,
+        quantityDelta: 200,
         timestamp: now.subtract(const Duration(days: 29)),
       ),
     ];
@@ -71,13 +73,22 @@ void main() {
           txnId: 'u$i',
           chipId: 'C1',
           type: InventoryTxnType.used,
-          quantity: 5,
+          quantityDelta: -5,
           timestamp: now.subtract(Duration(days: 29 - i)),
         ),
       );
     }
+    final state = InventoryEngine.recalculateState(
+      txns: txns,
+      chipId: 'C1',
+      leadTimeDays: supplier.leadTimeDays,
+      now: now,
+    );
+    expect(state.quantity, 50);
+    expect(state.riskLevel, 'HIGH');
+
     final snap = InventoryEngine.buildSnapshot(
-      chip: chip,
+      chip: chip.copyWith(quantity: state.quantity, riskLevel: StockRiskLevel.high),
       supplier: supplier,
       txns: txns,
       now: now,
@@ -87,16 +98,18 @@ void main() {
     expect(snap.risk, StockRiskLevel.high);
   });
 
-  test('zero usage yields no risk level', () {
-    const chip = SemiconductorChip(
+  test('zero usage yields INSUFFICIENT_DATA risk', () {
+    final chip = SemiconductorChip(
       chipId: 'C1',
       partNumber: 'X',
       manufacturer: 'Y',
       category: 'MCU',
+      quantity: 500,
       minimumStock: 10,
       supplierId: 'S1',
       batchId: 'B1',
       location: 'Shelf',
+      riskLevel: StockRiskLevel.insufficientData,
     );
     const supplier = Supplier(
       supplierId: 'S1',
@@ -105,20 +118,48 @@ void main() {
       leadTimeDays: 21,
       reliabilityPct: 95,
     );
+    final txns = [
+      InventoryTransaction(
+        txnId: 'r1',
+        chipId: 'C1',
+        type: InventoryTxnType.received,
+        quantityDelta: 500,
+        timestamp: DateTime(2026, 1, 1),
+      ),
+    ];
+    final state = InventoryEngine.recalculateState(
+      txns: txns,
+      chipId: 'C1',
+      leadTimeDays: supplier.leadTimeDays,
+    );
+    expect(state.riskLevel, 'INSUFFICIENT_DATA');
+
     final snap = InventoryEngine.buildSnapshot(
       chip: chip,
       supplier: supplier,
-      txns: [
-        InventoryTransaction(
-          txnId: 'r1',
-          chipId: 'C1',
-          type: InventoryTxnType.received,
-          quantity: 500,
-          timestamp: DateTime(2026, 1, 1),
-        ),
-      ],
+      txns: txns,
     );
     expect(snap.hasUsageData, isFalse);
-    expect(snap.risk, isNull);
+    expect(snap.risk, StockRiskLevel.insufficientData);
   });
+}
+
+extension on SemiconductorChip {
+  SemiconductorChip copyWith({
+    int? quantity,
+    StockRiskLevel? riskLevel,
+  }) {
+    return SemiconductorChip(
+      chipId: chipId,
+      partNumber: partNumber,
+      manufacturer: manufacturer,
+      category: category,
+      quantity: quantity ?? this.quantity,
+      minimumStock: minimumStock,
+      supplierId: supplierId,
+      batchId: batchId,
+      location: location,
+      riskLevel: riskLevel ?? this.riskLevel,
+    );
+  }
 }

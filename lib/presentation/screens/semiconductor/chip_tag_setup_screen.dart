@@ -121,7 +121,7 @@ class _ChipTagSetupScreenState extends ConsumerState<ChipTagSetupScreen> {
               ],
               const SizedBox(height: 16),
               OutlinedButton(
-                onPressed: () => context.push('/inventory'),
+                onPressed: () => context.push('/inventory-overview'),
                 child: const Text('Open inventory list'),
               ),
             ],

@@ -1,62 +1,147 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
-import '../local/semiconductor_database.dart';
 import '../models/semiconductor_models.dart';
 import 'inventory_engine.dart';
-
-final semiconductorDbProvider = Provider<SemiconductorDatabase>(
-  (ref) => SemiconductorDatabase.instance,
-);
+import 'supabase_service.dart';
 
 final inventoryOverviewProvider =
     FutureProvider<List<ChipLiveSnapshot>>((ref) async {
-  final repo = ref.watch(semiconductorDbProvider);
-  return SemiconductorRepository(repo).loadOverview();
+  return SemiconductorRepository.instance.loadOverview();
 });
 
 final chipDetailProvider = FutureProvider.family<ChipLiveSnapshot?, String>(
   (ref, chipId) async {
-    final repo = ref.watch(semiconductorDbProvider);
-    return SemiconductorRepository(repo).loadChipDetail(chipId);
+    return SemiconductorRepository.instance.loadChipDetail(chipId);
   },
 );
 
 final chipTransactionsProvider =
     FutureProvider.family<List<InventoryTransaction>, String>(
   (ref, chipId) async {
-    final db = ref.watch(semiconductorDbProvider);
-    return db.transactionsForChip(chipId, limit: 10);
+    return SemiconductorRepository.instance.transactionsForChip(chipId, limit: 10);
   },
 );
 
 final nfcTagsProvider = FutureProvider<List<NfcChipTag>>((ref) async {
-  final db = ref.watch(semiconductorDbProvider);
-  return db.allNfcTags();
+  return SemiconductorRepository.instance.allNfcTags();
 });
 
-/// Offline inventory access — no network calls.
-class SemiconductorRepository {
-  SemiconductorRepository(this._db);
+final zepCardChipProvider = FutureProvider<ChipLiveSnapshot?>((ref) async {
+  return SemiconductorRepository.instance.loadChipDetail(kZepCardSupplyChipId);
+});
 
-  final SemiconductorDatabase _db;
-  static const _uuid = Uuid();
+/// Semiconductor inventory via the shared Supabase project (no local SQLite).
+class SemiconductorRepository {
+  SemiconductorRepository._();
+  static final instance = SemiconductorRepository._();
+
+  void _require() => SupabaseService.instance.requireReady();
+
+  Future<List<SemiconductorChip>> _allChips() async {
+    _require();
+    final rows = await SupabaseService.instance.client
+        .from('semiconductors')
+        .select()
+        .order('part_number');
+    return (rows as List)
+        .map((r) => SemiconductorChip.fromJson(Map<String, dynamic>.from(r)))
+        .toList();
+  }
+
+  Future<SemiconductorChip?> chipById(String chipId) async {
+    _require();
+    final row = await SupabaseService.instance.client
+        .from('semiconductors')
+        .select()
+        .eq('chip_id', chipId)
+        .maybeSingle();
+    if (row == null) return null;
+    return SemiconductorChip.fromJson(Map<String, dynamic>.from(row));
+  }
+
+  Future<Supplier?> supplierById(String supplierId) async {
+    _require();
+    final row = await SupabaseService.instance.client
+        .from('suppliers')
+        .select()
+        .eq('supplier_id', supplierId)
+        .maybeSingle();
+    if (row == null) return null;
+    return Supplier.fromJson(Map<String, dynamic>.from(row));
+  }
+
+  Future<List<InventoryTransaction>> transactionsForChip(
+    String chipId, {
+    int? limit,
+  }) async {
+    _require();
+    var query = SupabaseService.instance.client
+        .from('inventory_transactions')
+        .select()
+        .eq('chip_id', chipId)
+        .order('timestamp', ascending: false);
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+    final rows = await query;
+    return (rows as List)
+        .map((r) => InventoryTransaction.fromJson(Map<String, dynamic>.from(r)))
+        .toList();
+  }
+
+  Future<List<InventoryTransaction>> _allTransactionsForChip(
+    String chipId,
+  ) async {
+    _require();
+    final rows = await SupabaseService.instance.client
+        .from('inventory_transactions')
+        .select()
+        .eq('chip_id', chipId);
+    return (rows as List)
+        .map((r) => InventoryTransaction.fromJson(Map<String, dynamic>.from(r)))
+        .toList();
+  }
+
+  Future<ChipAlternative?> primaryAlternative(String chipId) async {
+    _require();
+    final row = await SupabaseService.instance.client
+        .from('alternatives')
+        .select()
+        .eq('chip_id', chipId)
+        .limit(1)
+        .maybeSingle();
+    if (row == null) return null;
+    return ChipAlternative.fromJson(Map<String, dynamic>.from(row));
+  }
+
+  Future<List<NfcChipTag>> allNfcTags() async {
+    _require();
+    final rows = await SupabaseService.instance.client
+        .from('nfc_tags')
+        .select()
+        .order('nfc_id');
+    return (rows as List)
+        .map((r) => NfcChipTag.fromJson(Map<String, dynamic>.from(r)))
+        .toList();
+  }
+
+  Future<String?> chipIdForNfcTag(String nfcId) async {
+    _require();
+    final row = await SupabaseService.instance.client
+        .from('nfc_tags')
+        .select('chip_id')
+        .eq('nfc_id', nfcId)
+        .maybeSingle();
+    return row?['chip_id'] as String?;
+  }
 
   Future<List<ChipLiveSnapshot>> loadOverview() async {
-    final chips = await _db.allChips();
-    final txns = await _db.allTransactions();
+    final chips = await _allChips();
     final snapshots = <ChipLiveSnapshot>[];
 
     for (final chip in chips) {
-      final supplier = await _db.supplierById(chip.supplierId);
-      if (supplier == null) continue;
-      snapshots.add(
-        InventoryEngine.buildSnapshot(
-          chip: chip,
-          supplier: supplier,
-          txns: txns,
-        ),
-      );
+      final snap = await loadChipDetail(chip.chipId);
+      if (snap != null) snapshots.add(snap);
     }
 
     snapshots.sort((a, b) {
@@ -69,15 +154,15 @@ class SemiconductorRepository {
   }
 
   Future<ChipLiveSnapshot?> loadChipDetail(String chipId) async {
-    final chip = await _db.chipById(chipId);
+    final chip = await chipById(chipId);
     if (chip == null) return null;
-    final supplier = await _db.supplierById(chip.supplierId);
+    final supplier = await supplierById(chip.supplierId);
     if (supplier == null) return null;
-    final txns = await _db.allTransactions();
-    final alt = await _db.primaryAlternative(chipId);
+    final txns = await _allTransactionsForChip(chipId);
+    final alt = await primaryAlternative(chipId);
     SemiconductorChip? altChip;
     if (alt != null) {
-      altChip = await _db.chipById(alt.alternativeChipId);
+      altChip = await chipById(alt.alternativeChipId);
     }
     return InventoryEngine.buildSnapshot(
       chip: chip,
@@ -88,23 +173,36 @@ class SemiconductorRepository {
     );
   }
 
-  Future<String?> resolveChipIdFromNfc(String nfcId) {
-    return _db.chipIdForNfcTag(nfcId);
-  }
-
   Future<void> logTransaction({
     required String chipId,
     required InventoryTxnType type,
     required int quantity,
   }) async {
-    await _db.insertTransaction(
-      InventoryTransaction(
-        txnId: _uuid.v4(),
-        chipId: chipId,
-        type: type,
-        quantity: quantity,
-        timestamp: DateTime.now(),
-      ),
+    _require();
+    final delta = switch (type) {
+      InventoryTxnType.received => quantity,
+      InventoryTxnType.used => -quantity,
+      InventoryTxnType.transferred => -quantity,
+    };
+
+    await SupabaseService.instance.client.from('inventory_transactions').insert({
+      'chip_id': chipId,
+      'type': type.dbValue,
+      'quantity_delta': delta,
+    });
+
+    final chip = await chipById(chipId);
+    final supplier = await supplierById(chip!.supplierId);
+    final txns = await _allTransactionsForChip(chipId);
+    final state = InventoryEngine.recalculateState(
+      txns: txns,
+      chipId: chipId,
+      leadTimeDays: supplier!.leadTimeDays,
     );
+
+    await SupabaseService.instance.client.from('semiconductors').update({
+      'quantity': state.quantity,
+      'risk_level': state.riskLevel,
+    }).eq('chip_id', chipId);
   }
 }

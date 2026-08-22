@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../data/local/semiconductor_database.dart';
+import '../../../data/services/semiconductor_repository.dart';
 
 /// Resolves an NFC tag id to a chip detail route.
 class ChipNfcRouteScreen extends ConsumerStatefulWidget {
@@ -22,17 +22,25 @@ class _ChipNfcRouteScreenState extends ConsumerState<ChipNfcRouteScreen> {
   }
 
   Future<void> _resolve() async {
-    final chipId =
-        await SemiconductorDatabase.instance.chipIdForNfcTag(widget.nfcId);
-    if (!mounted) return;
-    if (chipId == null) {
+    try {
+      final chipId = await SemiconductorRepository.instance
+          .chipIdForNfcTag(widget.nfcId);
+      if (!mounted) return;
+      if (chipId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unknown chip batch tag')),
+        );
+        context.go('/inventory-overview');
+        return;
+      }
+      context.replace('/chip/$chipId?nfc=1');
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unknown chip batch tag')),
+        SnackBar(content: Text('Could not resolve tag: $e')),
       );
-      context.go('/inventory');
-      return;
+      context.go('/inventory-overview');
     }
-    context.replace('/inventory/$chipId?nfc=1');
   }
 
   @override

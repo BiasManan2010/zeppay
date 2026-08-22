@@ -39,8 +39,7 @@ class _ChipDetailScreenState extends ConsumerState<ChipDetailScreen> {
     if (qty <= 0) return;
     setState(() => _logging = true);
     try {
-      final repo = SemiconductorRepository(ref.read(semiconductorDbProvider));
-      await repo.logTransaction(
+      await SemiconductorRepository.instance.logTransaction(
         chipId: widget.chipId,
         type: _txnType,
         quantity: qty,
@@ -49,6 +48,7 @@ class _ChipDetailScreenState extends ConsumerState<ChipDetailScreen> {
       ref.invalidate(chipDetailProvider(widget.chipId));
       ref.invalidate(chipTransactionsProvider(widget.chipId));
       ref.invalidate(inventoryOverviewProvider);
+      ref.invalidate(zepCardChipProvider);
     } finally {
       if (mounted) setState(() => _logging = false);
     }
@@ -67,7 +67,7 @@ class _ChipDetailScreenState extends ConsumerState<ChipDetailScreen> {
         error: (e, _) => Text('Error: $e'),
         data: (snapshot) {
           if (snapshot == null) {
-            return const Text('Chip not found in local inventory.');
+            return const Text('Chip not found in Supabase inventory.');
           }
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
@@ -134,14 +134,15 @@ class _ChipDetailScreenState extends ConsumerState<ChipDetailScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Calculated from recent usage — never stored as a column.',
+                      'Stock and risk sync to Supabase after each transaction.',
                       style: TextStyle(color: AppColors.textDim, fontSize: 11),
                     ),
                   ],
                 ),
               ),
-              if (snapshot.risk == StockRiskLevel.medium ||
-                  snapshot.risk == StockRiskLevel.high) ...[
+              if ((snapshot.risk == StockRiskLevel.medium ||
+                      snapshot.risk == StockRiskLevel.high) &&
+                  snapshot.alternative != null) ...[
                 const SizedBox(height: 12),
                 ZepDarkCard(
                   child: Column(
