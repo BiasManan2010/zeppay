@@ -14,6 +14,7 @@ import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/models/zep_card.dart';
 import '../../../data/services/qr_parser.dart';
 import 'qr_image_scan.dart';
 import 'qr_scan_transition.dart';
@@ -126,6 +127,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
               'No UPI ID in this QR. Try FamPay / GPay / PhonePe pay QR.',
             ),
           ),
+        );
+      }
+      return;
+    }
+    if (!isValidUpiVpa(draft.vpa)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid UPI ID in this QR code.')),
         );
       }
       return;
