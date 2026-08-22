@@ -127,6 +127,9 @@ jobs:
           name: zeppay-ios-web
           path: site/ios
 
+      - name: Copy Zep Card web fallback
+        run: cp -r gh-pages-root/zeppay site/
+
       - name: Publish GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

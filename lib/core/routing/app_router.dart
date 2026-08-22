@@ -16,17 +16,23 @@ import '../../presentation/screens/pay/confirm_screen.dart';
 import '../../presentation/screens/pay/connecting_screen.dart';
 import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
+import '../../presentation/screens/coins/coins_screen.dart';
+import '../../presentation/screens/shop/shop_screen.dart';
+import '../../presentation/screens/pay/payment_services_hub.dart';
 import '../../presentation/screens/pay/money_pages.dart';
 import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/receive_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
+import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
 import '../../presentation/screens/split/group_detail_screen.dart';
 import '../../presentation/screens/split/split_home_screen.dart';
 import '../../presentation/screens/split/split_pages.dart';
-import '../../presentation/screens/splash_screen.dart';
+import '../../presentation/screens/nfc/merchant_mode_screen.dart';
+import '../../presentation/screens/nfc/zep_card_profile_screen.dart';
+import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -45,7 +51,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/otp' ||
           loc == '/splash' ||
           loc == '/welcome' ||
-          loc == '/verify-setup';
+          loc == '/verify-setup' ||
+          loc.startsWith('/nfc/profile');
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
@@ -101,6 +108,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/help', () => const HelpScreen()),
       fadeRoute('/search', () => const SearchScreen()),
       fadeRoute('/categories', () => const CategorySpendScreen()),
+      fadeRoute('/coins', () => const CoinsScreen()),
+      fadeRoute('/shop', () => const ShopScreen()),
+      fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
+      fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
+      fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
+      fadeRouteState(
+        '/nfc/profile',
+        (s) => ZepCardProfileScreen(
+          vpa: Uri.decodeComponent(s.uri.queryParameters['vpa'] ?? ''),
+          name: Uri.decodeComponent(s.uri.queryParameters['name'] ?? ''),
+          fromNfcTap: true,
+        ),
+      ),
       fadeRouteState(
         '/history/:id',
         (s) => TxDetailScreen(txId: s.pathParameters['id']!),

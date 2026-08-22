@@ -7,6 +7,7 @@ import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_store.dart';
 import 'data/services/autopay_scheduler.dart';
+import 'data/services/nfc_deep_link.dart';
 import 'data/services/notification_service.dart';
 
 Future<void> main() async {
@@ -34,12 +35,23 @@ class ZepPayApp extends ConsumerStatefulWidget {
 }
 
 class _ZepPayAppState extends ConsumerState<ZepPayApp> {
+  NfcDeepLinkListener? _deepLinks;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(autopaySchedulerProvider).tick();
+      final router = ref.read(routerProvider);
+      _deepLinks = NfcDeepLinkListener(router, ref.read(appLinksProvider));
+      await _deepLinks!.init();
     });
+  }
+
+  @override
+  void dispose() {
+    _deepLinks?.dispose();
+    super.dispose();
   }
 
   @override

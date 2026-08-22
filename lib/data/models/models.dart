@@ -631,6 +631,95 @@ class SplitGroup {
   );
 }
 
+class ZepCoinLedgerEntry {
+  const ZepCoinLedgerEntry({
+    required this.txId,
+    required this.amountPaise,
+    required this.coinsEarned,
+    required this.timestamp,
+  });
+
+  final String txId;
+  final int amountPaise;
+  final int coinsEarned;
+  final DateTime timestamp;
+
+  Map<String, dynamic> toJson() => {
+    'txId': txId,
+    'amountPaise': amountPaise,
+    'coinsEarned': coinsEarned,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory ZepCoinLedgerEntry.fromJson(Map<String, dynamic> j) =>
+      ZepCoinLedgerEntry(
+        txId: j['txId'] as String? ?? '',
+        amountPaise: j['amountPaise'] as int? ?? 0,
+        coinsEarned: j['coinsEarned'] as int? ?? 0,
+        timestamp: DateTime.parse(j['timestamp'] as String),
+      );
+}
+
+enum PartnerCategory { ott, shopping, food, travel }
+
+enum RedemptionStatus { active, used }
+
+class PartnerBrand {
+  const PartnerBrand({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.logoAsset,
+    required this.discountLabel,
+    required this.coinsRequired,
+  });
+
+  final String id;
+  final String name;
+  final PartnerCategory category;
+  final String logoAsset;
+  final String discountLabel;
+  final int coinsRequired;
+}
+
+class Redemption {
+  const Redemption({
+    required this.id,
+    required this.brandId,
+    required this.coinsSpent,
+    required this.voucherCode,
+    required this.redeemedAt,
+    this.status = RedemptionStatus.active,
+  });
+
+  final String id;
+  final String brandId;
+  final int coinsSpent;
+  final String voucherCode;
+  final DateTime redeemedAt;
+  final RedemptionStatus status;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'brandId': brandId,
+    'coinsSpent': coinsSpent,
+    'voucherCode': voucherCode,
+    'redeemedAt': redeemedAt.toIso8601String(),
+    'status': status.name,
+  };
+
+  factory Redemption.fromJson(Map<String, dynamic> j) => Redemption(
+    id: j['id'] as String,
+    brandId: j['brandId'] as String? ?? '',
+    coinsSpent: j['coinsSpent'] as int? ?? 0,
+    voucherCode: j['voucherCode'] as String? ?? '',
+    redeemedAt: DateTime.parse(j['redeemedAt'] as String),
+    status: RedemptionStatus.values.byName(
+      j['status'] as String? ?? 'active',
+    ),
+  );
+}
+
 class AppNotification {
   const AppNotification({
     required this.id,
@@ -683,6 +772,9 @@ class AppState {
     this.settlements = const [],
     this.notifications = const [],
     this.payees = const [],
+    this.zepCoinBalance = 0,
+    this.zepCoinLedger = const [],
+    this.redemptions = const [],
   });
 
   final String? sessionPhone;
@@ -695,6 +787,9 @@ class AppState {
   final List<Settlement> settlements;
   final List<AppNotification> notifications;
   final List<SavedPayee> payees;
+  final int zepCoinBalance;
+  final List<ZepCoinLedgerEntry> zepCoinLedger;
+  final List<Redemption> redemptions;
 
   AppState copyWith({
     String? sessionPhone,
@@ -707,6 +802,9 @@ class AppState {
     List<Settlement>? settlements,
     List<AppNotification>? notifications,
     List<SavedPayee>? payees,
+    int? zepCoinBalance,
+    List<ZepCoinLedgerEntry>? zepCoinLedger,
+    List<Redemption>? redemptions,
     bool clearSession = false,
   }) {
     return AppState(
@@ -720,6 +818,9 @@ class AppState {
       settlements: settlements ?? this.settlements,
       notifications: notifications ?? this.notifications,
       payees: payees ?? this.payees,
+      zepCoinBalance: zepCoinBalance ?? this.zepCoinBalance,
+      zepCoinLedger: zepCoinLedger ?? this.zepCoinLedger,
+      redemptions: redemptions ?? this.redemptions,
     );
   }
 
@@ -734,6 +835,9 @@ class AppState {
     'settlements': settlements.map((e) => e.toJson()).toList(),
     'notifications': notifications.map((e) => e.toJson()).toList(),
     'payees': payees.map((e) => e.toJson()).toList(),
+    'zepCoinBalance': zepCoinBalance,
+    'zepCoinLedger': zepCoinLedger.map((e) => e.toJson()).toList(),
+    'redemptions': redemptions.map((e) => e.toJson()).toList(),
   };
 
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
@@ -768,6 +872,17 @@ class AppState {
         .toList(),
     payees: (j['payees'] as List? ?? [])
         .map((e) => SavedPayee.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    zepCoinBalance: j['zepCoinBalance'] as int? ?? 0,
+    zepCoinLedger: (j['zepCoinLedger'] as List? ?? [])
+        .map(
+          (e) => ZepCoinLedgerEntry.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
+        .toList(),
+    redemptions: (j['redemptions'] as List? ?? [])
+        .map((e) => Redemption.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
   );
 }

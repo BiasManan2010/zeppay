@@ -118,6 +118,7 @@ class TelephonyBridge(
             "recommendedRail" to rail,
             "ussdSupported" to (rail == "ussd"),
             "platform" to "android",
+            "manufacturer" to (Build.MANUFACTURER ?: ""),
         )
     }
 

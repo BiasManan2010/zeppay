@@ -20,6 +20,23 @@ final pendingPhoneProvider = StateProvider<String>((_) => '');
 final lastRailProvider = StateProvider<PaymentRail?>((_) => null);
 final pendingTxIdProvider = StateProvider<String?>((_) => null);
 
+class SplitPrefill {
+  const SplitPrefill({
+    required this.amountPaise,
+    required this.payeeName,
+    required this.category,
+    this.title,
+  });
+
+  final int amountPaise;
+  final String payeeName;
+  final String category;
+  final String? title;
+}
+
+final splitPrefillProvider = StateProvider<SplitPrefill?>((_) => null);
+final lastCoinsEarnedProvider = StateProvider<int>((_) => 0);
+
 final otpLiveProvider = FutureProvider((ref) {
   return ref.watch(otpServiceProvider).isLive();
 });
@@ -70,9 +87,18 @@ Future<void> hapticLock() async {
 Future<void> applyPaymentResult(WidgetRef ref, TxStatus status) async {
   final id = ref.read(pendingTxIdProvider);
   if (id != null) {
+    final existing = ref
+        .read(appStoreProvider)
+        .transactions
+        .where((t) => t.id == id)
+        .firstOrNull;
     await ref.read(appStoreProvider.notifier).resolveTransaction(id, status);
     final audit = await ref.read(securityAuditProvider.future);
     await audit.paymentResolved(id, status);
+    if (status == TxStatus.success && existing != null) {
+      ref.read(lastCoinsEarnedProvider.notifier).state =
+          existing.amountPaise ~/ 1000;
+    }
   }
   await ref.read(paymentSessionProvider.notifier).resolve(status);
   final draft = ref.read(paymentDraftProvider);
