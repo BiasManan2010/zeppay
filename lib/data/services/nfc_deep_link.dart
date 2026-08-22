@@ -32,7 +32,7 @@ class NfcDeepLinkListener {
     final chipNfcId = ChipTagCodec.parseUri(uri);
     if (chipNfcId != null) {
       _router.go(
-        '/inventory/nfc/${Uri.encodeComponent(chipNfcId)}',
+        '/chip/nfc/${Uri.encodeComponent(chipNfcId)}',
       );
       return;
     }
