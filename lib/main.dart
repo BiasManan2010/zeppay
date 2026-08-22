@@ -9,6 +9,7 @@ import 'data/local/app_store.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,11 @@ Future<void> main() async {
     await NotificationService.instance.init();
   } catch (e) {
     debugPrint('notifications init failed: $e');
+  }
+  try {
+    await SupabaseService.instance.init();
+  } catch (e) {
+    debugPrint('supabase init failed: $e');
   }
   runApp(const ProviderScope(child: ZepPayApp()));
 }

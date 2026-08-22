@@ -93,6 +93,7 @@ class PaymentDraft {
     this.settleGroupId,
     this.settleFromId,
     this.settleToId,
+    this.zepCardPurchase = false,
   });
 
   final String vpa;
@@ -106,6 +107,7 @@ class PaymentDraft {
   final String? settleGroupId;
   final String? settleFromId;
   final String? settleToId;
+  final bool zepCardPurchase;
 
   double get amountRupees => amountPaise / 100.0;
 
@@ -115,6 +117,7 @@ class PaymentDraft {
     String? payeeName,
     String? vpa,
     String? category,
+    bool? zepCardPurchase,
   }) => PaymentDraft(
     vpa: vpa ?? this.vpa,
     amountPaise: amountPaise ?? this.amountPaise,
@@ -127,6 +130,7 @@ class PaymentDraft {
     settleGroupId: settleGroupId,
     settleFromId: settleFromId,
     settleToId: settleToId,
+    zepCardPurchase: zepCardPurchase ?? this.zepCardPurchase,
   );
 }
 
@@ -207,32 +211,57 @@ class TxRecord {
 
 class SavedPayee {
   const SavedPayee({
+    required this.id,
     required this.vpa,
     this.name = '',
+    this.phone = '',
     this.favorite = false,
+    this.lastPaidAt,
   });
 
+  final String id;
   final String vpa;
   final String name;
+  final String phone;
   final bool favorite;
+  final DateTime? lastPaidAt;
 
-  SavedPayee copyWith({String? name, bool? favorite}) => SavedPayee(
-    vpa: vpa,
-    name: name ?? this.name,
-    favorite: favorite ?? this.favorite,
-  );
+  SavedPayee copyWith({
+    String? name,
+    String? phone,
+    bool? favorite,
+    DateTime? lastPaidAt,
+  }) =>
+      SavedPayee(
+        id: id,
+        vpa: vpa,
+        name: name ?? this.name,
+        phone: phone ?? this.phone,
+        favorite: favorite ?? this.favorite,
+        lastPaidAt: lastPaidAt ?? this.lastPaidAt,
+      );
 
   Map<String, dynamic> toJson() => {
-    'vpa': vpa,
-    'name': name,
-    'favorite': favorite,
-  };
+        'id': id,
+        'vpa': vpa,
+        'name': name,
+        'phone': phone,
+        'favorite': favorite,
+        if (lastPaidAt != null) 'lastPaidAt': lastPaidAt!.toIso8601String(),
+      };
 
   factory SavedPayee.fromJson(Map<String, dynamic> j) => SavedPayee(
-    vpa: j['vpa'] as String? ?? '',
-    name: j['name'] as String? ?? '',
-    favorite: j['favorite'] as bool? ?? false,
-  );
+        id: j['id'] as String? ??
+            j['contact_id'] as String? ??
+            (j['vpa'] as String? ?? ''),
+        vpa: j['vpa'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+        phone: j['phone'] as String? ?? '',
+        favorite: j['favorite'] as bool? ?? j['is_favorite'] as bool? ?? false,
+        lastPaidAt: j['lastPaidAt'] == null
+            ? null
+            : DateTime.tryParse(j['lastPaidAt'] as String),
+      );
 }
 
 class PayRequest {

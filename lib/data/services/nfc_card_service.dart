@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
 import '../../core/platform.dart';
+import '../models/chip_tag_codec.dart';
 import '../models/zep_card.dart';
 
 typedef NfcTagHandler = Future<void> Function(ZepCardProfile profile);
+typedef NfcChipHandler = Future<void> Function(String nfcId);
 
 /// Android NFC read/write for Zep Cards. Passive tags only — identity, not money.
 class NfcCardService {
@@ -37,6 +39,7 @@ class NfcCardService {
       final message = await ndef.read();
       for (final record in message.records) {
         final uri = _uriFromRecord(record);
+        if (ChipTagCodec.parseUri(uri) != null) continue;
         final profile = ZepCardCodec.parseUri(uri);
         if (profile != null) return profile;
       }
@@ -62,12 +65,30 @@ class NfcCardService {
     final payload = record.payload;
     if (payload.isEmpty) return null;
     final text = utf8.decode(payload, allowMalformed: true);
-    if (text.contains('zeppay://') || text.contains('/zeppay/profile')) {
+    if (text.contains('zeppay://') || text.contains('/zeppay/profile') ||
+        text.contains('/zeppay/chip')) {
       final start = text.contains('zeppay://')
           ? text.indexOf('zeppay://')
           : text.indexOf('https://');
       final slice = text.substring(start).split('\u0000').first.trim();
       return Uri.tryParse(slice);
+    }
+    return null;
+  }
+
+  /// Reads a semiconductor batch tag id from NDEF (Challenge 2).
+  Future<String?> readChipNfcId(NfcTag tag) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) return null;
+    try {
+      final message = await ndef.read();
+      for (final record in message.records) {
+        final uri = _uriFromRecord(record);
+        final nfcId = ChipTagCodec.parseUri(uri);
+        if (nfcId != null) return nfcId;
+      }
+    } catch (e) {
+      debugPrint('NFC chip read failed: $e');
     }
     return null;
   }
@@ -91,6 +112,33 @@ class NfcCardService {
           final profile = await readProfile(tag);
           if (profile != null) {
             await onProfile(profile);
+          }
+        } catch (e) {
+          onError?.call(e);
+        }
+      },
+    );
+  }
+
+  /// Listen for semiconductor chip tags (nfc_id on physical Zep Cards).
+  Future<void> startChipListening(
+    NfcChipHandler onChipId, {
+    void Function(Object error)? onError,
+  }) async {
+    if (!isAndroidDevice || _listening) return;
+    final ok = await isAvailable();
+    if (!ok) {
+      onError?.call(StateError('NFC not available on this device'));
+      return;
+    }
+    _listening = true;
+    await NfcManager.instance.startSession(
+      pollingOptions: _polling,
+      onDiscovered: (tag) async {
+        try {
+          final nfcId = await readChipNfcId(tag);
+          if (nfcId != null) {
+            await onChipId(nfcId);
           }
         } catch (e) {
           onError?.call(e);
