@@ -163,7 +163,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
     final showSplit = app.groups.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Column(
           children: [
@@ -203,13 +203,13 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.15),
+                              color: AppColors.hero.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '+$coins ZepCoins earned →',
                               style: const TextStyle(
-                                color: AppColors.accent,
+                                color: AppColors.hero,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -296,7 +296,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
+                        backgroundColor: AppColors.hero,
                       ),
                       onPressed: () {
                         _clear();
@@ -319,16 +319,15 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textOnCreamMuted)),
+          Text(k, style: Theme.of(context).textTheme.bodyMedium),
           const Spacer(),
           Flexible(
             child: Text(
               v,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textOnCream,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
         ],
@@ -357,7 +356,7 @@ class _PostAction extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            Icon(icon, color: AppColors.accent, size: 28),
+            Icon(icon, color: AppColors.hero, size: 28),
             const SizedBox(height: 4),
             Text(
               label,
@@ -384,7 +383,7 @@ class FailedScreen extends ConsumerWidget {
         .where((t) => t.id == id)
         .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -448,7 +447,7 @@ class PendingScreen extends ConsumerWidget {
         .where((t) => t.id == id)
         .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),

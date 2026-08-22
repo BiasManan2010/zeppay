@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/services/live_state_provider.dart';
 import '../../../data/services/semiconductor_repository.dart';
@@ -25,6 +26,7 @@ class LiveStateScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final live = ref.watch(liveStateProvider);
+    final zep = context.zep;
     final fmt = DateFormat('d MMM yyyy, h:mm:ss a');
 
     return ZepPage(
@@ -154,6 +156,7 @@ class _LiveRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -162,7 +165,7 @@ class _LiveRow extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textOnCreamMuted,
+                  color: zep.textMuted,
                 ),
           ),
           const SizedBox(height: 4),
@@ -170,7 +173,7 @@ class _LiveRow extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textOnCream,
+                  color: zep.textPrimary,
                 ),
           ),
           Text(hint, style: Theme.of(context).textTheme.bodySmall),

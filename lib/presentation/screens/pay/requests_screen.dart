@@ -35,7 +35,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     final fmt = DateFormat('d MMM · h:mm a');
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       appBar: AppBar(
         title: const Text('Approve to pay'),
         actions: [

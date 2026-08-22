@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
@@ -65,6 +66,7 @@ class _DockedNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return SizedBox(
       height: 92 + MediaQuery.paddingOf(context).bottom,
       child: Stack(
@@ -73,10 +75,10 @@ class _DockedNav extends StatelessWidget {
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.navBar,
+                color: zep.navBar,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.surfaceBorder.withValues(alpha: 0.8),
+                    color: zep.border.withValues(alpha: 0.8),
                   ),
                 ),
                 boxShadow: [
@@ -149,6 +151,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -163,7 +166,7 @@ class _NavItem extends StatelessWidget {
                 curve: AppMotion.out,
                 child: Icon(
                   icon,
-                  color: selected ? AppColors.accent : AppColors.textDim,
+                  color: selected ? AppColors.hero : zep.textMuted,
                   size: 24,
                 ),
               ),
@@ -172,7 +175,7 @@ class _NavItem extends StatelessWidget {
                 duration: AppMotion.fast,
                 style:
                     Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? AppColors.accent : AppColors.textDim,
+                      color: selected ? AppColors.hero : zep.textMuted,
                       letterSpacing: 0.2,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ) ??
@@ -207,7 +210,7 @@ class _HomeTab extends ConsumerWidget {
     final unread = app.notifications.where((n) => !n.read).length;
 
     return ColoredBox(
-      color: AppColors.cream,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         bottom: false,
         child: ListView(
@@ -234,7 +237,7 @@ class _HomeTab extends ConsumerWidget {
                   ZepQuickAction(
                     icon: Icons.qr_code_scanner_rounded,
                     label: 'Scan',
-                    tint: AppColors.accent,
+                    tint: AppColors.hero,
                     onTap: () => context.push('/scan'),
                   ),
                   ZepQuickAction(
