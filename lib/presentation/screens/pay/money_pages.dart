@@ -836,10 +836,15 @@ class AnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final txs = ref
+    final allTxs = ref
         .watch(appStoreProvider)
         .transactions
         .where((t) => t.status == TxStatus.success)
+        .toList();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final txs = allTxs
+        .where((t) => !t.createdAt.isBefore(monthStart))
         .toList();
     final byDay = <String, double>{};
     for (final t in txs) {
@@ -885,7 +890,7 @@ class AnalyticsScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          DateFormat('MMM yyyy').format(DateTime.now()),
+                          DateFormat('MMM yyyy').format(now),
                           style: const TextStyle(color: Colors.white70),
                         ),
                       ),
@@ -901,8 +906,8 @@ class AnalyticsScreen extends ConsumerWidget {
                   ),
                   Text(
                     txs.isEmpty
-                        ? 'No successful payments yet'
-                        : '${txs.length} payments logged locally',
+                        ? 'No successful payments this month'
+                        : '${txs.length} payments this month',
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],

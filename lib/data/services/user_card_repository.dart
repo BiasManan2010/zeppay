@@ -6,7 +6,7 @@ import '../models/user_card.dart';
 import 'phone_hash.dart';
 import 'supabase_service.dart';
 
-final userCardProvider = FutureProvider<UserCard?>((ref) async {
+final userCardProvider = FutureProvider.autoDispose<UserCard?>((ref) async {
   final phone = ref.watch(appStoreProvider).sessionPhone;
   if (phone == null || phone.isEmpty) return null;
   if (!SupabaseService.instance.isReady) return null;
@@ -18,7 +18,7 @@ final userCardProvider = FutureProvider<UserCard?>((ref) async {
   }
 });
 
-final userCardChipIdProvider = FutureProvider<String?>((ref) async {
+final userCardChipIdProvider = FutureProvider.autoDispose<String?>((ref) async {
   final card = await ref.watch(userCardProvider.future);
   if (card == null) return null;
   return UserCardRepository.instance.chipIdForNfc(card.nfcId);

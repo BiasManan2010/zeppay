@@ -5,28 +5,30 @@ import 'inventory_engine.dart';
 import 'supabase_service.dart';
 
 final inventoryOverviewProvider =
-    FutureProvider<List<ChipLiveSnapshot>>((ref) async {
+    FutureProvider.autoDispose<List<ChipLiveSnapshot>>((ref) async {
   return SemiconductorRepository.instance.loadOverview();
 });
 
-final chipDetailProvider = FutureProvider.family<ChipLiveSnapshot?, String>(
+final chipDetailProvider =
+    FutureProvider.autoDispose.family<ChipLiveSnapshot?, String>(
   (ref, chipId) async {
     return SemiconductorRepository.instance.loadChipDetail(chipId);
   },
 );
 
 final chipTransactionsProvider =
-    FutureProvider.family<List<InventoryTransaction>, String>(
+    FutureProvider.autoDispose.family<List<InventoryTransaction>, String>(
   (ref, chipId) async {
     return SemiconductorRepository.instance.transactionsForChip(chipId, limit: 10);
   },
 );
 
-final nfcTagsProvider = FutureProvider<List<NfcChipTag>>((ref) async {
+final nfcTagsProvider = FutureProvider.autoDispose<List<NfcChipTag>>((ref) async {
   return SemiconductorRepository.instance.allNfcTags();
 });
 
-final zepCardChipProvider = FutureProvider<ChipLiveSnapshot?>((ref) async {
+final zepCardChipProvider =
+    FutureProvider.autoDispose<ChipLiveSnapshot?>((ref) async {
   return SemiconductorRepository.instance.loadChipDetail(kZepCardSupplyChipId);
 });
 
