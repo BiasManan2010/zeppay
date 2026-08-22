@@ -96,6 +96,7 @@ class PaymentServicesHubScreen extends StatelessWidget {
               crossAxisCount: 4,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 0.72,
               mainAxisSpacing: 16,
               crossAxisSpacing: 8,
               children: [

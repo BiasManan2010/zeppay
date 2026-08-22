@@ -7,13 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../core/platform.dart';
-import '../../core/theme/app_colors.dart';
-import '../../data/local/app_store.dart';
-import '../../data/models/models.dart';
-import '../../data/models/zep_card.dart';
-import '../../data/services/nfc_card_service.dart';
-import '../../data/services/sound_cue_service.dart';
+import '../../../core/platform.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../data/local/app_store.dart';
+import '../../../data/models/zep_card.dart';
+import '../../../data/services/nfc_card_service.dart';
+import '../../../data/services/sound_cue_service.dart';
 
 /// Mode B — merchant tablet listens for Zep Cards and collects payment.
 class MerchantModeScreen extends ConsumerStatefulWidget {
@@ -53,8 +52,6 @@ class _MerchantModeScreenState extends ConsumerState<MerchantModeScreen> {
   String get _merchantName =>
       ref.read(appStoreProvider).profile?.name ?? 'Merchant';
 
-  String get _merchantPhone => ref.read(appStoreProvider).sessionPhone ?? '';
-
   int get _amountPaise {
     final rupees = double.tryParse(_amount.text.trim()) ?? 0;
     return (rupees * 100).round();
@@ -62,8 +59,17 @@ class _MerchantModeScreenState extends ConsumerState<MerchantModeScreen> {
 
   String _receiveUri(int amountPaise) {
     final am = (amountPaise / 100).toStringAsFixed(2);
-    final pn = Uri.encodeComponent(_merchantName);
-    return 'upi://pay?pa=$_merchantVpa&pn=$pn&am=$am&cu=INR&tn=Zep%20Card';
+    return Uri(
+      scheme: 'upi',
+      host: 'pay',
+      queryParameters: {
+        'pa': _merchantVpa,
+        'pn': _merchantName,
+        'am': am,
+        'cu': 'INR',
+        'tn': 'Zep Card',
+      },
+    ).toString();
   }
 
   Future<void> _onCardTapped(ZepCardProfile profile) async {
@@ -75,20 +81,6 @@ class _MerchantModeScreenState extends ConsumerState<MerchantModeScreen> {
     }
     HapticFeedback.heavyImpact();
     await SoundCueService().success();
-
-    await ref.read(appStoreProvider.notifier).addRequest(
-          PayRequest(
-            id: AppStore.id(),
-            fromPhone: profile.vpa,
-            toPhone: _merchantPhone,
-            amountPaise: amount,
-            status: RequestStatus.pending,
-            createdAt: DateTime.now(),
-            note: 'Zep Card NFC · ${profile.vpa}',
-            fromName: profile.name.isNotEmpty ? profile.name : profile.vpa,
-            toVpa: _merchantVpa,
-          ),
-        );
 
     if (!mounted) return;
     setState(() {

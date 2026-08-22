@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../data/local/app_store.dart';
-import '../../data/models/models.dart';
-import '../../data/services/partner_shop.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../data/local/app_store.dart';
+import '../../../data/models/models.dart';
+import '../../../data/services/partner_shop.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});

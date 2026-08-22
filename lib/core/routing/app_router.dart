@@ -25,6 +25,7 @@ import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/receive_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
+import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
 import '../../presentation/screens/split/group_detail_screen.dart';
 import '../../presentation/screens/split/split_home_screen.dart';

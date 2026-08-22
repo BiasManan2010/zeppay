@@ -228,31 +228,29 @@ class ZepQuickAction extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        width: 80,
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: tint.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: tint, size: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: tint.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textOnCream,
-                    fontSize: 11,
-                  ),
-              maxLines: 2,
-            ),
-          ],
-        ),
+            child: Icon(icon, color: tint, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textOnCream,
+                  fontSize: 11,
+                ),
+            maxLines: 2,
+          ),
+        ],
       ),
     );
   }

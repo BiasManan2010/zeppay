@@ -9,11 +9,11 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/brand.dart';
-import '../../core/widgets/chrome.dart';
-import '../../data/models/zep_card.dart';
-import '../../data/services/providers.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
+import '../../../data/models/zep_card.dart';
+import '../../../data/services/providers.dart';
 
 /// Profile + live QR revealed by a Zep Card tap (Mode A).
 /// Photo is not on the tag — only initials avatar from encoded name.
@@ -45,8 +45,15 @@ class _ZepCardProfileScreenState extends ConsumerState<ZepCardProfileScreen> {
       widget.name.trim().isNotEmpty ? widget.name.trim() : widget.vpa;
 
   String get _upiUri {
-    final pn = Uri.encodeComponent(_displayName);
-    return 'upi://pay?pa=${widget.vpa}&pn=$pn&cu=INR';
+    return Uri(
+      scheme: 'upi',
+      host: 'pay',
+      queryParameters: {
+        'pa': widget.vpa,
+        'pn': _displayName,
+        'cu': 'INR',
+      },
+    ).toString();
   }
 
   Future<void> _shareQr() async {

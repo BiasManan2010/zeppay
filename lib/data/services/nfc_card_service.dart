@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -15,6 +16,11 @@ class NfcCardService {
 
   var _listening = false;
 
+  static const _polling = {
+    NfcPollingOption.iso14443,
+    NfcPollingOption.iso15693,
+  };
+
   Future<bool> isAvailable() async {
     if (!isAndroidDevice) return false;
     try {
@@ -22,12 +28,6 @@ class NfcCardService {
     } catch (_) {
       return false;
     }
-  }
-
-  ZepCardProfile? profileFromTag(NfcTag tag) {
-    final ndef = Ndef.from(tag);
-    if (ndef == null) return null;
-    return null; // sync read not available — use readTag async
   }
 
   Future<ZepCardProfile?> readProfile(NfcTag tag) async {
@@ -47,18 +47,21 @@ class NfcCardService {
   }
 
   Uri? _uriFromRecord(NdefRecord record) {
-    if (NdefRecord.isUriRecord(record)) {
-      return NdefRecord.uriFromRecord(record);
+    if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
+        record.type.isNotEmpty &&
+        record.type[0] == 0x55 &&
+        record.payload.isNotEmpty) {
+      final prefixIndex = record.payload[0];
+      final prefix = prefixIndex < NdefRecord.URI_PREFIX_LIST.length
+          ? NdefRecord.URI_PREFIX_LIST[prefixIndex]
+          : '';
+      final rest = utf8.decode(record.payload.sublist(1));
+      return Uri.tryParse('$prefix$rest');
     }
-    final type = String.fromCharCodes(record.type);
-    if (type.contains('U')) {
-      try {
-        return NdefRecord.uriFromRecord(record);
-      } catch (_) {}
-    }
+
     final payload = record.payload;
     if (payload.isEmpty) return null;
-    final text = String.fromCharCodes(payload);
+    final text = utf8.decode(payload, allowMalformed: true);
     if (text.contains('zeppay://') || text.contains('/zeppay/profile')) {
       final start = text.contains('zeppay://')
           ? text.indexOf('zeppay://')
@@ -82,7 +85,7 @@ class NfcCardService {
     }
     _listening = true;
     await NfcManager.instance.startSession(
-      pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+      pollingOptions: _polling,
       onDiscovered: (tag) async {
         try {
           final profile = await readProfile(tag);
@@ -117,9 +120,9 @@ class NfcCardService {
     if (!ok) throw StateError('NFC not available');
 
     final completer = Completer<void>();
-    Object? writeError;
 
     await NfcManager.instance.startSession(
+      pollingOptions: _polling,
       onDiscovered: (tag) async {
         try {
           onStatus?.call('Tag found — writing…');
@@ -130,7 +133,7 @@ class NfcCardService {
           if (!ndef.isWritable) {
             throw StateError('Tag is read-only');
           }
-          final message = NdefMessage(records: [
+          final message = NdefMessage([
             NdefRecord.createUri(ZepCardCodec.appUri(vpa: vpa, name: name)),
             NdefRecord.createUri(ZepCardCodec.webUri(vpa: vpa, name: name)),
           ]);
@@ -138,7 +141,6 @@ class NfcCardService {
           onStatus?.call('Zep Card programmed successfully');
           if (!completer.isCompleted) completer.complete();
         } catch (e) {
-          writeError = e;
           if (!completer.isCompleted) completer.completeError(e);
         } finally {
           await NfcManager.instance.stopSession();

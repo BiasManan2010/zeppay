@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../data/local/app_store.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../data/local/app_store.dart';
 
 class CoinsScreen extends ConsumerWidget {
   const CoinsScreen({super.key});

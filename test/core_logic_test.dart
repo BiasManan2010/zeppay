@@ -307,4 +307,15 @@ void main() {
     expect(ZepCardCodec.parseUri(web)?.vpa, profile.vpa);
     expect(profile.initials, 'RS');
   });
+
+  test('Zep Card codec rejects malformed VPAs', () {
+    final injected = ZepCardCodec.appUri(
+      vpa: 'payee@upi&am=9999',
+      name: 'Attacker',
+    );
+    expect(ZepCardCodec.parseUri(injected), isNull);
+
+    final badLocal = ZepCardCodec.appUri(vpa: 'bad@vpa@upi', name: 'X');
+    expect(ZepCardCodec.parseUri(badLocal), isNull);
+  });
 }
