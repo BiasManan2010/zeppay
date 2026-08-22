@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,7 +151,51 @@ class AppStore extends Notifier<AppState> {
   Future<void> resolveTransaction(String id, TxStatus status) async {
     final existing = state.transactions.where((e) => e.id == id).firstOrNull;
     if (existing == null) return;
+    final wasSuccess = existing.status == TxStatus.success;
     await logTransaction(existing.copyWith(status: status));
+    if (status == TxStatus.success && !wasSuccess) {
+      await awardZepCoins(txId: id, amountPaise: existing.amountPaise);
+    }
+  }
+
+  Future<void> awardZepCoins({
+    required String txId,
+    required int amountPaise,
+  }) async {
+    final coins = amountPaise ~/ 1000;
+    if (coins <= 0) return;
+    if (state.zepCoinLedger.any((e) => e.txId == txId)) return;
+    final entry = ZepCoinLedgerEntry(
+      txId: txId,
+      amountPaise: amountPaise,
+      coinsEarned: coins,
+      timestamp: DateTime.now(),
+    );
+    state = state.copyWith(
+      zepCoinBalance: state.zepCoinBalance + coins,
+      zepCoinLedger: [entry, ...state.zepCoinLedger],
+    );
+    await _persist();
+  }
+
+  Future<Redemption?> redeemPartner(PartnerBrand brand) async {
+    if (state.zepCoinBalance < brand.coinsRequired) return null;
+    final rnd = Random();
+    final code =
+        'ZEP-${rnd.nextInt(9000) + 1000}-${rnd.nextInt(9000) + 1000}';
+    final redemption = Redemption(
+      id: _uuid.v4(),
+      brandId: brand.id,
+      coinsSpent: brand.coinsRequired,
+      voucherCode: code,
+      redeemedAt: DateTime.now(),
+    );
+    state = state.copyWith(
+      zepCoinBalance: state.zepCoinBalance - brand.coinsRequired,
+      redemptions: [redemption, ...state.redemptions],
+    );
+    await _persist();
+    return redemption;
   }
 
   Future<void> addRequest(PayRequest req) async {

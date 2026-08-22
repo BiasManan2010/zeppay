@@ -139,17 +139,60 @@ void main() {
       ussdSupported: false,
       platform: 'android',
     );
-    expect(RailEngine.select(info), PaymentRail.ivr);
+    expect(RailEngine.resolve(info).rail, PaymentRail.ivr);
   });
 
-  test('123PAY dial string includes amount DTMF', () {
+  test('Android resolve never returns upiIntent', () {
+    const info = NetworkInfo(
+      operator: 'Airtel',
+      isJio: false,
+      networkType: 'lte',
+      recommendedRail: 'ussd',
+      ussdSupported: true,
+      platform: 'android',
+    );
+    expect(RailEngine.resolve(info).rail, isNot(PaymentRail.upiIntent));
+
+    const jio = NetworkInfo(
+      operator: 'Jio',
+      isJio: true,
+      networkType: 'lte',
+      recommendedRail: 'ivr',
+      ussdSupported: false,
+      platform: 'android',
+    );
+    expect(RailEngine.resolve(jio).rail, isNot(PaymentRail.upiIntent));
+  });
+
+  test('unknown platform returns error not upiIntent on Android path', () {
+    final r = RailEngine.resolve(NetworkInfo.unknown());
+    expect(r.rail, isNull);
+    expect(r.error, isNotNull);
+  });
+
+  test('USSD embeds full amount for large values', () {
+    const draft = PaymentDraft(
+      vpa: 'merchant@okicici',
+      amountPaise: 123456789,
+      payeeName: 'Big',
+    );
+    final dial = RailEngine.ussdString(
+      vpa: draft.vpa,
+      amountPaise: draft.amountPaise,
+    );
+    expect(dial, contains('*1234568#'));
+    expect(dial, isNot(contains('*1234567#')));
+  });
+
+  test('123PAY dial uses semicolon wait on default OEMs', () {
     const draft = PaymentDraft(
       vpa: 'tea@okicici',
       amountPaise: 15000,
       payeeName: 'Tea',
     );
-    expect(RailEngine.ivrString(draft), contains('150'));
-    expect(RailEngine.ivrScript(draft).toLowerCase(), contains('tea@okicici'));
+    expect(RailEngine.ivrString(draft), '18008913333;150');
+    expect(RailEngine.ivrString(draft, manufacturer: 'samsung'),
+        '18008913333,,,150');
   });
 
   test('balance enquiry uses NPCI *99*3#', () {

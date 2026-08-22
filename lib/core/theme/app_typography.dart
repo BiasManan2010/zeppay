@@ -5,53 +5,63 @@ import 'app_colors.dart';
 
 abstract final class AppTypography {
   static TextTheme textTheme() {
-    final base = GoogleFonts.plusJakartaSansTextTheme();
-    return base.copyWith(
-      displayLarge: GoogleFonts.plusJakartaSans(
+    final display = GoogleFonts.syneTextTheme();
+    final body = GoogleFonts.dmSansTextTheme();
+    return TextTheme(
+      displayLarge: display.displayLarge?.copyWith(
         fontWeight: FontWeight.w800,
         fontSize: 42,
         letterSpacing: -1.2,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      displayMedium: GoogleFonts.plusJakartaSans(
+      displayMedium: display.displayMedium?.copyWith(
         fontWeight: FontWeight.w800,
         fontSize: 32,
         letterSpacing: -0.8,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      headlineMedium: GoogleFonts.plusJakartaSans(
+      displaySmall: display.displaySmall?.copyWith(
+        fontWeight: FontWeight.w700,
+        fontSize: 28,
+        color: AppColors.textOnCream,
+      ),
+      headlineMedium: display.headlineMedium?.copyWith(
         fontWeight: FontWeight.w700,
         fontSize: 22,
         letterSpacing: -0.3,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      titleLarge: GoogleFonts.plusJakartaSans(
+      titleLarge: body.titleLarge?.copyWith(
         fontWeight: FontWeight.w700,
         fontSize: 18,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      titleMedium: GoogleFonts.plusJakartaSans(
+      titleMedium: body.titleMedium?.copyWith(
         fontWeight: FontWeight.w600,
         fontSize: 16,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      bodyLarge: GoogleFonts.plusJakartaSans(
+      bodyLarge: body.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
         fontSize: 16,
-        color: AppColors.textPrimary,
+        color: AppColors.textOnCream,
       ),
-      bodyMedium: GoogleFonts.plusJakartaSans(
+      bodyMedium: body.bodyMedium?.copyWith(
         fontWeight: FontWeight.w500,
         fontSize: 14,
-        color: AppColors.textMuted,
+        color: AppColors.textOnCreamMuted,
       ),
-      labelLarge: GoogleFonts.plusJakartaSans(
+      bodySmall: body.bodySmall?.copyWith(
+        fontSize: 13,
+        color: AppColors.textOnCreamMuted,
+      ),
+      labelLarge: body.labelLarge?.copyWith(
         fontWeight: FontWeight.w600,
         fontSize: 13,
         letterSpacing: 0.4,
-        color: AppColors.textMuted,
+        color: AppColors.textOnCreamMuted,
       ),
-      labelSmall: GoogleFonts.plusJakartaSans(
+      labelSmall: body.labelSmall?.copyWith(
         fontWeight: FontWeight.w600,
         fontSize: 11,
         letterSpacing: 0.2,

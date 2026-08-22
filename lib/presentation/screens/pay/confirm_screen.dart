@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/pay_motion.dart';
+import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -30,6 +31,19 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
     Future<void>.delayed(const Duration(milliseconds: 280), () async {
       HapticFeedback.heavyImpact();
       await SoundCueService().success();
+      final coins = ref.read(lastCoinsEarnedProvider);
+      if (coins > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('+$coins ZepCoins earned'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => context.push('/coins'),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     });
   }
 
@@ -43,12 +57,66 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
   void _clear() {
     ref.read(paymentDraftProvider.notifier).state = null;
     ref.read(pendingTxIdProvider.notifier).state = null;
+    ref.read(lastCoinsEarnedProvider.notifier).state = 0;
+  }
+
+  void _openSplitPicker(TxRecord? tx, int amount, String who, String category) {
+    final groups = ref.read(appStoreProvider).groups;
+    if (groups.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Split with which group?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ...groups.map(
+              (g) => ListTile(
+                title: Text(g.name, style: const TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  '${g.members.length} members',
+                  style: const TextStyle(color: Colors.white54),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(splitPrefillProvider.notifier).state = SplitPrefill(
+                    amountPaise: amount,
+                    payeeName: who,
+                    category: category,
+                    title: tx?.note.isNotEmpty == true
+                        ? tx!.note
+                        : 'Payment to $who',
+                  );
+                  context.push('/split-bill');
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(paymentDraftProvider);
     final tx = _tx;
+    final app = ref.watch(appStoreProvider);
     final amount = tx?.amountPaise ?? draft?.amountPaise ?? 0;
     final who = (tx?.payeeName.isNotEmpty == true)
         ? tx!.payeeName
@@ -56,27 +124,28 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
               ? draft!.payeeName
               : (tx?.vpa ?? draft?.vpa ?? ''));
     final vpa = tx?.vpa ?? draft?.vpa ?? '';
-    final refCode = tx?.refCode.isNotEmpty == true ? tx!.refCode : (tx?.id ?? '');
+    final category = tx?.category ?? draft?.category ?? 'other';
+    final refCode =
+        tx?.refCode.isNotEmpty == true ? tx!.refCode : (tx?.id ?? '');
     final when = tx?.createdAt ?? DateTime.now();
+    final coins = ref.watch(lastCoinsEarnedProvider);
+    final showSplit = app.groups.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Column(
           children: [
             const ConfettiBurst(),
             const PaymentSuccessBurst(),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             Text(
-                  'Payment Successful',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              'Payment Successful',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.success,
                     fontWeight: FontWeight.w800,
                   ),
-                )
-                .animate()
-                .fadeIn(delay: 200.ms)
-                .slideY(begin: 0.2, duration: 400.ms),
+            ).animate().fadeIn(delay: 200.ms),
             const SizedBox(height: 8),
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: amount / 100),
@@ -86,54 +155,83 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                 '₹${value.toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.displayMedium,
               ),
-            ).animate().fadeIn(delay: 120.ms),
+            ),
             Text(who, style: Theme.of(context).textTheme.titleMedium),
-            Text(vpa, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            if (refCode.isNotEmpty)
-              Text(
-                'Txn $refCode',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.hero,
-                      letterSpacing: 1.1,
+            if (coins > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: InkWell(
+                  onTap: () => context.push('/coins'),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-              ),
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SurfaceCard(
-                child: Column(
-                  children: [
-                    _row('Paid to', who),
-                    _row('UPI ID', vpa),
-                    _row('Zep Pay ID', refCode),
-                    _row(
-                      'On',
-                      DateFormat('d MMM y, h:mm a').format(when),
+                    child: Text(
+                      '+$coins ZepCoins earned →',
+                      style: const TextStyle(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    if ((tx?.note ?? draft?.note ?? '').isNotEmpty)
-                      _row('Note', tx?.note ?? draft?.note ?? ''),
-                  ],
+                  ),
                 ),
               ),
-            ).animate().fadeIn(delay: 360.ms).slideY(begin: 0.12),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _row('Paid to', who),
+                      _row('UPI ID', vpa),
+                      _row('Zep Pay ID', refCode),
+                      _row('On', DateFormat('d MMM y, h:mm a').format(when)),
+                      if ((tx?.note ?? draft?.note ?? '').isNotEmpty)
+                        _row('Note', tx?.note ?? draft?.note ?? ''),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (showSplit)
+                    _PostAction(
+                      icon: Icons.call_split_rounded,
+                      label: 'Split this expense',
+                      onTap: () => _openSplitPicker(tx, amount, who, category),
+                    ),
+                  _PostAction(
+                    icon: Icons.ios_share_rounded,
+                    label: 'Share screenshot',
+                    onTap: tx == null ? null : () => ReceiptShare.share(tx),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: 'Spend ZepCoins in the Shop',
+              subtext: 'Demo partner offers — invented for the pitch',
+              chip: '${app.zepCoinBalance} coins',
+              onTap: () => context.push('/shop'),
+            ),
             const Spacer(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: tx == null
-                          ? null
-                          : () => ReceiptShare.share(tx),
-                      icon: const Icon(Icons.ios_share_rounded),
-                      label: const Text('Share'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
+                    child: OutlinedButton(
                       onPressed: () {
                         startPayment(
                           ref,
@@ -146,21 +244,23 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                         ref.read(pendingTxIdProvider.notifier).state = null;
                         context.go('/pay/amount');
                       },
-                      icon: const Icon(Icons.replay_rounded),
-                      label: const Text('Pay again'),
+                      child: const Text('Send Again'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                      ),
+                      onPressed: () {
+                        _clear();
+                        context.go('/home');
+                      },
+                      child: const Text('Home'),
                     ),
                   ),
                 ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: GlowButton(
-                label: 'DONE',
-                onTap: () {
-                  _clear();
-                  context.go('/home');
-                },
               ),
             ),
           ],
@@ -174,16 +274,53 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textDim)),
+          Text(k, style: const TextStyle(color: AppColors.textOnCreamMuted)),
           const Spacer(),
           Flexible(
             child: Text(
               v,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textOnCream,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PostAction extends StatelessWidget {
+  const _PostAction({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.accent, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -196,9 +333,13 @@ class FailedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(paymentDraftProvider);
     final id = ref.watch(pendingTxIdProvider);
-    final tx = ref.watch(appStoreProvider).transactions.where((t) => t.id == id).firstOrNull;
+    final tx = ref
+        .watch(appStoreProvider)
+        .transactions
+        .where((t) => t.id == id)
+        .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -210,8 +351,8 @@ class FailedScreen extends ConsumerWidget {
               Text(
                 'Payment Failed',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.danger,
-                ),
+                      color: AppColors.danger,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -224,7 +365,7 @@ class FailedScreen extends ConsumerWidget {
               ],
               const SizedBox(height: 8),
               const Text(
-                'Nothing was taken in Zep Pay. Try again when the call or PIN prompt is ready.',
+                'Nothing was taken in Zep Pay. Try again when the dialer session is ready.',
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -262,7 +403,7 @@ class PendingScreen extends ConsumerWidget {
         .where((t) => t.id == id)
         .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.base,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -274,8 +415,8 @@ class PendingScreen extends ConsumerWidget {
               Text(
                 'Payment Pending',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.warning,
-                ),
+                      color: AppColors.warning,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(

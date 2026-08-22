@@ -25,6 +25,19 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> {
   final _amount = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pre = ref.read(splitPrefillProvider);
+      if (pre != null) {
+        _amount.text = (pre.amountPaise / 100).toStringAsFixed(0);
+        _title.text = pre.title ?? pre.payeeName;
+        ref.read(splitPrefillProvider.notifier).state = null;
+        setState(() {});
+      }
+    });
+  }
+  @override
   void dispose() {
     _title.dispose();
     _amount.dispose();
