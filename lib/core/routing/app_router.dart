@@ -33,6 +33,10 @@ import '../../presentation/screens/split/split_pages.dart';
 import '../../presentation/screens/nfc/merchant_mode_screen.dart';
 import '../../presentation/screens/nfc/zep_card_profile_screen.dart';
 import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
+import '../../presentation/screens/semiconductor/chip_detail_screen.dart';
+import '../../presentation/screens/semiconductor/chip_nfc_route_screen.dart';
+import '../../presentation/screens/semiconductor/chip_tag_setup_screen.dart';
+import '../../presentation/screens/semiconductor/inventory_overview_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -52,7 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/splash' ||
           loc == '/welcome' ||
           loc == '/verify-setup' ||
-          loc.startsWith('/nfc/profile');
+          loc.startsWith('/nfc/profile') ||
+          loc.startsWith('/chip/nfc');
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
@@ -113,6 +118,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
       fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
       fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
+      fadeRoute('/inventory-overview', () => const InventoryOverviewScreen()),
+      fadeRoute('/chip-tag-setup', () => const ChipTagSetupScreen()),
+      fadeRouteState(
+        '/chip/nfc/:nfcId',
+        (s) => ChipNfcRouteScreen(
+          nfcId: Uri.decodeComponent(s.pathParameters['nfcId'] ?? ''),
+        ),
+      ),
+      fadeRouteState(
+        '/chip/:chipId',
+        (s) => ChipDetailScreen(
+          chipId: s.pathParameters['chipId']!,
+          fromNfcTap: s.uri.queryParameters['nfc'] == '1',
+        ),
+      ),
       fadeRouteState(
         '/nfc/profile',
         (s) => ZepCardProfileScreen(

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_store.dart';
+import 'data/services/supabase_service.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
 import 'data/services/notification_service.dart';
@@ -23,6 +24,11 @@ Future<void> main() async {
     await NotificationService.instance.init();
   } catch (e) {
     debugPrint('notifications init failed: $e');
+  }
+  try {
+    await SupabaseService.instance.init();
+  } catch (e) {
+    debugPrint('Supabase init failed: $e');
   }
   runApp(const ProviderScope(child: ZepPayApp()));
 }

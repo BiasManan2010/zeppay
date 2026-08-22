@@ -373,6 +373,14 @@ class _HomeTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
+              headline: 'Chip shortage tracker',
+              subtext:
+                  'Tap NFC batch tags — live stock math from usage (Challenge 2)',
+              chip: 'Inventory',
+              onTap: () => context.push('/inventory-overview'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'ZepCoins & Shop',
               subtext: 'Earn coins on every payment — redeem demo offers',
               chip: '${app.zepCoinBalance} coins',
@@ -499,8 +507,24 @@ class _HomeTab extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 22),
             ],
+            const SizedBox(height: 22),
+            SectionHeader(title: 'Supply chain'),
+            ActionTileRow(
+              tiles: [
+                ActionTile(
+                  icon: Icons.memory_rounded,
+                  label: 'Chip inventory',
+                  onTap: () => context.push('/inventory-overview'),
+                ),
+                ActionTile(
+                  icon: Icons.nfc_rounded,
+                  label: 'Batch tags',
+                  onTap: () => context.push('/chip-tag-setup'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
             SectionHeader(title: 'Quick Access', onAction: () => onOpenTab(3)),
             ActionTileRow(
               tiles: [
