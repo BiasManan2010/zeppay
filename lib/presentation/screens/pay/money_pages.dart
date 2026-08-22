@@ -753,6 +753,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           if (isAndroidDevice) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.nfc_rounded, color: AppColors.accent),
+              title: const Text('Set up My Zep Card'),
+              subtitle: const Text('Write your VPA to an NFC card (Challenge 1)'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/zep-card-setup'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.point_of_sale_rounded,
+                  color: AppColors.accent),
+              title: const Text('Merchant Mode'),
+              subtitle: const Text('Turn this phone into a tap-to-pay terminal'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/merchant-mode'),
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Auto USSD mode'),

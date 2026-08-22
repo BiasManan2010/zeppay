@@ -8,6 +8,7 @@ import 'package:zeppay/data/local/app_store.dart';
 import 'package:zeppay/data/models/models.dart';
 import 'package:zeppay/data/services/csv_export_service.dart';
 import 'package:zeppay/data/services/ocr_service.dart';
+import 'package:zeppay/data/models/zep_card.dart';
 import 'package:zeppay/data/services/rail_engine.dart';
 import 'package:zeppay/data/services/telephony_service.dart';
 
@@ -295,5 +296,15 @@ void main() {
       category: 'food',
     );
     expect(TxRecord.fromJson(tx.toJson()).category, 'food');
+  });
+
+  test('Zep Card codec round-trips profile URIs', () {
+    const profile = ZepCardProfile(vpa: 'rahul@upi', name: 'Rahul Shah');
+    final app = ZepCardCodec.appUri(vpa: profile.vpa, name: profile.name);
+    final web = ZepCardCodec.webUri(vpa: profile.vpa, name: profile.name);
+    expect(ZepCardCodec.parseUri(app)?.vpa, profile.vpa);
+    expect(ZepCardCodec.parseUri(app)?.name, profile.name);
+    expect(ZepCardCodec.parseUri(web)?.vpa, profile.vpa);
+    expect(profile.initials, 'RS');
   });
 }

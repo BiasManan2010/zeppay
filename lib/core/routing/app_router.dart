@@ -29,7 +29,9 @@ import '../../presentation/screens/split/add_expense_screen.dart';
 import '../../presentation/screens/split/group_detail_screen.dart';
 import '../../presentation/screens/split/split_home_screen.dart';
 import '../../presentation/screens/split/split_pages.dart';
-import '../../presentation/screens/splash_screen.dart';
+import '../../presentation/screens/nfc/merchant_mode_screen.dart';
+import '../../presentation/screens/nfc/zep_card_profile_screen.dart';
+import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -48,7 +50,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/otp' ||
           loc == '/splash' ||
           loc == '/welcome' ||
-          loc == '/verify-setup';
+          loc == '/verify-setup' ||
+          loc.startsWith('/nfc/profile');
       if (!authed && !authFlow && loc != '/onboarding') return '/login';
       if (authed && !onboarded && loc != '/onboarding' && loc != '/splash') {
         return '/onboarding';
@@ -107,6 +110,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/coins', () => const CoinsScreen()),
       fadeRoute('/shop', () => const ShopScreen()),
       fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
+      fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
+      fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
+      fadeRouteState(
+        '/nfc/profile',
+        (s) => ZepCardProfileScreen(
+          vpa: Uri.decodeComponent(s.uri.queryParameters['vpa'] ?? ''),
+          name: Uri.decodeComponent(s.uri.queryParameters['name'] ?? ''),
+          fromNfcTap: true,
+        ),
+      ),
       fadeRouteState(
         '/history/:id',
         (s) => TxDetailScreen(txId: s.pathParameters['id']!),
