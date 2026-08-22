@@ -36,6 +36,8 @@ import '../../presentation/screens/split/split_pages.dart';
 import '../../presentation/screens/nfc/merchant_mode_screen.dart';
 import '../../presentation/screens/nfc/zep_card_profile_screen.dart';
 import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
+import '../../presentation/screens/zep_card/get_zep_card_screen.dart';
+import '../../presentation/screens/zep_card/zep_card_details_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -126,6 +128,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/shop', () => const ShopScreen()),
       fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
       fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
+      fadeRoute('/get-zep-card', () => const GetZepCardScreen()),
+      fadeRoute('/my-zep-card', () => const ZepCardDetailsScreen()),
       fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
       fadeRouteState(
         '/nfc/profile',

@@ -93,6 +93,7 @@ class PaymentDraft {
     this.settleGroupId,
     this.settleFromId,
     this.settleToId,
+    this.zepCardPurchase = false,
   });
 
   final String vpa;
@@ -106,6 +107,7 @@ class PaymentDraft {
   final String? settleGroupId;
   final String? settleFromId;
   final String? settleToId;
+  final bool zepCardPurchase;
 
   double get amountRupees => amountPaise / 100.0;
 
@@ -115,6 +117,7 @@ class PaymentDraft {
     String? payeeName,
     String? vpa,
     String? category,
+    bool? zepCardPurchase,
   }) => PaymentDraft(
     vpa: vpa ?? this.vpa,
     amountPaise: amountPaise ?? this.amountPaise,
@@ -127,6 +130,7 @@ class PaymentDraft {
     settleGroupId: settleGroupId,
     settleFromId: settleFromId,
     settleToId: settleToId,
+    zepCardPurchase: zepCardPurchase ?? this.zepCardPurchase,
   );
 }
 
