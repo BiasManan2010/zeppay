@@ -20,6 +20,7 @@ frontend/.vite/
 
 # Data artifacts
 data/chroma_store/
+data/faiss_store/
 data/shap_summary.png
 data/*.db
 backend/app/data/*.db

@@ -97,9 +97,9 @@ export default function VoiceChat() {
           type="button"
           className={`mic-btn ${recording ? 'recording' : ''}`}
           onClick={recording ? stopRecording : startRecording}
-          aria-label="Record voice"
+          aria-label={recording ? 'Stop recording' : 'Start voice intake'}
         >
-          {recording ? '■' : '🎤'}
+          {recording ? 'Stop recording' : 'Start voice intake'}
         </button>
       </div>
 

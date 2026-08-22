@@ -8,8 +8,8 @@ Voice-first postnatal danger-sign triage assistant for community health workers 
 | --- | --- |
 | Backend | Python 3.12, FastAPI, Uvicorn |
 | ML | XGBoost + SHAP (UCI Maternal Health Risk dataset) |
-| STT | OpenAI Whisper (local, `small` model) |
-| RAG | Chroma + sentence-transformers + Claude API |
+| STT | OpenAI Whisper (local, `base` default via `WHISPER_MODEL`) |
+| RAG | FAISS (default) or Chroma + sentence-transformers + Claude API |
 | SMS | Twilio (with `SIMULATE_SMS=true` demo mode) |
 | Frontend | React + Vite (mobile-first PWA) |
 | Cases | SQLite |
@@ -26,6 +26,8 @@ sahai/
 ```
 
 ## Quick start
+
+**Windows:** see [SETUP_RUNBOOK.md](./SETUP_RUNBOOK.md) for PowerShell steps, pip workarounds, and troubleshooting.
 
 ### 1. Python environment
 

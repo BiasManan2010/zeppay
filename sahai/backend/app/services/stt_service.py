@@ -1,14 +1,20 @@
 """Speech-to-text via OpenAI Whisper (local)."""
 
+import os
+
 import whisper
 
 _model = None
 
 
+def _model_name() -> str:
+    return os.getenv("WHISPER_MODEL", "base")
+
+
 def _load_model():
     global _model
     if _model is None:
-        _model = whisper.load_model("small")
+        _model = whisper.load_model(_model_name())
     return _model
 
 

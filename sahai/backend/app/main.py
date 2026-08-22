@@ -63,8 +63,14 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health():
+def health_root():
     return {"ok": True, "service": "sahai-backend"}
+
+
+@app.get("/api/health")
+@app.get("/api/health/")
+def health_api():
+    return {"status": "ok", "service": "sahai-backend"}
 
 
 @app.post("/api/vitals", response_model=VitalsResponse)

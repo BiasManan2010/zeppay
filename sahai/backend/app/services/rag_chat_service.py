@@ -1,23 +1,21 @@
 """RAG retrieval + Claude conversational layer."""
 
 import os
-from pathlib import Path
 
-import chromadb
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
+from app.services.guideline_text import extract_text
+from app.services.vector_store import retrieve
+
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parents[3]
-CHROMA_PATH = ROOT / "data" / "chroma_store"
-COLLECTION_NAME = "who_postnatal"
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 
 _embedder = None
-_collection = None
 _client = None
+_static_fallback: str | None = None
 
 
 def _get_embedder():
@@ -25,19 +23,6 @@ def _get_embedder():
     if _embedder is None:
         _embedder = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedder
-
-
-def _get_collection():
-    global _collection
-    if _collection is None:
-        if not CHROMA_PATH.exists():
-            raise FileNotFoundError(
-                f"Chroma store not found at {CHROMA_PATH}. "
-                "Run: python -m app.services.ingest_guidelines"
-            )
-        client = chromadb.PersistentClient(path=str(CHROMA_PATH))
-        _collection = client.get_or_create_collection(name=COLLECTION_NAME)
-    return _collection
 
 
 def _get_client():
@@ -50,13 +35,23 @@ def _get_client():
     return _client
 
 
+def _static_guideline_snippet() -> str:
+    global _static_fallback
+    if _static_fallback is None:
+        try:
+            _static_fallback = extract_text()[:500]
+        except FileNotFoundError:
+            _static_fallback = "No guideline text loaded."
+    return _static_fallback
+
+
 def retrieve_context(query: str, top_k: int = 4) -> list[str]:
-    embedder = _get_embedder()
-    collection = _get_collection()
-    query_embedding = embedder.encode([query]).tolist()
-    results = collection.query(query_embeddings=query_embedding, n_results=top_k)
-    docs = results.get("documents", [[]])
-    return docs[0] if docs else []
+    try:
+        embedder = _get_embedder()
+        query_embedding = embedder.encode([query])
+        return retrieve(query_embedding, top_k=top_k)
+    except FileNotFoundError:
+        return [_static_guideline_snippet()]
 
 
 def get_llm_response(
@@ -100,7 +95,7 @@ def get_llm_response(
 def get_demo_response(user_message: str, risk_level: str) -> str:
     """Fallback when ANTHROPIC_API_KEY is not configured."""
     chunks = retrieve_context(user_message, top_k=2)
-    snippet = chunks[0][:200] if chunks else "No guideline text loaded."
+    snippet = chunks[0][:200] if chunks else _static_guideline_snippet()[:200]
     return (
         f"[Demo mode — set ANTHROPIC_API_KEY for full Claude replies] "
         f"Risk level is {risk_level}. Based on WHO guidelines: {snippet}... "
