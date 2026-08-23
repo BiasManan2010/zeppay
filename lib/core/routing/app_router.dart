@@ -18,6 +18,8 @@ import '../../presentation/screens/pay/face_confirm_screen.dart';
 import '../../presentation/screens/pay/history_screen.dart';
 import '../../presentation/screens/coins/coins_screen.dart';
 import '../../presentation/screens/shop/shop_screen.dart';
+import '../../presentation/screens/pay/bills_recharge_screen.dart';
+import '../../presentation/screens/pay/saved_contacts_screen.dart';
 import '../../presentation/screens/pay/payment_services_hub.dart';
 import '../../presentation/screens/pay/money_pages.dart';
 import '../../presentation/screens/pay/donate_screen.dart';
@@ -25,6 +27,7 @@ import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/receive_screen.dart';
 import '../../presentation/screens/pay/requests_screen.dart';
+import '../../presentation/screens/pay/request_money_screen.dart';
 import '../../presentation/screens/pay/scan_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/split/add_expense_screen.dart';
@@ -34,6 +37,9 @@ import '../../presentation/screens/split/split_pages.dart';
 import '../../presentation/screens/nfc/merchant_mode_screen.dart';
 import '../../presentation/screens/nfc/zep_card_profile_screen.dart';
 import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
+import '../../presentation/screens/zep_card/get_zep_card_screen.dart';
+import '../../presentation/screens/zep_card/zep_card_details_screen.dart';
+import '../../presentation/screens/live_state/live_state_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -94,6 +100,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/pay/upi', () => const PayUpiScreen()),
       fadeRoute('/pay/donate', () => const DonateScreen()),
       fadeRoute('/pay/contacts', () => const PayContactsScreen()),
+      fadeRoute('/pay/saved-contacts', () => const SavedContactsScreen()),
+      fadeRoute('/pay/self', () => const SelfTransferScreen()),
+      fadeRoute('/bills-recharge', () => const BillsRechargeHubScreen()),
+      fadeRoute('/request-money', () => const RequestMoneyScreen()),
+      fadeRouteState(
+        '/bills-recharge/:categoryId',
+        (s) => BillRechargeFormScreen(
+          categoryId: s.pathParameters['categoryId']!,
+        ),
+      ),
       fadeRoute('/pay/bank', () => const PayBankScreen()),
       fadeRoute('/history', () => const HistoryScreen()),
       fadeRoute('/requests', () => const RequestsScreen()),
@@ -114,6 +130,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/shop', () => const ShopScreen()),
       fadeRoute('/payment-hub', () => const PaymentServicesHubScreen()),
       fadeRoute('/zep-card-setup', () => const ZepCardSetupScreen()),
+      fadeRoute('/get-zep-card', () => const GetZepCardScreen()),
+      fadeRoute('/my-zep-card', () => const ZepCardDetailsScreen()),
+      fadeRoute('/live-state', () => const LiveStateScreen()),
       fadeRoute('/merchant-mode', () => const MerchantModeScreen()),
       fadeRouteState(
         '/nfc/profile',

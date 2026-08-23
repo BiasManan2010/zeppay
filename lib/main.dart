@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'data/local/app_store.dart';
 import 'data/services/app_config_service.dart';
 import 'data/services/autopay_scheduler.dart';
@@ -27,7 +28,11 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('notifications init failed: $e');
   }
-  await SupabaseService.instance.init();
+  try {
+    await SupabaseService.instance.init();
+  } catch (e) {
+    debugPrint('supabase init failed: $e');
+  }
   final prefs = await SharedPreferences.getInstance();
   final configService = AppConfigService(prefs);
   runApp(
@@ -81,10 +86,13 @@ class _ZepPayAppState extends ConsumerState<ZepPayApp> {
   Widget build(BuildContext context) {
     ref.watch(appStoreProvider);
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Zeppay',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

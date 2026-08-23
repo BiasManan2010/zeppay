@@ -17,6 +17,18 @@ class PaymentServicesHubScreen extends ConsumerWidget {
 
     final actions = <(IconData, String, VoidCallback, Color)>[
       (
+        Icons.qr_code_scanner_rounded,
+        'Scan to pay',
+        () => context.push('/scan'),
+        AppColors.hero,
+      ),
+      (
+        Icons.contacts_rounded,
+        'Contacts',
+        () => context.push('/pay/saved-contacts'),
+        const Color(0xFF5B8DEF),
+      ),
+      (
         Icons.nfc_rounded,
         'Zep Card',
         () => context.push('/zep-card-setup'),
@@ -31,8 +43,8 @@ class PaymentServicesHubScreen extends ConsumerWidget {
       (
         Icons.send_rounded,
         'Send to self',
-        () => context.push('/pay/upi'),
-        const Color(0xFFE87B3A),
+        () => context.push('/pay/self'),
+        AppColors.heroDeep,
       ),
       (
         Icons.event_repeat_rounded,
@@ -62,19 +74,19 @@ class PaymentServicesHubScreen extends ConsumerWidget {
       (
         Icons.call_received_rounded,
         'Request money',
-        () => context.push('/requests'),
+        () => context.push('/request-money'),
         const Color(0xFF5B8DEF),
       ),
       (
         Icons.receipt_long_outlined,
         'My Bills',
-        () => context.push('/history'),
-        const Color(0xFFE87B3A),
+        () => context.push('/bills-recharge'),
+        AppColors.heroSoft,
       ),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       appBar: embedded
           ? null
           : AppBar(

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Shared Supabase client for app configuration and optional cloud features.
+/// Shared Supabase client for app configuration, semiconductor inventory, and census OTP.
 class SupabaseService {
   SupabaseService._();
   static final instance = SupabaseService._();
@@ -31,7 +31,7 @@ class SupabaseService {
     final anon = (prefs.getString(anonKeyPrefsKey) ?? compiledAnonKey).trim();
     if (url.isEmpty || anon.isEmpty) {
       debugPrint(
-        'Supabase: URL/anon key not set — app_config uses cached values.',
+        'Supabase: URL/anon key not set — cloud features use cache when configured.',
       );
       return;
     }
@@ -53,5 +53,14 @@ class SupabaseService {
       url: (prefs.getString(urlPrefsKey) ?? compiledUrl).trim(),
       anonKey: (prefs.getString(anonKeyPrefsKey) ?? compiledAnonKey).trim(),
     );
+  }
+
+  void requireReady() {
+    if (!isReady) {
+      throw StateError(
+        'Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY '
+        'in Settings, or pass --dart-define values at build time.',
+      );
+    }
   }
 }

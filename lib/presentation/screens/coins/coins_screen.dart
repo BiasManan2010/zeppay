@@ -18,7 +18,7 @@ class CoinsScreen extends ConsumerWidget {
     final tier = ZepCoinsGamification.tierLabel(app);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       appBar: AppBar(
         title: const Text('ZepCoins'),
         actions: [
@@ -35,7 +35,7 @@ class CoinsScreen extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: AppColors.forestCard,
+              gradient: AppColors.brandCard,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -63,7 +63,7 @@ class CoinsScreen extends ConsumerWidget {
                 const Text(
                   'ZepCoins',
                   style: TextStyle(
-                    color: AppColors.accent,
+                    color: AppColors.heroSoft,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
