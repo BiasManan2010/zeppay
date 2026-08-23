@@ -1,9 +1,12 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/accessibility/accessibility_provider.dart';
+import 'core/locale/locale_provider.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
@@ -12,7 +15,9 @@ import 'data/services/app_config_service.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/referral_flow.dart';
 import 'data/services/supabase_service.dart';
+import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +78,7 @@ class _ZepPayAppState extends ConsumerState<ZepPayApp> {
             await ref.read(appConfigServiceProvider).refreshDonationsEnabled();
         ref.read(donationsEnabledProvider.notifier).state = enabled;
       }
+      await syncReferralRewards(ref);
     });
   }
 
@@ -87,13 +93,34 @@ class _ZepPayAppState extends ConsumerState<ZepPayApp> {
     ref.watch(appStoreProvider);
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
+    final largerText = ref.watch(largerTextProvider);
+    final highContrast = ref.watch(highContrastProvider);
+
     return MaterialApp.router(
       title: 'Zeppay',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: AppTheme.light(highContrast: highContrast),
+      darkTheme: AppTheme.dark(highContrast: highContrast),
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        final scale = largerText ? largerTextScaleFactor : 1.0;
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }
