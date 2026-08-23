@@ -10,7 +10,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
-import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/brand.dart';
@@ -18,11 +17,15 @@ import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/ussd_bridge.dart';
 import '../zep_card/zep_card_navigation.dart';
 import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/contacts_access.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/semiconductor_repository.dart';
+import '../../../data/services/supabase_service.dart';
 import '../../../data/services/telephony_service.dart';
+import '../semiconductor/inventory_overview_screen.dart';
 import 'extra_pages.dart';
 
 void _goPay(
@@ -681,9 +684,12 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _url = TextEditingController();
   final _name = TextEditingController();
+  final _supabaseUrl = TextEditingController();
+  final _supabaseAnon = TextEditingController();
   String _status = '';
   var _ussdAuto = false;
   var _ussdReady = false;
+  var _zepCardExpanded = false;
 
   @override
   void initState() {
@@ -691,6 +697,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _name.text = ref.read(appStoreProvider).profile?.name ?? '';
     ref.read(otpServiceProvider).resolveUrl().then((v) {
       if (mounted) _url.text = v;
+    });
+    SupabaseService.instance.loadConfig().then((c) {
+      if (mounted) {
+        _supabaseUrl.text = c.url;
+        _supabaseAnon.text = c.anonKey;
+      }
     });
     UxPrefs.ussdAutoMode().then((v) {
       if (mounted) setState(() => _ussdAuto = v);
@@ -706,11 +718,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void dispose() {
     _url.dispose();
     _name.dispose();
+    _supabaseUrl.dispose();
+    _supabaseAnon.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final zepCardChip = ref.watch(zepCardChipProvider);
+
     return ZepPage(
       title: 'Settings',
       subtitle:
@@ -725,6 +741,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 .updateProfile(p.copyWith(name: _name.text.trim()));
           }
           await ref.read(otpServiceProvider).saveUrl(_url.text);
+          await SupabaseService.instance.saveConfig(
+            url: _supabaseUrl.text,
+            anonKey: _supabaseAnon.text,
+          );
+          await SupabaseService.instance.init();
+          ref.invalidate(zepCardChipProvider);
+          ref.invalidate(inventoryOverviewProvider);
           final health = await ref.read(otpServiceProvider).health();
           ref.invalidate(otpLiveProvider);
           final users = health['users'];
@@ -823,6 +846,125 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          TextField(
+            controller: _supabaseUrl,
+            decoration: const InputDecoration(
+              labelText: 'SUPABASE URL',
+              hintText: 'https://YOUR_PROJECT.supabase.co',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _supabaseAnon,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'SUPABASE ANON KEY',
+              hintText: 'eyJ... (public anon key only)',
+            ),
+          ),
+          const SizedBox(height: 16),
+          ZepDarkCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  onTap: () =>
+                      setState(() => _zepCardExpanded = !_zepCardExpanded),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.memory_rounded, color: AppColors.accent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Zep Card NFC chip',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'NTAG213 batch tracked in Supabase',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        _zepCardExpanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: AppColors.textMuted,
+                      ),
+                    ],
+                  ),
+                ),
+                if (_zepCardExpanded) ...[
+                  const SizedBox(height: 12),
+                  zepCardChip.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text(
+                      'Could not load chip: $e',
+                      style: const TextStyle(color: AppColors.textMuted),
+                    ),
+                    data: (snap) {
+                      if (snap == null) {
+                        return const Text(
+                          'Configure Supabase above, then run semiconductor_schema.sql.',
+                          style: TextStyle(color: AppColors.textMuted),
+                        );
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            snap.chip.partNumber,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Batch ${snap.chip.batchId}',
+                            style: const TextStyle(color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              RiskBadge(snapshot: snap),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Stock ${snap.currentStock}',
+                                style: const TextStyle(color: AppColors.textDim),
+                              ),
+                            ],
+                          ),
+                          if (snap.lastTxnAt != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Last txn ${DateFormat('d MMM, h:mm a').format(snap.lastTxnAt!)}',
+                              style: const TextStyle(
+                                color: AppColors.textDim,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           if (isAndroidDevice) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -892,7 +1034,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text(_status, style: const TextStyle(color: AppColors.hero)),
           const SizedBox(height: 20),
           Text(
-            'Run backend/server.js with Twilio env plus SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Paste supabase/schema.sql in the Supabase SQL editor first. Never put those keys in the app.',
+            'Run backend/server.js with Twilio env plus SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Paste supabase/schema.sql and semiconductor_schema.sql in the Supabase SQL editor. Never put service-role keys in the app — use the anon key for inventory.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
