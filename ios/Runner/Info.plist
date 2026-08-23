@@ -31,9 +31,9 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Zep Pay requires Face ID before every payment.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Zep Pay can add split-group members from your contacts.</string>
+	<string>Zep Pay reads your address book so you can pay people on this phone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Zep Pay reads receipt photos for itemized splits.</string>
+	<string>Zep Pay uses photos for your profile picture and for receipt splits.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Used only if a plugin requests it; Zep Pay does not record audio.</string>
 	<key>UIApplicationSceneManifest</key>

@@ -119,7 +119,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     for (final m in group.members) {
       _exact.putIfAbsent(m.id, TextEditingController.new);
       _pct.putIfAbsent(m.id, TextEditingController.new);
-      _shares.putIfAbsent(m.id, () => TextEditingController(text: '${m.defaultShare}'));
+      _shares.putIfAbsent(
+        m.id,
+        () => TextEditingController(
+          text: '${group.defaultShares[m.id] ?? m.defaultShare}',
+        ),
+      );
     }
 
     return Scaffold(
@@ -236,25 +241,41 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           if (_mode == SplitMode.itemized) ...[
             const SizedBox(height: 8),
             ..._items.asMap().entries.map((e) {
-              return CheckboxListTile(
-                title: Text(e.value.label),
-                subtitle: MoneyText(e.value.amountPaise),
-                value: e.value.assigneeIds.contains('me'),
-                onChanged: (v) {
-                  setState(() {
-                    final ids = [...e.value.assigneeIds];
-                    if (v == true) {
-                      ids.add('me');
-                    } else {
-                      ids.remove('me');
-                    }
-                    _items[e.key] = LineItem(
-                      label: e.value.label,
-                      amountPaise: e.value.amountPaise,
-                      assigneeIds: ids,
-                    );
-                  });
-                },
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(e.value.label),
+                    trailing: MoneyText(e.value.amountPaise),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    children: group.members
+                        .map(
+                          (m) => FilterChip(
+                            label: Text(m.name),
+                            selected: e.value.assigneeIds.contains(m.id),
+                            onSelected: (v) {
+                              setState(() {
+                                final ids = [...e.value.assigneeIds];
+                                if (v) {
+                                  ids.add(m.id);
+                                } else {
+                                  ids.remove(m.id);
+                                }
+                                _items[e.key] = LineItem(
+                                  label: e.value.label,
+                                  amountPaise: e.value.amountPaise,
+                                  assigneeIds: ids,
+                                );
+                              });
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
               );
             }),
           ],

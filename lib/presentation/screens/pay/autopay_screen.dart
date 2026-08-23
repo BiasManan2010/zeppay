@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/illustrations.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
@@ -23,13 +24,21 @@ class AutopayScreen extends ConsumerWidget {
         ],
       ),
       body: mandates.isEmpty
-          ? const Center(child: Text('No mandates yet'))
+          ? const Center(
+              child: EmptyScene(
+                art: ZepArt.autopay,
+                message: 'No mandates yet',
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
               itemCount: mandates.length,
               itemBuilder: (context, i) {
                 final m = mandates[i];
-                return SurfaceCard(
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                  onTap: () => _edit(context, ref, m),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -48,21 +57,31 @@ class AutopayScreen extends ConsumerWidget {
                         '${m.frequency.name} · limit ₹${(m.limitPaise / 100).toStringAsFixed(0)} · next ${DateFormat('d MMM').format(m.nextRun)}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-                            vpa: m.vpa,
-                            amountPaise: m.amountPaise,
-                            payeeName: m.payee,
-                            note: 'Autopay',
-                            source: 'autopay',
-                          );
-                          context.push('/face');
-                        },
-                        child: const Text('Run now'),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              startPayment(
+                                ref,
+                                vpa: m.vpa,
+                                amountPaise: m.amountPaise,
+                                payeeName: m.payee,
+                                note: 'Autopay',
+                                source: 'autopay',
+                              );
+                              context.push('/pay/amount');
+                            },
+                            child: const Text('Run now'),
+                          ),
+                          TextButton(
+                            onPressed: () => ref.read(appStoreProvider.notifier).deleteMandate(m.id),
+                            child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                ),
                 );
               },
             ),
