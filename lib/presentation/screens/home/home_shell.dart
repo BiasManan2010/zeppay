@@ -3,15 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/locale/locale_provider.dart';
+import '../../../l10n/app_localizations.dart';
+
+import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
+import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
+import '../../../data/services/payment_session.dart';
 import '../../../data/services/providers.dart';
-import '../pay/autopay_screen.dart';
-import '../pay/requests_screen.dart';
+import '../../../data/services/zep_coins_gamification.dart';
+import '../pay/payment_services_hub.dart';
+import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
+import '../zep_card/zep_card_navigation.dart';
+import 'profile_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
@@ -23,58 +35,120 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   var _tab = 0;
 
+  void _go(int tab) => setState(() => _tab = tab);
+
   @override
   Widget build(BuildContext context) {
-    final pages = const [
-      _HomeTab(),
-      SplitHomeScreen(),
-      RequestsScreen(),
-      AutopayScreen(),
+    final pages = [
+      _HomeTab(onOpenTab: _go),
+      const PaymentServicesHubScreen(embedded: true),
+      const HistoryScreen(),
+      const ProfileScreen(),
     ];
     return Scaffold(
-      body: IndexedStack(index: _tab, children: pages),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: SizedBox(
-          width: 74,
-          height: 74,
-          child: HapticScale(
-            onTap: () => context.push('/scan'),
-            child: Container(
+      extendBody: true,
+      body: pages[_tab],
+      bottomNavigationBar: _DockedNav(
+        tab: _tab,
+        onTab: _go,
+        onScan: () => context.push('/scan'),
+      ),
+    );
+  }
+}
+
+class _DockedNav extends StatelessWidget {
+  const _DockedNav({
+    required this.tab,
+    required this.onTab,
+    required this.onScan,
+  });
+
+  final int tab;
+  final ValueChanged<int> onTab;
+  final VoidCallback onScan;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final zep = context.zep;
+    return SizedBox(
+      height: 92 + MediaQuery.paddingOf(context).bottom,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.heroGlow,
+                color: zep.navBar,
+                border: Border(
+                  top: BorderSide(
+                    color: zep.border.withValues(alpha: 0.8),
+                  ),
+                ),
                 boxShadow: [
-                  BoxShadow(color: AppColors.hero.withValues(alpha: 0.45), blurRadius: 22),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    offset: const Offset(0, -8),
+                  ),
                 ],
-                border: Border.all(color: AppColors.hero, width: 1.2),
               ),
-              child: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.white),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+                child: Row(
+                  children: [
+                    _NavItem(
+                      icon: Icons.home_rounded,
+                      label: l10n.navHome,
+                      selected: tab == 0,
+                      onTap: () => onTab(0),
+                    ),
+                    _NavItem(
+                      icon: Icons.grid_view_rounded,
+                      label: l10n.navPay,
+                      selected: tab == 1,
+                      onTap: () => onTab(1),
+                    ),
+                    const SizedBox(width: 72),
+                    _NavItem(
+                      icon: Icons.history_rounded,
+                      label: l10n.navHistory,
+                      selected: tab == 2,
+                      onTap: () => onTab(2),
+                    ),
+                    _NavItem(
+                      icon: Icons.person_rounded,
+                      label: l10n.navProfile,
+                      selected: tab == 3,
+                      onTap: () => onTab(3),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        color: AppColors.baseAlt,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        child: Row(
-          children: [
-            _NavItem(icon: Icons.bolt_rounded, label: 'Home', selected: _tab == 0, onTap: () => setState(() => _tab = 0)),
-            _NavItem(icon: Icons.groups_rounded, label: 'Split', selected: _tab == 1, onTap: () => setState(() => _tab = 1)),
-            const SizedBox(width: 72),
-            _NavItem(icon: Icons.inbox_rounded, label: 'Requests', selected: _tab == 2, onTap: () => setState(() => _tab = 2)),
-            _NavItem(icon: Icons.event_repeat_rounded, label: 'Autopay', selected: _tab == 3, onTap: () => setState(() => _tab = 3)),
-          ],
-        ),
+          Positioned(
+            top: -22,
+            left: 0,
+            right: 0,
+            child: Center(child: ZepOrangeFab(onTap: onScan)),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final bool selected;
@@ -82,21 +156,37 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Expanded(
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.only(top: 14, bottom: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: selected ? AppColors.hero : AppColors.textDim, size: 22),
+              AnimatedScale(
+                scale: selected ? 1.12 : 1,
+                duration: AppMotion.fast,
+                curve: AppMotion.out,
+                child: Icon(
+                  icon,
+                  color: selected ? AppColors.hero : zep.textMuted,
+                  size: 24,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: selected ? AppColors.hero : AppColors.textDim,
-                        letterSpacing: 0.4,
-                      )),
+              AnimatedDefaultTextStyle(
+                duration: AppMotion.fast,
+                style:
+                    Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: selected ? AppColors.hero : zep.textMuted,
+                      letterSpacing: 0.2,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    ) ??
+                    const TextStyle(),
+                child: Text(label),
+              ),
             ],
           ),
         ),
@@ -106,119 +196,420 @@ class _NavItem extends StatelessWidget {
 }
 
 class _HomeTab extends ConsumerWidget {
-  const _HomeTab();
+  const _HomeTab({required this.onOpenTab});
+  final ValueChanged<int> onOpenTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final app = ref.watch(appStoreProvider);
+    final track = ref.watch(paymentSessionProvider).value?.track;
+    if (track?.needsConfirmation == true &&
+        ref.read(pendingTxIdProvider) != track!.txId) {
+      resumePendingPaymentTrack(ref);
+    }
     final profile = app.profile;
-    final net = ref.watch(networkInfoProvider);
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-        children: [
-          Row(
-            children: [
-              Text('ZEP PAY', style: Theme.of(context).textTheme.labelLarge),
-              const Spacer(),
-              Text(profile?.name ?? '', style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text('BALANCE', style: Theme.of(context).textTheme.labelSmall),
-          MoneyText(
-            profile?.balancePaise ?? 0,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 6),
-          net.when(
-            data: (info) => Text(
-              isIosDevice
-                  ? 'iOS · online UPI fallback'
-                  : '${info.operator.isEmpty ? 'Carrier' : info.operator} · ${info.isJio ? '123PAY' : '*99#'}',
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 22),
-          if (!isAndroidDevice)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceHigh,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.45)),
-              ),
-              child: Text(
-                'Offline *99# / 123PAY is Android-only. On iOS, Zep Pay opens the online UPI intent instead of silently failing.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.warning),
-              ),
-            ),
-          Hero(
-            tag: 'scan-hero',
-            child: ScanHeroCard(onTap: () => context.push('/scan')),
-          ),
-          const SizedBox(height: 22),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.25,
-            children: [
-              _Quick(icon: Icons.people_alt_rounded, label: 'Pay Friends', onTap: () => context.push('/pay-friends')),
-              _Quick(icon: Icons.account_balance_rounded, label: 'Bank / Self', onTap: () => _self(context, ref)),
-              _Quick(icon: Icons.account_balance_wallet_rounded, label: 'Check Balance', onTap: () => _balanceSheet(context, profile)),
-              _Quick(icon: Icons.receipt_long_rounded, label: 'History', onTap: () => context.push('/history')),
-            ],
-          ),
-          const SizedBox(height: 22),
-          Text('RECENT', style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          if (app.transactions.isEmpty)
-            Text('No payments yet. Scan to start.', style: Theme.of(context).textTheme.bodyMedium)
-          else
-            ...app.transactions.take(4).map((tx) => _TxTile(tx: tx)),
-        ],
-      ),
-    );
-  }
+    final me = app.sessionPhone ?? '';
+    final pending = app.requests
+        .where((r) => r.status == RequestStatus.pending && r.toPhone == me)
+        .length;
+    final unread = app.notifications.where((n) => !n.read).length;
 
-  void _self(BuildContext context, WidgetRef ref) {
-    final me = ref.read(appStoreProvider).profile;
-    if (me == null) return;
-    ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
-      vpa: me.upiId,
-      amountPaise: 0,
-      payeeName: 'Self',
-      source: 'self',
-    );
-    context.push('/pay-friends');
-  }
-
-  void _balanceSheet(BuildContext context, UserProfile? profile) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 140),
           children: [
-            Text('Linked account', style: Theme.of(ctx).textTheme.labelLarge),
+            ZepHeaderBar(
+              name: profile?.name ?? '',
+              upiId: profile?.upiId ?? '',
+              unreadCount: unread,
+              onNotifications: () => context.push('/inbox'),
+            ),
             const SizedBox(height: 8),
-            Text(profile?.bankName ?? '—', style: Theme.of(ctx).textTheme.headlineMedium),
-            Text('UPI  ${profile?.upiId ?? ''}', style: Theme.of(ctx).textTheme.bodyMedium),
+            ZepCoinBalanceChip(
+              balance: app.zepCoinBalance,
+              subtitle:
+                  '${ZepCoinsGamification.tierLabel(app)} · ${ZepCoinsGamification.paymentsThisWeek(app)} pays this week',
+            ),
+            const SizedBox(height: 8),
+            ZepBankCard(
+              bankName: profile?.bankName ?? '',
+              accountLast4: profile?.accountLast4 ?? '',
+              balancePaise: profile?.balancePaise ?? 0,
+            ),
             const SizedBox(height: 16),
-            MoneyText(profile?.balancePaise ?? 0, style: Theme.of(ctx).textTheme.displayMedium),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ZepQuickAction(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: l10n.homeScan,
+                    tint: AppColors.hero,
+                    onTap: () => context.push('/scan'),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.send_rounded,
+                    label: l10n.homeSend,
+                    tint: const Color(0xFF5B8DEF),
+                    onTap: () => onOpenTab(1),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.call_split_rounded,
+                    label: l10n.homeSplit,
+                    tint: const Color(0xFF2D8A5E),
+                    onTap: () => context.push('/split'),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.credit_card_rounded,
+                    label: l10n.homeMyCard,
+                    tint: const Color(0xFF3BA3FF),
+                    onTap: () => openMyZepCard(context, ref),
+                  ),
+                ],
+              ),
+            ),
+            if (track?.needsConfirmation == true) ...[
+              const SizedBox(height: 12),
+              RiseIn(
+                child: HapticScale(
+                  onTap: () => context.push('/outcome'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.hourglass_top_rounded,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Confirm what *99# showed',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(color: AppColors.warning),
+                              ),
+                              Text(
+                                '${track!.refCode} · ₹${(track.amountPaise / 100).toStringAsFixed(0)} → ${track.vpa}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.textMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (pending > 0) ...[
+              ZepSectionHeader(
+                title: 'Action needed',
+                badge: pending,
+                onViewAll: () => context.push('/requests'),
+              ),
+              ...app.requests
+                  .where(
+                    (r) =>
+                        r.status == RequestStatus.pending && r.toPhone == me,
+                  )
+                  .take(3)
+                  .map(
+                    (r) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: ZepDarkCard(
+                        onTap: () => context.push('/requests'),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    r.fromName.isEmpty
+                                        ? r.fromPhone
+                                        : r.fromName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₹${(r.amountPaise / 100).toStringAsFixed(0)} requested',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.accent,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              onPressed: () => context.push('/requests'),
+                              child: Text(
+                                'Pay ₹${(r.amountPaise / 100).toStringAsFixed(0)}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+            ],
             const SizedBox(height: 8),
-            Text('**** ${profile?.accountLast4 ?? '••••'}', style: Theme.of(ctx).textTheme.bodyMedium),
+            ZepPromoBanner(
+              headline: 'My Live State',
+              subtext: 'See your real counts and balances right now — tap to refresh',
+              chip: 'Live',
+              onTap: () => context.push('/live-state'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: 'Zep Card — tap to pay',
+              subtext: 'Physical NFC card with live chip tracking inside',
+              chip: 'My Card',
+              onTap: () => openMyZepCard(context, ref),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: 'Chip shortage tracker',
+              subtext:
+                  'Tap NFC batch tags — live stock math from usage (Challenge 2)',
+              chip: 'Inventory',
+              onTap: () => context.push('/inventory-overview'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: 'ZepCoins & Shop',
+              subtext: 'Earn coins on every payment — redeem demo offers',
+              chip: '${app.zepCoinBalance} coins',
+              onTap: () => context.push('/coins'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: l10n.homeInviteFriends,
+              subtext: 'Share your code — you both earn ZepCoins',
+              chip: 'Invite',
+              onTap: () => context.push('/invite-friends'),
+            ),
+            const SizedBox(height: 16),
+            if (isWebApp)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'iOS offline rails have a lower ceiling than Android — paste VPA in Phone when asked.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              )
+            else if (isIosDevice)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Offline *99# / 123PAY is strongest on Android. iOS uses UPI app handoff.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.warning,
+                      ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            const _PeopleRow(),
+            const SizedBox(height: 16),
+            SectionHeader(title: 'Split & Settle', onAction: () => context.push('/split')),
+            ActionTileRow(
+              tiles: [
+                ActionTile(
+                  icon: Icons.group_add_rounded,
+                  label: 'Split Bill',
+                  onTap: () => context.push('/split-bill'),
+                ),
+                ActionTile(
+                  icon: Icons.pie_chart_outline_rounded,
+                  label: 'My Groups',
+                  onTap: () => context.push('/split'),
+                ),
+                ActionTile(
+                  icon: Icons.swap_horiz_rounded,
+                  label: 'Settle Up',
+                  onTap: () => context.push('/settle'),
+                ),
+                ActionTile(
+                  icon: Icons.assignment_outlined,
+                  label: 'Activity',
+                  onTap: () => context.push('/split-activity'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            if (supportsOfflineRails) ...[
+              HapticScale(
+              onTap: () => context.push('/offline'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.surfaceBorder),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.hero.withValues(alpha: 0.14),
+                      ),
+                      child: const Icon(
+                        Icons.cell_tower_rounded,
+                        color: AppColors.hero,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.hero.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Offline Only',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.hero,
+                                    letterSpacing: 0,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Offline Payment',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            'Use *99# / 123PAY when data drops.',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textDim,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ],
+            const SizedBox(height: 22),
+            SectionHeader(title: 'Supply chain'),
+            ActionTileRow(
+              tiles: [
+                ActionTile(
+                  icon: Icons.memory_rounded,
+                  label: 'Chip inventory',
+                  onTap: () => context.push('/inventory-overview'),
+                ),
+                ActionTile(
+                  icon: Icons.nfc_rounded,
+                  label: 'Batch tags',
+                  onTap: () => context.push('/chip-tag-setup'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            SectionHeader(title: 'Quick Access', onAction: () => onOpenTab(3)),
+            ActionTileRow(
+              tiles: [
+                if (supportsOfflineRails)
+                  ActionTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Check Balance',
+                    onTap: () => context.push('/balance'),
+                  ),
+                ActionTile(
+                  icon: Icons.history_rounded,
+                  label: 'Transaction History',
+                  onTap: () => context.push('/history'),
+                ),
+                ActionTile(
+                  icon: Icons.upload_file_outlined,
+                  label: 'Pending Requests',
+                  badge: pending > 0 ? '$pending' : null,
+                  onTap: () => context.push('/requests'),
+                ),
+                ActionTile(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  onTap: () => context.push('/settings'),
+                ),
+                if (isWebApp)
+                  ActionTile(
+                    icon: Icons.event_repeat_rounded,
+                    label: 'Autopay',
+                    onTap: () => context.push('/autopay'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            Text('Recent', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            if (app.transactions.isEmpty)
+              const EmptyScene(
+                art: ZepArt.emptyPay,
+                message: 'No payments yet. Scan to start.',
+                size: 140,
+              )
+            else
+              ...app.transactions.take(4).map(
+                    (tx) => _TxTile(
+                      tx: tx,
+                      onTap: () => context.push('/history/${tx.id}'),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -226,23 +617,47 @@ class _HomeTab extends ConsumerWidget {
   }
 }
 
-class _Quick extends StatelessWidget {
-  const _Quick({required this.icon, required this.label, required this.onTap});
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.onTap,
+  });
+
   final IconData icon;
   final String label;
+  final String hint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SurfaceCard(
+    return HapticScale(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.hero),
-          const Spacer(),
-          Text(label, style: Theme.of(context).textTheme.titleMedium),
-        ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.hero.withValues(alpha: 0.16),
+              ),
+              child: Icon(icon, color: AppColors.hero, size: 22),
+            ),
+            const SizedBox(height: 12),
+            Text(label, style: Theme.of(context).textTheme.titleMedium),
+            Text(hint, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
       ),
     );
   }
@@ -259,22 +674,126 @@ class TxStatusDot extends StatelessWidget {
       TxStatus.pending => AppColors.warning,
       TxStatus.failed => AppColors.danger,
     };
-    return Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
   }
 }
 
 class _TxTile extends StatelessWidget {
-  const _TxTile({required this.tx});
+  const _TxTile({required this.tx, this.onTap});
   final TxRecord tx;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      onTap: onTap,
       leading: TxStatusDot(tx.status),
       title: Text(tx.payeeName.isEmpty ? tx.vpa : tx.payeeName),
       subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.createdAt)),
-      trailing: MoneyText(tx.amountPaise, style: Theme.of(context).textTheme.titleMedium),
+      trailing: MoneyText(
+        tx.amountPaise,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+}
+
+class _PeopleRow extends ConsumerWidget {
+  const _PeopleRow();
+
+  List<SavedPayee> _people(AppState app) {
+    if (app.payees.isNotEmpty) {
+      final fav = app.payees.where((p) => p.favorite);
+      final rest = app.payees.where((p) => !p.favorite);
+      return [...fav, ...rest].take(12).toList();
+    }
+    final seen = <String>{};
+    final out = <SavedPayee>[];
+    for (final tx in app.transactions) {
+      if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
+      out.add(
+        SavedPayee(
+          id: tx.vpa,
+          vpa: tx.vpa,
+          name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
+        ),
+      );
+      if (out.length >= 12) break;
+    }
+    return out;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = _people(ref.watch(appStoreProvider));
+    if (people.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'People',
+          onAction: () => context.push('/pay/saved-contacts'),
+        ),
+        SizedBox(
+          height: 92,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: people.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final p = people[i];
+              final label = p.name.trim().isNotEmpty ? p.name.trim() : p.vpa;
+              final letter = label.isEmpty
+                  ? '?'
+                  : label.characters.first.toUpperCase();
+              return InkWell(
+                onTap: () {
+                  startPayment(
+                    ref,
+                    vpa: p.vpa,
+                    amountPaise: 0,
+                    payeeName: p.name,
+                    source: 'people',
+                  );
+                  context.push('/pay/amount');
+                },
+                child: SizedBox(
+                  width: 68,
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.hero.withValues(alpha: 0.18),
+                        child: Text(
+                          letter,
+                          style: const TextStyle(
+                            color: AppColors.hero,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        (p.name.trim().isEmpty ? p.vpa : p.name)
+                            .split(' ')
+                            .first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

@@ -6,18 +6,26 @@ Cross-platform Flutter UPI app: one QR scan + biometric confirmation, then Andro
 
 - Flutter + Riverpod
 - Local JSON store (offline-first, hackathon-ready). Swap the store for Firestore later without rewriting UI.
-- Twilio Verify via `backend/server.js` (never put the Twilio auth token in the app)
+- Twilio OTP via `backend/server.js` on **Render** (Messaging Service or Verify — never put the Auth Token in the app)
 - Android Kotlin platform channel for carrier detection, `ACTION_CALL`, and call-end
-- iOS: offline rails are **not available**; the UI says so and falls back to `upi://` intent
+- iOS: use the **PWA** (Safari → Add to Home Screen). Offline rails are Android-only; the PWA opens `upi://` pay.
 
-## Android demo APK
+## Android APK + iPhone website
 
-GitHub Actions builds a signed-with-debug-keys release APK on every push to `main`.
+GitHub Actions builds the Android APK, an **Android web app**, and a separate **iPhone website** (React — not the Flutter PWA).
 
-- **Actions artifact:** [github.com/BiasManan2010/zeppay/actions](https://github.com/BiasManan2010/zeppay/actions) → latest run → `zeppay-apk`
-- **Release download:** [github.com/BiasManan2010/zeppay/releases](https://github.com/BiasManan2010/zeppay/releases)
+- **Actions artifacts:** [github.com/BiasManan2010/zeppay/actions](https://github.com/BiasManan2010/zeppay/actions) → `zeppay-apk`, `zeppay-pwa`, `zeppay-ios-web`
+- **iPhone (Safari):** [biasmanan2010.github.io/zeppay/ios/](https://biasmanan2010.github.io/zeppay/ios/) → Share → **Add to Home Screen** (UPI app handoff — works on Jio)
+- **Android browser:** [biasmanan2010.github.io/zeppay/](https://biasmanan2010.github.io/zeppay/)
+- **Android APK:** [github.com/BiasManan2010/zeppay/releases](https://github.com/BiasManan2010/zeppay/releases)
 
-Install on a phone: download `app-release.apk` → allow unknown sources → open the file. Dev OTP is **123456**. Offline `*99#` / 123PAY needs a real SIM.
+Opening the old Flutter URL on iPhone redirects to `/zeppay/ios/` automatically.
+
+Onboarding on the APK includes a **permissions step** (camera + phone) before the app is ready to pay. Jio uses **123PAY IVR** on Android; iPhone uses **UPI apps** (GPay / PhonePe).
+
+Enable GitHub Pages on this repo: **Settings → Pages → Source → Deploy from branch `gh-pages`.** The workflow publishes that branch on every push to `main`.
+
+Dev OTP is **123456** if Twilio is not set.
 
 ## First run
 
@@ -35,17 +43,59 @@ flutter run
 
 Dev OTP (no Twilio): **123456**
 
-Live OTP:
+Live OTP: deploy `backend/` to Render, then point the app at that URL (see **Render** below). For LAN debugging only:
 
 ```powershell
 cd backend
 npm i
 $env:TWILIO_ACCOUNT_SID="ACxxx"
 $env:TWILIO_AUTH_TOKEN="xxx"
-$env:TWILIO_VERIFY_SID="VAxxx"
-node server.js
+$env:TWILIO_MESSAGING_SERVICE_SID="MGxxx"
+npm start
 flutter run --dart-define=TWILIO_VERIFY_URL=http://192.168.x.x:8787
 ```
+
+If you use Twilio Verify instead, set `TWILIO_VERIFY_SID` (VA…) and skip the Messaging Service SID.
+
+## Render (OTP + Supabase proxy)
+
+The Node proxy is a Render **Web Service**. Secrets stay in Render — never in Flutter `--dart-define` or git.
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service** → this GitHub repo.
+2. **Root Directory:** `backend`
+3. **Runtime:** Node. **Build:** `npm install --omit=dev`. **Start:** `npm start`
+4. Instance can be free; Render injects `PORT`. Opening the site URL or `GET /health` returns JSON `{ "ok": true, ... }` — this is an API, not a website.
+5. Environment (same keys as `backend/env.example`):
+
+| Key | Notes |
+| --- | --- |
+| `TWILIO_ACCOUNT_SID` | `AC…` |
+| `TWILIO_AUTH_TOKEN` | rotate if it was ever pasted in chat |
+| `TWILIO_MESSAGING_SERVICE_SID` | `MG…` (or `TWILIO_FROM` / `TWILIO_VERIFY_SID`) |
+| `SUPABASE_URL` | `https://xxxx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role, not anon |
+| `OTP_PEPPER` | optional extra salt |
+
+Or apply `render.yaml` (Blueprint). Fill the `sync: false` vars in the dashboard.
+
+After deploy, the public URL is `https://<service>.onrender.com` (no trailing slash).
+
+- Phone: **Settings → OTP PROXY URL**
+- Builds: `--dart-define=TWILIO_VERIFY_URL=https://<service>.onrender.com`
+- GitHub Actions: repo secret `TWILIO_VERIFY_URL` = that same URL
+
+Free Render services sleep after idle; the first OTP after sleep can take ~30s.
+
+## Supabase (user count + OTP login)
+
+Paste `supabase/schema.sql` into the Supabase SQL editor. Then:
+
+```powershell
+$env:SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+```
+
+`app_users` is only a hashed phone (how many people signed in). `otp_logins` holds the login phone and a hash of the SMS code until it is used or expires. No UPI, name, or bank data is uploaded.
 
 ## Android permissions
 
@@ -57,19 +107,19 @@ flutter run --dart-define=TWILIO_VERIFY_URL=http://192.168.x.x:8787
 
 All colors live in `lib/core/theme/app_colors.dart`. Do not hardcode hex in screens.
 
-Hero accent: `#00B4FF`  
-Base: `#0A0A0F` / `#0D0D14`  
-Surfaces: `#161B26`  
+Hero accent: `#3BA3FF`  
+Base: charcoal `#1C1C1E` / `#2C2C2E` (grey-black, not a blue wash)  
+Surfaces: `#3A3A3C`  
 Failure: `#C45C4A` (never use blue for errors)
 
 ## Payment path
 
-1. Scan QR (`mobile_scanner`) → decode VPA + amount locally  
-2. Face/fingerprint (`local_auth`) — required, not skippable  
-3. Connecting screen (signal-arc pulse)  
-4. Android: dial `*99*1*3*<vpa>*<amount>#` or `18008913333` (Jio / 4G-only)  
-5. Call-end event → confirmation (bolt → check)  
-6. Transaction written to history / balance  
+1. Scan a UPI QR  
+2. Enter the amount and pick what you are spending on  
+3. Android dials `*99#` / 123PAY (or opens UPI) so the user types their **UPI PIN**  
+4. Call-end → confirmation  
+
+Contacts are read-only (`READ_CONTACTS` only). OTP defaults to `https://zeppay.onrender.com`.
 
 ## Tests
 

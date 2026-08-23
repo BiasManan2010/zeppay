@@ -1,0 +1,25 @@
+# Render Blueprint — https://dashboard.render.com
+# New → Blueprint → this repo. Or create a Web Service and set Root Directory to `backend`.
+services:
+  - type: web
+    name: zeppay-otp
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_MESSAGING_SERVICE_SID
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OTP_PEPPER
+        generateValue: true

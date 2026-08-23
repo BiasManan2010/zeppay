@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/zep_palette.dart';
+import '../motion/app_motion.dart';
 
 class HapticScale extends StatefulWidget {
-  const HapticScale({super.key, required this.child, this.onTap, this.enabled = true});
+  const HapticScale(
+      {super.key, required this.child, this.onTap, this.enabled = true});
 
   final Widget child;
   final VoidCallback? onTap;
@@ -23,7 +26,7 @@ class _HapticScaleState extends State<HapticScale> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: widget.enabled ? (_) => setState(() => _scale = 0.96) : null,
+      onTapDown: widget.enabled ? (_) => setState(() => _scale = 0.94) : null,
       onTapCancel: () => setState(() => _scale = 1),
       onTapUp: (_) => setState(() => _scale = 1),
       onTap: widget.enabled
@@ -34,7 +37,8 @@ class _HapticScaleState extends State<HapticScale> {
           : null,
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 90),
+        duration: AppMotion.fast,
+        curve: AppMotion.out,
         child: widget.child,
       ),
     );
@@ -42,7 +46,8 @@ class _HapticScaleState extends State<HapticScale> {
 }
 
 class DottedRing extends StatelessWidget {
-  const DottedRing({super.key, this.size = 72, this.progress = 0.35, this.spinning = true});
+  const DottedRing(
+      {super.key, this.size = 72, this.progress = 0.35, this.spinning = true});
 
   final double size;
   final double progress;
@@ -79,17 +84,21 @@ class _RingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, math.pi * 1.55, false, glow);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, math.pi * 1.55, false, solid);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2,
+        math.pi * 1.55, false, glow);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2,
+        math.pi * 1.55, false, solid);
     const dashes = 3;
     for (var i = 0; i < dashes; i++) {
       final start = math.pi * 1.05 + i * 0.22;
-      canvas.drawArc(Rect.fromCircle(center: c, radius: r), start, 0.12, false, solid);
+      canvas.drawArc(
+          Rect.fromCircle(center: c, radius: r), start, 0.12, false, solid);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class SignalArcs extends StatelessWidget {
@@ -146,7 +155,10 @@ class BoltCheck extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(painter: _BoltPainter(complete: complete)),
-    ).animate().scale(begin: const Offset(0.6, 0.6), duration: 420.ms, curve: Curves.easeOutBack);
+    ).animate().scale(
+        begin: const Offset(0.6, 0.6),
+        duration: 420.ms,
+        curve: Curves.easeOutBack);
   }
 }
 
@@ -182,60 +194,8 @@ class _BoltPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _BoltPainter oldDelegate) => oldDelegate.complete != complete;
-}
-
-class ScanHeroCard extends StatelessWidget {
-  const ScanHeroCard({super.key, required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return HapticScale(
-      onTap: onTap,
-      child: Container(
-        height: 220,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: AppColors.scanCard,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.hero.withValues(alpha: 0.35),
-              blurRadius: 36,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.heroGlow,
-              ),
-            ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                  begin: const Offset(0.92, 0.92),
-                  end: const Offset(1.05, 1.05),
-                  duration: 1800.ms,
-                ),
-            const DottedRing(size: 128),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.qr_code_scanner_rounded, size: 36, color: AppColors.white),
-                const SizedBox(height: 10),
-                Text(
-                  'TAP TO SCAN',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.white),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant _BoltPainter oldDelegate) =>
+      oldDelegate.complete != complete;
 }
 
 class FaceGlow extends StatelessWidget {
@@ -285,7 +245,10 @@ class ScanBrackets extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(painter: _BracketPainter())
         .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scale(begin: const Offset(0.96, 0.96), end: const Offset(1.04, 1.04), duration: 900.ms);
+        .scale(
+            begin: const Offset(0.96, 0.96),
+            end: const Offset(1.04, 1.04),
+            duration: 900.ms);
   }
 }
 
@@ -321,14 +284,19 @@ class SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     final body = Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.stroke.withValues(alpha: 0.6)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x33000000), blurRadius: 12, offset: Offset(0, 8)),
+        color: zep.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: zep.border.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: child,

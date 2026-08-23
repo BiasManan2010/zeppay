@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/chrome.dart';
+import '../../../core/widgets/illustrations.dart';
+import '../../../core/widgets/ux.dart';
+import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -20,28 +23,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    UxPrefs.lastPhone().then((v) {
+      if (!mounted || v.length < 10) return;
+      final d = v.replaceAll(RegExp(r'\D'), '');
+      _phone.text = d.length >= 10 ? d.substring(d.length - 10) : d;
+      setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _phone.dispose();
     super.dispose();
   }
 
   Future<void> _send() async {
-    final raw = _phone.text.replaceAll(RegExp(r'\D'), '');
-    if (raw.length < 10) {
+    var raw = _phone.text.replaceAll(RegExp(r'\D'), '');
+    if (raw.startsWith('91') && raw.length >= 12) {
+      raw = raw.substring(raw.length - 10);
+    }
+    if (raw.length != 10) {
       setState(() => _error = 'Enter a valid 10-digit mobile number');
       return;
     }
-    final phone = raw.length == 10 ? '+91$raw' : '+$raw';
+    final phone = '+91$raw';
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       await ref.read(otpServiceProvider).send(phone);
+      await UxPrefs.savePhone(phone);
       ref.read(pendingPhoneProvider.notifier).state = phone;
       if (mounted) context.go('/otp');
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = '$e'.replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -49,70 +67,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const BoltCheck(size: 72),
-              const SizedBox(height: 28),
-              Text('Pay even when\nthe internet dies.',
-                  style: Theme.of(context).textTheme.displayMedium),
-              const SizedBox(height: 10),
-              Text(
-                'Phone number in. One OTP. Then you scan and go.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const Spacer(),
-              TextField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(
-                  labelText: 'MOBILE NUMBER',
-                  hintText: '98765 43210',
-                  prefixText: '+91  ',
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 10),
-                Text(_error!, style: const TextStyle(color: AppColors.danger)),
-              ],
-              const SizedBox(height: 18),
-              HapticScale(
-                onTap: _busy ? null : _send,
-                enabled: !_busy,
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.hero,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.hero.withValues(alpha: 0.35), blurRadius: 18),
-                    ],
+    final ready = _phone.text.replaceAll(RegExp(r'\D'), '').length >= 10;
+    return AuthBackdrop(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        children: [
+            const GoalBar(
+              done: 2,
+              total: 4,
+              label: 'App open · number next',
+            ),
+            const SizedBox(height: 12),
+            const Center(child: ZepIllustration(ZepArt.otp, size: 168)),
+            const SizedBox(height: 18),
+            Text(
+              'Your number.',
+              style: Theme.of(
+                context,
+              ).textTheme.displayMedium?.copyWith(height: 1.12),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'OTP goes to the number you type. Then your name, photo, and UPI ID.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            GlassPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'MOBILE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.hero,
+                      letterSpacing: 1.6,
+                    ),
                   ),
-                  child: _busy
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.base),
-                        )
-                      : Text('SEND OTP',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.base)),
-                ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    onChanged: (_) => setState(() {}),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '98765 43210',
+                      prefixText: '+91  ',
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: AppColors.danger),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Dev OTP is 123456 until Twilio is wired.',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-            ],
-          ).animate().fadeIn(duration: 400.ms),
-        ),
+            ),
+            const SizedBox(height: 10),
+            const LossNote(
+              text:
+                  'Walk away here and this phone stays unsigned-in — nothing is saved yet.',
+            ),
+            const SizedBox(height: 14),
+            GlowButton(
+              label: ready ? 'SEND OTP' : 'ENTER 10 DIGITS',
+              onTap: _busy || !ready ? null : _send,
+              busy: _busy,
+            ),
+            Center(
+              child: ref
+                  .watch(otpLiveProvider)
+                  .when(
+                    data: (live) => Text(
+                      live
+                          ? 'We’ll text this exact number.'
+                          : 'No OTP URL yet — use 123456, or tap Twilio setup.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/verify-setup'),
+              child: const Text('Twilio setup'),
+            ),
+        ],
       ),
     );
   }
