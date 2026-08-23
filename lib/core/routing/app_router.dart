@@ -20,6 +20,7 @@ import '../../presentation/screens/coins/coins_screen.dart';
 import '../../presentation/screens/shop/shop_screen.dart';
 import '../../presentation/screens/pay/payment_services_hub.dart';
 import '../../presentation/screens/pay/money_pages.dart';
+import '../../presentation/screens/pay/donate_screen.dart';
 import '../../presentation/screens/pay/extra_pages.dart';
 import '../../presentation/screens/pay/outcome_screen.dart';
 import '../../presentation/screens/pay/receive_screen.dart';
@@ -91,6 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/receive', () => const ReceiveScreen()),
       fadeRoute('/pay/mobile', () => const PayMobileScreen()),
       fadeRoute('/pay/upi', () => const PayUpiScreen()),
+      fadeRoute('/pay/donate', () => const DonateScreen()),
       fadeRoute('/pay/contacts', () => const PayContactsScreen()),
       fadeRoute('/pay/bank', () => const PayBankScreen()),
       fadeRoute('/history', () => const HistoryScreen()),

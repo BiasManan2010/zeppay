@@ -660,7 +660,15 @@ class ZepCoinLedgerEntry {
       );
 }
 
-enum PartnerCategory { ott, shopping, food, travel }
+enum PartnerCategory {
+  streaming,
+  sportswear,
+  fitness,
+  food,
+  travel,
+  electronics,
+  groceries,
+}
 
 enum RedemptionStatus { active, used }
 
@@ -669,7 +677,7 @@ class PartnerBrand {
     required this.id,
     required this.name,
     required this.category,
-    required this.logoAsset,
+    required this.accentColor,
     required this.discountLabel,
     required this.coinsRequired,
   });
@@ -677,7 +685,7 @@ class PartnerBrand {
   final String id;
   final String name;
   final PartnerCategory category;
-  final String logoAsset;
+  final int accentColor;
   final String discountLabel;
   final int coinsRequired;
 }

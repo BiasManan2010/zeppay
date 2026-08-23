@@ -1,11 +1,10 @@
 # Supabase for Zep Pay
 
-Two tables. No names, UPI IDs, bank details, or balances.
-
 | Table | What it stores |
 |---|---|
 | `app_users` | One hashed phone per account + timestamps. Use this for **how many users**. |
 | `otp_logins` | E.164 **phone** and **SHA-256 of the OTP** for Twilio login. Consumed or expired. |
+| `app_config` | Admin feature flags (e.g. `donations_enabled`). See `app_config_schema.sql`. |
 
 The raw 6-digit code is never written. The service role key stays on `backend/server.js`.
 
@@ -13,8 +12,9 @@ The raw 6-digit code is never written. The service role key stays on `backend/se
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. SQL Editor → paste `schema.sql` → Run
-3. Settings → API: copy Project URL and `service_role` key
-4. On the proxy host:
+3. SQL Editor → paste `app_config_schema.sql` → Run (donations toggle)
+4. Settings → API: copy Project URL, `anon` key (Flutter), and `service_role` key (backend)
+5. On the proxy host:
 
 ```
 export SUPABASE_URL=https://YOUR_PROJECT.supabase.co

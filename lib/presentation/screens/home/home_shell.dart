@@ -14,6 +14,7 @@ import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/payment_session.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/zep_coins_gamification.dart';
 import '../pay/payment_services_hub.dart';
 import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
@@ -217,6 +218,12 @@ class _HomeTab extends ConsumerWidget {
               upiId: profile?.upiId ?? '',
               unreadCount: unread,
               onNotifications: () => context.push('/inbox'),
+            ),
+            const SizedBox(height: 8),
+            ZepCoinBalanceChip(
+              balance: app.zepCoinBalance,
+              subtitle:
+                  '${ZepCoinsGamification.tierLabel(app)} · ${ZepCoinsGamification.paymentsThisWeek(app)} pays this week',
             ),
             const SizedBox(height: 8),
             ZepBankCard(
