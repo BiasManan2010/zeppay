@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
@@ -95,7 +97,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(appStoreProvider).profile;
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         bottom: false,
         child: ListView(
@@ -133,7 +135,6 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () => context.push('/receive'),
@@ -309,6 +310,32 @@ class ProfileScreen extends ConsumerWidget {
                 isWebApp
                     ? 'Scan, amount, then your UPI app'
                     : '*99# / 123PAY walkthrough',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SurfaceCard(
+              child: Builder(
+                builder: (context) {
+                  final mode = ref.watch(themeModeProvider);
+                  final isDark = mode == ThemeMode.dark;
+                  return SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: AppColors.hero,
+                    ),
+                    title: const Text('Dark mode'),
+                    subtitle: Text(
+                      isDark
+                          ? 'Grey-black theme with blue accents'
+                          : 'Light grey theme with blue accents',
+                    ),
+                    value: isDark,
+                    activeThumbColor: AppColors.hero,
+                    onChanged: (_) =>
+                        ref.read(themeModeProvider.notifier).toggle(),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 24),

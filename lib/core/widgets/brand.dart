@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/zep_palette.dart';
 import '../motion/app_motion.dart';
 
 class HapticScale extends StatefulWidget {
@@ -283,15 +284,19 @@ class SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     final body = Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: zep.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.stroke.withValues(alpha: 0.7)),
-        boxShadow: const [
+        border: Border.all(color: zep.border.withValues(alpha: 0.8)),
+        boxShadow: [
           BoxShadow(
-              color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: child,

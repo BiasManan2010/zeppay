@@ -114,22 +114,39 @@ class AppStore extends Notifier<AppState> {
     if (tx.status == TxStatus.success) {
       await rememberPayee(
         SavedPayee(
+          id: '',
           vpa: tx.vpa,
           name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
         ),
+        lastPaidAt: tx.createdAt,
       );
+      await _notify(
+        'Payment succeeded',
+        '₹${(tx.amountPaise / 100).toStringAsFixed(2)} to '
+        '${tx.payeeName.isEmpty ? tx.vpa : tx.payeeName}',
+      );
+      await _persist();
       return tx;
     }
     await _persist();
     return tx;
   }
 
-  Future<void> rememberPayee(SavedPayee payee) async {
+  Future<void> rememberPayee(
+    SavedPayee payee, {
+    DateTime? lastPaidAt,
+  }) async {
     final existing = state.payees.where((p) => p.vpa == payee.vpa).firstOrNull;
+    final id = existing?.id.isNotEmpty == true
+        ? existing!.id
+        : (payee.id.isNotEmpty ? payee.id : _uuid.v4());
     final next = SavedPayee(
+      id: id,
       vpa: payee.vpa,
       name: payee.name.isNotEmpty ? payee.name : (existing?.name ?? payee.vpa),
+      phone: payee.phone.isNotEmpty ? payee.phone : (existing?.phone ?? ''),
       favorite: existing?.favorite ?? payee.favorite,
+      lastPaidAt: lastPaidAt ?? existing?.lastPaidAt,
     );
     state = state.copyWith(
       payees: [next, ...state.payees.where((p) => p.vpa != payee.vpa)],
@@ -141,7 +158,7 @@ class AppStore extends Notifier<AppState> {
     final existing = state.payees.where((p) => p.vpa == vpa).firstOrNull;
     if (existing == null) {
       await rememberPayee(
-        SavedPayee(vpa: vpa, name: name, favorite: true),
+        SavedPayee(id: '', vpa: vpa, name: name, favorite: true),
       );
       return;
     }
@@ -164,6 +181,16 @@ class AppStore extends Notifier<AppState> {
   }) async {
     final coins = amountPaise ~/ 1000;
     if (coins <= 0) return;
+    await awardBonusCoins(txId: txId, coins: coins, amountPaise: amountPaise);
+  }
+
+  /// Bonus coins (referrals, promos) — same ledger as payment rewards.
+  Future<void> awardBonusCoins({
+    required String txId,
+    required int coins,
+    int amountPaise = 0,
+  }) async {
+    if (coins <= 0) return;
     if (state.zepCoinLedger.any((e) => e.txId == txId)) return;
     final entry = ZepCoinLedgerEntry(
       txId: txId,
@@ -175,6 +202,7 @@ class AppStore extends Notifier<AppState> {
       zepCoinBalance: state.zepCoinBalance + coins,
       zepCoinLedger: [entry, ...state.zepCoinLedger],
     );
+    await _notify('ZepCoins earned', '+$coins coins');
     await _persist();
   }
 
