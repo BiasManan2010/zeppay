@@ -30,6 +30,7 @@ class SupabaseService {
     final url = (prefs.getString(urlPrefsKey) ?? compiledUrl).trim();
     final anon = (prefs.getString(anonKeyPrefsKey) ?? compiledAnonKey).trim();
     if (url.isEmpty || anon.isEmpty) {
+      _ready = false;
       debugPrint(
         'Supabase: URL/anon key not set — cloud features use cache when configured.',
       );
@@ -39,6 +40,25 @@ class SupabaseService {
       await Supabase.initialize(url: url, publishableKey: anon);
     }
     _ready = true;
+    debugPrint('Supabase: connected to $url');
+  }
+
+  /// Lightweight read to confirm the project URL/key work and tables exist.
+  Future<bool> testConnection() async {
+    if (!isReady) return false;
+    try {
+      await client.from('app_config').select('key').limit(1);
+      return true;
+    } catch (e) {
+      debugPrint('Supabase ping (app_config): $e');
+    }
+    try {
+      await client.from('semiconductors').select('chip_id').limit(1);
+      return true;
+    } catch (e) {
+      debugPrint('Supabase ping (semiconductors): $e');
+      return false;
+    }
   }
 
   Future<void> saveConfig({required String url, required String anonKey}) async {
