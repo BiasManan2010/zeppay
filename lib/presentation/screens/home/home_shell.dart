@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/locale/locale_provider.dart';
+import '../../../l10n/app_localizations.dart';
+
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
@@ -17,6 +21,7 @@ import '../../../data/services/providers.dart';
 import '../pay/payment_services_hub.dart';
 import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
+import '../zep_card/zep_card_navigation.dart';
 import 'profile_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -64,6 +69,8 @@ class _DockedNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final zep = context.zep;
     return SizedBox(
       height: 92 + MediaQuery.paddingOf(context).bottom,
       child: Stack(
@@ -72,10 +79,10 @@ class _DockedNav extends StatelessWidget {
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.navBar,
+                color: zep.navBar,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.surfaceBorder.withValues(alpha: 0.8),
+                    color: zep.border.withValues(alpha: 0.8),
                   ),
                 ),
                 boxShadow: [
@@ -94,26 +101,26 @@ class _DockedNav extends StatelessWidget {
                   children: [
                     _NavItem(
                       icon: Icons.home_rounded,
-                      label: 'Home',
+                      label: l10n.navHome,
                       selected: tab == 0,
                       onTap: () => onTab(0),
                     ),
                     _NavItem(
                       icon: Icons.grid_view_rounded,
-                      label: 'Pay',
+                      label: l10n.navPay,
                       selected: tab == 1,
                       onTap: () => onTab(1),
                     ),
                     const SizedBox(width: 72),
                     _NavItem(
                       icon: Icons.history_rounded,
-                      label: 'History',
+                      label: l10n.navHistory,
                       selected: tab == 2,
                       onTap: () => onTab(2),
                     ),
                     _NavItem(
                       icon: Icons.person_rounded,
-                      label: 'Profile',
+                      label: l10n.navProfile,
                       selected: tab == 3,
                       onTap: () => onTab(3),
                     ),
@@ -148,6 +155,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -162,7 +170,7 @@ class _NavItem extends StatelessWidget {
                 curve: AppMotion.out,
                 child: Icon(
                   icon,
-                  color: selected ? AppColors.accent : AppColors.textDim,
+                  color: selected ? AppColors.hero : zep.textMuted,
                   size: 24,
                 ),
               ),
@@ -171,7 +179,7 @@ class _NavItem extends StatelessWidget {
                 duration: AppMotion.fast,
                 style:
                     Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? AppColors.accent : AppColors.textDim,
+                      color: selected ? AppColors.hero : zep.textMuted,
                       letterSpacing: 0.2,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ) ??
@@ -192,6 +200,7 @@ class _HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final app = ref.watch(appStoreProvider);
     final track = ref.watch(paymentSessionProvider).value?.track;
     if (track?.needsConfirmation == true &&
@@ -206,7 +215,7 @@ class _HomeTab extends ConsumerWidget {
     final unread = app.notifications.where((n) => !n.read).length;
 
     return ColoredBox(
-      color: AppColors.cream,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         bottom: false,
         child: ListView(
@@ -232,21 +241,27 @@ class _HomeTab extends ConsumerWidget {
                 children: [
                   ZepQuickAction(
                     icon: Icons.qr_code_scanner_rounded,
-                    label: 'Scan',
-                    tint: AppColors.accent,
+                    label: l10n.homeScan,
+                    tint: AppColors.hero,
                     onTap: () => context.push('/scan'),
                   ),
                   ZepQuickAction(
                     icon: Icons.send_rounded,
-                    label: 'Send',
+                    label: l10n.homeSend,
                     tint: const Color(0xFF5B8DEF),
                     onTap: () => onOpenTab(1),
                   ),
                   ZepQuickAction(
                     icon: Icons.call_split_rounded,
-                    label: 'Split',
+                    label: l10n.homeSplit,
                     tint: const Color(0xFF2D8A5E),
                     onTap: () => context.push('/split'),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.credit_card_rounded,
+                    label: l10n.homeMyCard,
+                    tint: const Color(0xFF3BA3FF),
+                    onTap: () => openMyZepCard(context, ref),
                   ),
                 ],
               ),
@@ -366,10 +381,17 @@ class _HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             ZepPromoBanner(
+              headline: 'My Live State',
+              subtext: 'See your real counts and balances right now — tap to refresh',
+              chip: 'Live',
+              onTap: () => context.push('/live-state'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'Zep Card — tap to pay',
-              subtext: 'NFC identity card for our closed-loop network (Challenge 1)',
-              chip: 'Set up card',
-              onTap: () => context.push('/zep-card-setup'),
+              subtext: 'Physical NFC card with live chip tracking inside',
+              chip: 'My Card',
+              onTap: () => openMyZepCard(context, ref),
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
@@ -385,6 +407,13 @@ class _HomeTab extends ConsumerWidget {
               subtext: 'Earn coins on every payment — redeem demo offers',
               chip: '${app.zepCoinBalance} coins',
               onTap: () => context.push('/coins'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: l10n.homeInviteFriends,
+              subtext: 'Share your code — you both earn ZepCoins',
+              chip: 'Invite',
+              onTap: () => context.push('/invite-friends'),
             ),
             const SizedBox(height: 16),
             if (isWebApp)
@@ -682,6 +711,7 @@ class _PeopleRow extends ConsumerWidget {
       if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
       out.add(
         SavedPayee(
+          id: tx.vpa,
           vpa: tx.vpa,
           name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
         ),
@@ -700,9 +730,7 @@ class _PeopleRow extends ConsumerWidget {
       children: [
         SectionHeader(
           title: 'People',
-          onAction: () => context.push(
-            supportsDeviceContacts ? '/pay/contacts' : '/pay/upi',
-          ),
+          onAction: () => context.push('/pay/saved-contacts'),
         ),
         SizedBox(
           height: 92,

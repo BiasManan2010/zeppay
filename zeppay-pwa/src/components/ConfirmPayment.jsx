@@ -1,8 +1,17 @@
+import { useState } from 'react';
+import { formatRupee, parseAmount } from '../lib/amount';
 import { CopyVpaChip } from './ScanScreen';
 
 export function ConfirmPayment({ draft, onPay, onBack }) {
   const who = draft.name?.trim() || draft.vpa;
-  const amount = Number(draft.amount);
+  const parsed = parseAmount(draft.amount);
+  const [busy, setBusy] = useState(false);
+
+  function handlePay() {
+    if (!parsed || busy) return;
+    setBusy(true);
+    onPay(parsed);
+  }
 
   return (
     <div className="stack confirm">
@@ -17,7 +26,7 @@ export function ConfirmPayment({ draft, onPay, onBack }) {
 
       <div className="amount-display card">
         <div className="muted">Amount</div>
-        <div className="amount-value">₹{amount.toFixed(2)}</div>
+        <div className="amount-value">₹{parsed ? formatRupee(parsed) : '—'}</div>
         {draft.note ? <div className="note-line">Note: {draft.note}</div> : null}
       </div>
 
@@ -34,10 +43,16 @@ export function ConfirmPayment({ draft, onPay, onBack }) {
         </p>
       </div>
 
-      <button type="button" className="btn-primary" onClick={onPay}>
-        Copy ID &amp; dial *99#
+      <button
+        type="button"
+        className={`btn-primary${busy ? ' is-busy' : ''}`}
+        onClick={handlePay}
+        disabled={!parsed || busy}
+        aria-busy={busy}
+      >
+        {busy ? 'Starting dialer…' : 'Copy ID & dial *99#'}
       </button>
-      <button type="button" className="btn-ghost" onClick={onBack}>
+      <button type="button" className="btn-ghost" onClick={onBack} disabled={busy}>
         Back
       </button>
     </div>

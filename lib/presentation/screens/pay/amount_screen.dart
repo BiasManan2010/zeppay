@@ -12,6 +12,7 @@ import '../../../data/local/app_store.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/providers.dart';
 import '../../../data/services/security_audit.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AmountScreen extends ConsumerStatefulWidget {
   const AmountScreen({super.key});
@@ -117,6 +118,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(paymentDraftProvider);
     if (draft == null) {
       return const Scaffold(body: Center(child: Text('No payee selected')));
@@ -124,12 +126,15 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
     final who = draft.payeeName.isEmpty ? draft.vpa : draft.payeeName;
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '0', '⌫'];
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter amount')),
+      appBar: AppBar(title: Text(l10n.amountTitle)),
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Text('Paying $who', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.amountPaying(who),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             Text(draft.vpa, style: Theme.of(context).textTheme.bodyMedium),
             if (isWebApp)
               Padding(
@@ -174,7 +179,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
                 child: Text(
-                  'SPENDING ON',
+                  l10n.amountSpendingOn,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
@@ -202,7 +207,7 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
               child: TextField(
                 controller: _note,
-                decoration: const InputDecoration(labelText: 'NOTE (OPTIONAL)'),
+                decoration: InputDecoration(labelText: l10n.amountNoteOptional),
               ),
             ),
             const Spacer(),
@@ -237,7 +242,9 @@ class _AmountScreenState extends ConsumerState<AmountScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: GlowButton(
-                label: _paise <= 0 ? 'PAY' : 'PAY ${_totalLabel.replaceFirst('₹', '₹')}',
+                label: _paise <= 0
+                    ? l10n.amountPay
+                    : l10n.amountPayWithTotal(_totalLabel),
                 onTap: _paise <= 0
                     ? null
                     : () async {

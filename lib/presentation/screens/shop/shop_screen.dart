@@ -119,10 +119,24 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final balance = ref.watch(appStoreProvider).zepCoinBalance;
     final brands = PartnerShop.byCategory(_tab);
     return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(title: const Text('Zep Shop')),
+      
+      appBar: AppBar(
+        title: const Text('Zep Shop'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text(
+                '$balance coins',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SingleChildScrollView(
@@ -174,14 +188,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                             ),
                             child: Icon(
                               _iconFor(b.category),
-                              color: AppColors.accent,
+                              color: AppColors.hero,
                             ),
                           ),
                           const Spacer(),
                           Text(
                             PartnerShop.demoBadge,
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppColors.accent,
+                                  color: AppColors.hero,
                                   fontSize: 9,
                                 ),
                           ),
@@ -201,7 +215,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                             '${b.coinsRequired} coins',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.forest,
+                              color: AppColors.hero,
                             ),
                           ),
                         ],

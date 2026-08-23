@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
+import '../../../core/accessibility/accessibility_provider.dart';
+import '../../../core/locale/locale_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/ussd_bridge.dart';
+import '../zep_card/zep_card_navigation.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
@@ -767,6 +772,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
           ),
           const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Language'),
+            subtitle: Text(
+              ref.watch(localeProvider).languageCode == 'hi'
+                  ? 'हिंदी'
+                  : 'English',
+            ),
+            secondary: const Icon(Icons.translate_rounded),
+            value: ref.watch(localeProvider).languageCode == 'hi',
+            activeThumbColor: AppColors.hero,
+            onChanged: (_) => ref.read(localeProvider.notifier).toggleEnHi(),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.school_outlined, color: AppColors.hero),
+            title: const Text('Replay tutorial'),
+            subtitle: const Text('Walk through Zep Pay features again'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/walkthrough/replay'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.group_add_outlined, color: AppColors.hero),
+            title: const Text('Invite Friends'),
+            subtitle: const Text('Share your referral code'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/invite-friends'),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Accessibility',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Larger text'),
+            subtitle: const Text('Increase text size across the app'),
+            value: ref.watch(largerTextProvider),
+            activeThumbColor: AppColors.hero,
+            onChanged: (v) =>
+                ref.read(largerTextProvider.notifier).setEnabled(v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('High contrast mode'),
+            subtitle: const Text('Stronger text and border contrast'),
+            value: ref.watch(highContrastProvider),
+            activeThumbColor: AppColors.hero,
+            onChanged: (v) =>
+                ref.read(highContrastProvider.notifier).setEnabled(v),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Dark mode'),
+            subtitle: Text(
+              ref.watch(themeModeProvider) == ThemeMode.dark
+                  ? 'Grey-black surfaces, blue buttons'
+                  : 'Light grey surfaces, blue buttons',
+            ),
+            value: ref.watch(themeModeProvider) == ThemeMode.dark,
+            activeThumbColor: AppColors.hero,
+            onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _url,
             decoration: const InputDecoration(
@@ -897,6 +968,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (isAndroidDevice) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.credit_card_rounded, color: AppColors.hero),
+              title: const Text('My Zep Card'),
+              subtitle: const Text('View card, UPI reveal, and chip tracking'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => openMyZepCard(context, ref),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.nfc_rounded, color: AppColors.accent),
               title: const Text('Set up My Zep Card'),
               subtitle: const Text('Write your VPA to an NFC card (Challenge 1)'),
@@ -969,10 +1048,15 @@ class AnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final txs = ref
+    final allTxs = ref
         .watch(appStoreProvider)
         .transactions
         .where((t) => t.status == TxStatus.success)
+        .toList();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final txs = allTxs
+        .where((t) => !t.createdAt.isBefore(monthStart))
         .toList();
     final byDay = <String, double>{};
     for (final t in txs) {
@@ -998,7 +1082,7 @@ class AnalyticsScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.forestCard,
+                gradient: AppColors.brandCard,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -1018,7 +1102,7 @@ class AnalyticsScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          DateFormat('MMM yyyy').format(DateTime.now()),
+                          DateFormat('MMM yyyy').format(now),
                           style: const TextStyle(color: Colors.white70),
                         ),
                       ),
@@ -1034,8 +1118,8 @@ class AnalyticsScreen extends ConsumerWidget {
                   ),
                   Text(
                     txs.isEmpty
-                        ? 'No successful payments yet'
-                        : '${txs.length} payments logged locally',
+                        ? 'No successful payments this month'
+                        : '${txs.length} payments this month',
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -1107,7 +1191,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   child: SurfaceCard(
                     onTap: () {
                       final t = n.title.toLowerCase();
-                      if (t.contains('autopay')) {
+                      if (t.contains('payment succeeded') ||
+                          t.contains('zepcoins')) {
+                        context.push('/history');
+                      } else if (t.contains('autopay')) {
                         context.push('/autopay');
                       } else if (t.contains('split')) {
                         context.push('/split-activity');
