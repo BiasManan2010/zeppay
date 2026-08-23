@@ -8,11 +8,11 @@
   "terminals": [
     {
       "name": "api-server",
-      "command": "dart run server/bin/server.dart"
+      "command": "bash .cursor/run-api-server.sh"
     },
     {
       "name": "flutter-web",
-      "command": "flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0 --dart-define=TWILIO_VERIFY_URL=http://127.0.0.1:8787"
+      "command": "bash .cursor/run-flutter-web.sh"
     }
   ],
   "ports": [8080, 8787]

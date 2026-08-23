@@ -19,12 +19,9 @@ The Flutter app uses the **anon** key (`SUPABASE_ANON_KEY`) — never embed the 
 ## Setup
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. SQL Editor → paste `schema.sql` → Run
-3. SQL Editor → paste `semiconductor_schema.sql` → Run (demo seed data)
-4. SQL Editor → paste `app_config_schema.sql` → Run (if using donations toggle)
-5. SQL Editor → paste `referral_schema.sql` → Run (invite/referral codes)
-6. Settings → API: copy Project URL, `anon` key (Flutter), and `service_role` key (backend)
-7. On the proxy host:
+2. SQL Editor → paste `full_setup.sql` → Run (or run each file below in order)
+3. Settings → API: copy Project URL, `anon` key (Flutter), and `service_role` key (backend)
+4. On the proxy host (or `backend/.env` locally):
 
 ```
 export SUPABASE_URL=https://YOUR_PROJECT.supabase.co
@@ -32,7 +29,7 @@ export SUPABASE_SERVICE_ROLE_KEY=eyJ...
 node server.js
 ```
 
-8. In the Flutter app Settings (or build with `--dart-define`):
+5. In the Flutter app Settings (or build with `--dart-define`):
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
 
