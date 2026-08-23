@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/zep_palette.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
@@ -18,6 +19,7 @@ import '../../../data/services/zep_coins_gamification.dart';
 import '../pay/payment_services_hub.dart';
 import '../pay/history_screen.dart';
 import '../split/split_home_screen.dart';
+import '../zep_card/zep_card_navigation.dart';
 import 'profile_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -65,6 +67,7 @@ class _DockedNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return SizedBox(
       height: 92 + MediaQuery.paddingOf(context).bottom,
       child: Stack(
@@ -73,10 +76,10 @@ class _DockedNav extends StatelessWidget {
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.navBar,
+                color: zep.navBar,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.surfaceBorder.withValues(alpha: 0.8),
+                    color: zep.border.withValues(alpha: 0.8),
                   ),
                 ),
                 boxShadow: [
@@ -149,6 +152,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zep = context.zep;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -163,7 +167,7 @@ class _NavItem extends StatelessWidget {
                 curve: AppMotion.out,
                 child: Icon(
                   icon,
-                  color: selected ? AppColors.accent : AppColors.textDim,
+                  color: selected ? AppColors.hero : zep.textMuted,
                   size: 24,
                 ),
               ),
@@ -172,7 +176,7 @@ class _NavItem extends StatelessWidget {
                 duration: AppMotion.fast,
                 style:
                     Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? AppColors.accent : AppColors.textDim,
+                      color: selected ? AppColors.hero : zep.textMuted,
                       letterSpacing: 0.2,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ) ??
@@ -207,7 +211,7 @@ class _HomeTab extends ConsumerWidget {
     final unread = app.notifications.where((n) => !n.read).length;
 
     return ColoredBox(
-      color: AppColors.cream,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         bottom: false,
         child: ListView(
@@ -240,7 +244,7 @@ class _HomeTab extends ConsumerWidget {
                   ZepQuickAction(
                     icon: Icons.qr_code_scanner_rounded,
                     label: 'Scan',
-                    tint: AppColors.accent,
+                    tint: AppColors.hero,
                     onTap: () => context.push('/scan'),
                   ),
                   ZepQuickAction(
@@ -254,6 +258,12 @@ class _HomeTab extends ConsumerWidget {
                     label: 'Split',
                     tint: const Color(0xFF2D8A5E),
                     onTap: () => context.push('/split'),
+                  ),
+                  ZepQuickAction(
+                    icon: Icons.credit_card_rounded,
+                    label: 'My Card',
+                    tint: const Color(0xFF3BA3FF),
+                    onTap: () => openMyZepCard(context, ref),
                   ),
                 ],
               ),
@@ -373,10 +383,17 @@ class _HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             ZepPromoBanner(
+              headline: 'My Live State',
+              subtext: 'See your real counts and balances right now — tap to refresh',
+              chip: 'Live',
+              onTap: () => context.push('/live-state'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'Zep Card — tap to pay',
-              subtext: 'NFC identity card for our closed-loop network (Challenge 1)',
-              chip: 'Set up card',
-              onTap: () => context.push('/zep-card-setup'),
+              subtext: 'Physical NFC card with live chip tracking inside',
+              chip: 'My Card',
+              onTap: () => openMyZepCard(context, ref),
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
@@ -665,6 +682,7 @@ class _PeopleRow extends ConsumerWidget {
       if (tx.vpa.isEmpty || !seen.add(tx.vpa)) continue;
       out.add(
         SavedPayee(
+          id: tx.vpa,
           vpa: tx.vpa,
           name: tx.payeeName.isEmpty ? tx.vpa : tx.payeeName,
         ),
@@ -683,9 +701,7 @@ class _PeopleRow extends ConsumerWidget {
       children: [
         SectionHeader(
           title: 'People',
-          onAction: () => context.push(
-            supportsDeviceContacts ? '/pay/contacts' : '/pay/upi',
-          ),
+          onAction: () => context.push('/pay/saved-contacts'),
         ),
         SizedBox(
           height: 92,

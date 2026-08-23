@@ -89,7 +89,6 @@ class _DonateScreenState extends ConsumerState<DonateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Donate'),
       ),
@@ -110,7 +109,6 @@ class _DonateScreenState extends ConsumerState<DonateScreen> {
                 SizedBox(height: 6),
                 Text(
                   'Donations go through the same *99# / 123PAY rail as any payment — no internet required once you start.',
-                  style: TextStyle(color: AppColors.textOnCreamMuted),
                 ),
               ],
             ),
@@ -122,12 +120,12 @@ class _DonateScreenState extends ConsumerState<DonateScreen> {
             (c) => Card(
               margin: const EdgeInsets.only(bottom: 8),
               color: _cause.id == c.id
-                  ? AppColors.accent.withValues(alpha: 0.12)
+                  ? AppColors.hero.withValues(alpha: 0.12)
                   : null,
               child: RadioListTile<String>(
                 value: c.id,
                 groupValue: _cause.id,
-                activeColor: AppColors.accent,
+                activeColor: AppColors.hero,
                 onChanged: (id) {
                   setState(() {
                     _cause = donationCauses.firstWhere((x) => x.id == id);
@@ -162,7 +160,7 @@ class _DonateScreenState extends ConsumerState<DonateScreen> {
           const SizedBox(height: 28),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.hero,
               minimumSize: const Size(double.infinity, 52),
             ),
             onPressed: _donate,

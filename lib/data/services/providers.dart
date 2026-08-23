@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,13 @@ import 'otp_service.dart';
 import 'telephony_service.dart';
 import 'security_audit.dart';
 import 'payment_session.dart';
+import 'supabase_service.dart';
+import 'user_card_repository.dart';
+
+enum ZepCardClaimOutcome { claimed, noInventory, error }
+
+final zepCardClaimOutcomeProvider =
+    StateProvider<ZepCardClaimOutcome?>((_) => null);
 
 final otpServiceProvider = Provider((_) => OtpService());
 final biometricServiceProvider = Provider((_) => BiometricService());
@@ -57,6 +65,7 @@ void startPayment(
   String? settleGroupId,
   String? settleFromId,
   String? settleToId,
+  bool zepCardPurchase = false,
 }) {
   ref.read(paymentDraftProvider.notifier).state = PaymentDraft(
     vpa: vpa,
@@ -69,6 +78,7 @@ void startPayment(
     settleGroupId: settleGroupId,
     settleFromId: settleFromId,
     settleToId: settleToId,
+    zepCardPurchase: zepCardPurchase,
   );
 }
 
@@ -123,6 +133,45 @@ Future<void> applyPaymentResult(WidgetRef ref, TxStatus status) async {
           ),
         );
   }
+  if (status == TxStatus.success && draft?.zepCardPurchase == true) {
+    await _claimZepCardAfterPayment(ref);
+  }
+}
+
+Future<void> _claimZepCardAfterPayment(WidgetRef ref) async {
+  ref.read(zepCardClaimOutcomeProvider.notifier).state = null;
+  final phone = ref.read(appStoreProvider).sessionPhone;
+  if (phone == null || phone.isEmpty) {
+    ref.read(zepCardClaimOutcomeProvider.notifier).state =
+        ZepCardClaimOutcome.error;
+    return;
+  }
+  if (!SupabaseService.instance.isReady) {
+    ref.read(zepCardClaimOutcomeProvider.notifier).state =
+        ZepCardClaimOutcome.error;
+    return;
+  }
+  try {
+    final nfcId = await UserCardRepository.instance.findUnclaimedNfcId();
+    if (nfcId == null) {
+      ref.read(zepCardClaimOutcomeProvider.notifier).state =
+          ZepCardClaimOutcome.noInventory;
+      return;
+    }
+    final name = ref.read(appStoreProvider).profile?.name ?? 'Cardholder';
+    await UserCardRepository.instance.claimCard(
+      phone: phone,
+      nfcId: nfcId,
+      cardName: name,
+    );
+    ref.invalidate(userCardProvider);
+    ref.read(zepCardClaimOutcomeProvider.notifier).state =
+        ZepCardClaimOutcome.claimed;
+  } catch (e) {
+    debugPrint('Zep Card claim after payment failed: $e');
+    ref.read(zepCardClaimOutcomeProvider.notifier).state =
+        ZepCardClaimOutcome.error;
+  }
 }
 
 String routeForTxStatus(TxStatus status) {
@@ -151,5 +200,6 @@ void resumePendingPaymentTrack(WidgetRef ref) {
     note: tx.note,
     category: tx.category,
     source: 'track',
+    zepCardPurchase: false,
   );
 }

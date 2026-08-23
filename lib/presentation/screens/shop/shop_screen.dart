@@ -53,7 +53,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
             const SizedBox(height: 4),
             Text(
               PartnerShop.demoBadge,
-              style: TextStyle(color: AppColors.accent.withValues(alpha: 0.9)),
+              style: TextStyle(color: AppColors.hero.withValues(alpha: 0.9)),
             ),
             const SizedBox(height: 12),
             Text(
@@ -77,7 +77,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               child: FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: AppColors.hero,
                 ),
                 child: const Text('Redeem'),
               ),
@@ -101,7 +101,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
             Text(
               PartnerShop.demoBadge,
               style: const TextStyle(
-                color: AppColors.accent,
+                color: AppColors.hero,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -135,7 +135,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     final streak = ZepCoinsGamification.paymentsThisWeek(app);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Zep Shop'),
         actions: [
@@ -184,7 +183,7 @@ class _GamificationHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.forestCard,
+        gradient: AppColors.brandCard,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -243,7 +242,7 @@ class _CategorySection extends StatelessWidget {
           Text(
             pitch,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.forest,
+                  color: AppColors.hero,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -303,7 +302,7 @@ class _PartnerCard extends StatelessWidget {
                     Text(
                       PartnerShop.demoBadge,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.accent,
+                            color: AppColors.hero,
                             fontSize: 9,
                           ),
                     ),
@@ -329,7 +328,7 @@ class _PartnerCard extends StatelessWidget {
                     '${brand.coinsRequired}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.forest,
+                      color: AppColors.hero,
                     ),
                   ),
                 ],

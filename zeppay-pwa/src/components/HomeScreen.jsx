@@ -1,4 +1,17 @@
-export function HomeScreen({ onScan, onPayUpi, onBalance, onHistory, recents, onRecent }) {
+export function HomeScreen({
+  onScan,
+  onPayUpi,
+  onBalance,
+  onHistory,
+  onCoins,
+  onRequests,
+  onSplit,
+  onProfile,
+  onSpending,
+  coinBalance,
+  recents,
+  onRecent,
+}) {
   return (
     <div className="home">
       <section className="hero-card card">
@@ -40,6 +53,35 @@ export function HomeScreen({ onScan, onPayUpi, onBalance, onHistory, recents, on
           <span className="action-hint">This device only</span>
         </button>
       </div>
+
+      <section className="card section-card">
+        <div className="section-head">
+          <strong>More</strong>
+          <span className="muted">Same features as Android</span>
+        </div>
+        <div className="mini-grid">
+          <button type="button" className="mini-tile" onClick={onCoins}>
+            <span className="mini-label">ZepCoins</span>
+            <span className="mini-value">{coinBalance}</span>
+          </button>
+          <button type="button" className="mini-tile" onClick={onRequests}>
+            <span className="mini-label">Requests</span>
+            <span className="mini-hint">Approve to pay</span>
+          </button>
+          <button type="button" className="mini-tile" onClick={onSplit}>
+            <span className="mini-label">Split</span>
+            <span className="mini-hint">Groups &amp; bills</span>
+          </button>
+          <button type="button" className="mini-tile" onClick={onSpending}>
+            <span className="mini-label">Spending</span>
+            <span className="mini-hint">Confirmed only</span>
+          </button>
+          <button type="button" className="mini-tile wide" onClick={onProfile}>
+            <span className="mini-label">Profile &amp; receive QR</span>
+            <span className="mini-hint">Your UPI ID on this device</span>
+          </button>
+        </div>
+      </section>
 
       {recents.length > 0 ? (
         <section className="card recents">

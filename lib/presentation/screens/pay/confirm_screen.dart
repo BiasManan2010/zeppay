@@ -51,6 +51,37 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
         setState(() => _coinsRevealed = true);
         _coinCtrl.forward(from: 0);
       }
+      final draft = ref.read(paymentDraftProvider);
+      final claim = ref.read(zepCardClaimOutcomeProvider);
+      if (!mounted || draft?.zepCardPurchase != true) return;
+      if (claim == ZepCardClaimOutcome.claimed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your Zep Card is linked — opening Card Details.'),
+          ),
+        );
+        ref.read(zepCardClaimOutcomeProvider.notifier).state = null;
+        _clear();
+        context.go('/my-zep-card');
+      } else if (claim == ZepCardClaimOutcome.noInventory) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment received, but no unclaimed Zep Cards are available right now. Contact support.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      } else if (claim == ZepCardClaimOutcome.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment succeeded but card linking failed. Try claiming manually with your NFC ID.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      }
     });
   }
 
@@ -145,7 +176,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
     final showSplit = app.groups.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Column(
           children: [
@@ -190,18 +221,18 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    AppColors.accent.withValues(alpha: 0.28),
-                                    AppColors.forest.withValues(alpha: 0.18),
+                                    AppColors.hero.withValues(alpha: 0.28),
+                                    AppColors.heroDeep.withValues(alpha: 0.18),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: AppColors.accent.withValues(alpha: 0.55),
+                                  color: AppColors.hero.withValues(alpha: 0.55),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.accent.withValues(alpha: 0.25),
+                                    color: AppColors.hero.withValues(alpha: 0.25),
                                     blurRadius: 16,
                                     offset: const Offset(0, 6),
                                   ),
@@ -221,14 +252,14 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
                                             .textTheme
                                             .headlineSmall
                                             ?.copyWith(
-                                              color: AppColors.forest,
+                                              color: AppColors.hero,
                                               fontWeight: FontWeight.w900,
                                             ),
                                       ),
                                       const Text(
                                         'ZepCoins earned',
                                         style: TextStyle(
-                                          color: AppColors.accent,
+                                          color: AppColors.heroSoft,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14,
                                         ),
@@ -238,7 +269,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
                                   const SizedBox(width: 8),
                                   const Icon(
                                     Icons.chevron_right_rounded,
-                                    color: AppColors.accent,
+                                    color: AppColors.hero,
                                   ),
                                 ],
                               ),
@@ -326,7 +357,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
+                        backgroundColor: AppColors.hero,
                       ),
                       onPressed: () {
                         _clear();
@@ -349,16 +380,15 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textOnCreamMuted)),
+          Text(k, style: Theme.of(context).textTheme.bodyMedium),
           const Spacer(),
           Flexible(
             child: Text(
               v,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textOnCream,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
         ],
@@ -387,7 +417,7 @@ class _PostAction extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            Icon(icon, color: AppColors.accent, size: 28),
+            Icon(icon, color: AppColors.hero, size: 28),
             const SizedBox(height: 4),
             Text(
               label,
@@ -427,7 +457,7 @@ class _FailedScreenState extends ConsumerState<FailedScreen> {
         .where((t) => t.id == id)
         .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -504,7 +534,7 @@ class _PendingScreenState extends ConsumerState<PendingScreen> {
         .where((t) => t.id == id)
         .firstOrNull;
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),

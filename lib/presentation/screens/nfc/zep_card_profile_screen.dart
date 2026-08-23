@@ -100,7 +100,7 @@ class _ZepCardProfileScreenState extends ConsumerState<ZepCardProfileScreen> {
   Widget build(BuildContext context) {
     final valid = widget.vpa.contains('@');
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      
       appBar: AppBar(
         title: Text(widget.fromNfcTap ? 'Zep Card' : 'Profile'),
         leading: IconButton(

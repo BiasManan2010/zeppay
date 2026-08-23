@@ -9,9 +9,11 @@ import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../data/local/ux_prefs.dart';
 import '../../../data/services/ussd_bridge.dart';
+import '../zep_card/zep_card_navigation.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
@@ -744,6 +746,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
           ),
           const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Dark mode'),
+            subtitle: Text(
+              ref.watch(themeModeProvider) == ThemeMode.dark
+                  ? 'Grey-black surfaces, blue buttons'
+                  : 'Light grey surfaces, blue buttons',
+            ),
+            value: ref.watch(themeModeProvider) == ThemeMode.dark,
+            activeThumbColor: AppColors.hero,
+            onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _url,
             decoration: const InputDecoration(
@@ -753,6 +768,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           if (isAndroidDevice) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.credit_card_rounded, color: AppColors.hero),
+              title: const Text('My Zep Card'),
+              subtitle: const Text('View card, UPI reveal, and chip tracking'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => openMyZepCard(context, ref),
+            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.nfc_rounded, color: AppColors.accent),
@@ -827,10 +850,15 @@ class AnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final txs = ref
+    final allTxs = ref
         .watch(appStoreProvider)
         .transactions
         .where((t) => t.status == TxStatus.success)
+        .toList();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final txs = allTxs
+        .where((t) => !t.createdAt.isBefore(monthStart))
         .toList();
     final byDay = <String, double>{};
     for (final t in txs) {
@@ -856,7 +884,7 @@ class AnalyticsScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.forestCard,
+                gradient: AppColors.brandCard,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -876,7 +904,7 @@ class AnalyticsScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          DateFormat('MMM yyyy').format(DateTime.now()),
+                          DateFormat('MMM yyyy').format(now),
                           style: const TextStyle(color: Colors.white70),
                         ),
                       ),
@@ -892,8 +920,8 @@ class AnalyticsScreen extends ConsumerWidget {
                   ),
                   Text(
                     txs.isEmpty
-                        ? 'No successful payments yet'
-                        : '${txs.length} payments logged locally',
+                        ? 'No successful payments this month'
+                        : '${txs.length} payments this month',
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -965,7 +993,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   child: SurfaceCard(
                     onTap: () {
                       final t = n.title.toLowerCase();
-                      if (t.contains('autopay')) {
+                      if (t.contains('payment succeeded') ||
+                          t.contains('zepcoins')) {
+                        context.push('/history');
+                      } else if (t.contains('autopay')) {
                         context.push('/autopay');
                       } else if (t.contains('split')) {
                         context.push('/split-activity');
