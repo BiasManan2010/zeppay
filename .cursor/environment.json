@@ -1,0 +1,19 @@
+{
+  "name": "Zep Pay",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "user": "ubuntu",
+  "install": ".cursor/install.sh",
+  "terminals": [
+    {
+      "name": "api-server",
+      "command": "dart run server/bin/server.dart"
+    },
+    {
+      "name": "flutter-web",
+      "command": "flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0 --dart-define=TWILIO_VERIFY_URL=http://127.0.0.1:8787"
+    }
+  ],
+  "ports": [8080, 8787]
+}
