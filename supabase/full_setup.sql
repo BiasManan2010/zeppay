@@ -1,4 +1,4 @@
--- Zep Pay full Supabase setup (run once in SQL Editor)
+-- Zep Pay full Supabase setup (safe to re-run — policies use DROP IF EXISTS)
 -- Order: census → semiconductors → app_config → referrals → user_cards
 
 -- Zep Pay census + Twilio login challenges.
@@ -169,14 +169,21 @@ alter table public.nfc_tags enable row level security;
 alter table public.inventory_transactions enable row level security;
 alter table public.alternatives enable row level security;
 
+drop policy if exists "semiconductor_read" on public.suppliers;
 create policy "semiconductor_read" on public.suppliers for select using (true);
+drop policy if exists "semiconductor_read" on public.semiconductors;
 create policy "semiconductor_read" on public.semiconductors for select using (true);
+drop policy if exists "semiconductor_read" on public.nfc_tags;
 create policy "semiconductor_read" on public.nfc_tags for select using (true);
+drop policy if exists "semiconductor_read" on public.inventory_transactions;
 create policy "semiconductor_read" on public.inventory_transactions for select using (true);
+drop policy if exists "semiconductor_read" on public.alternatives;
 create policy "semiconductor_read" on public.alternatives for select using (true);
 
+drop policy if exists "semiconductor_insert_txn" on public.inventory_transactions;
 create policy "semiconductor_insert_txn" on public.inventory_transactions
   for insert with check (true);
+drop policy if exists "semiconductor_update_chip" on public.semiconductors;
 create policy "semiconductor_update_chip" on public.semiconductors
   for update using (true);
 
@@ -446,11 +453,15 @@ create index if not exists user_cards_nfc_idx on public.user_cards (nfc_id);
 alter table public.user_cards enable row level security;
 
 -- Demo / hackathon: open policies (tighten in production with auth.uid()).
+drop policy if exists "user_cards_read" on public.user_cards;
 create policy "user_cards_read" on public.user_cards for select using (true);
+drop policy if exists "user_cards_insert" on public.user_cards;
 create policy "user_cards_insert" on public.user_cards for insert with check (true);
+drop policy if exists "user_cards_update" on public.user_cards;
 create policy "user_cards_update" on public.user_cards for update using (true);
 
 -- Allow Flutter to resolve app_users.id from phone hash (census table).
+drop policy if exists "app_users_id_lookup" on public.app_users;
 create policy "app_users_id_lookup" on public.app_users for select using (true);
 
 -- Extra unclaimed NFC tags for card assignment demos (idempotent).
