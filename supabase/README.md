@@ -19,7 +19,7 @@ The Flutter app uses the **anon** key (`SUPABASE_ANON_KEY`) — never embed the 
 ## Setup
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. SQL Editor → paste `full_setup.sql` → Run (or run each file below in order)
+2. SQL Editor → paste `full_setup.sql` → Run (safe to re-run; skips existing tables/rows and recreates policies)
 3. Settings → API: copy Project URL, `anon` key (Flutter), and `service_role` key (backend)
 4. On the proxy host (or `backend/.env` locally):
 

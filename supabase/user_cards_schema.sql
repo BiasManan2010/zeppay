@@ -15,11 +15,15 @@ create index if not exists user_cards_nfc_idx on public.user_cards (nfc_id);
 alter table public.user_cards enable row level security;
 
 -- Demo / hackathon: open policies (tighten in production with auth.uid()).
+drop policy if exists "user_cards_read" on public.user_cards;
 create policy "user_cards_read" on public.user_cards for select using (true);
+drop policy if exists "user_cards_insert" on public.user_cards;
 create policy "user_cards_insert" on public.user_cards for insert with check (true);
+drop policy if exists "user_cards_update" on public.user_cards;
 create policy "user_cards_update" on public.user_cards for update using (true);
 
 -- Allow Flutter to resolve app_users.id from phone hash (census table).
+drop policy if exists "app_users_id_lookup" on public.app_users;
 create policy "app_users_id_lookup" on public.app_users for select using (true);
 
 -- Extra unclaimed NFC tags for card assignment demos (idempotent).

@@ -55,14 +55,21 @@ alter table public.nfc_tags enable row level security;
 alter table public.inventory_transactions enable row level security;
 alter table public.alternatives enable row level security;
 
+drop policy if exists "semiconductor_read" on public.suppliers;
 create policy "semiconductor_read" on public.suppliers for select using (true);
+drop policy if exists "semiconductor_read" on public.semiconductors;
 create policy "semiconductor_read" on public.semiconductors for select using (true);
+drop policy if exists "semiconductor_read" on public.nfc_tags;
 create policy "semiconductor_read" on public.nfc_tags for select using (true);
+drop policy if exists "semiconductor_read" on public.inventory_transactions;
 create policy "semiconductor_read" on public.inventory_transactions for select using (true);
+drop policy if exists "semiconductor_read" on public.alternatives;
 create policy "semiconductor_read" on public.alternatives for select using (true);
 
+drop policy if exists "semiconductor_insert_txn" on public.inventory_transactions;
 create policy "semiconductor_insert_txn" on public.inventory_transactions
   for insert with check (true);
+drop policy if exists "semiconductor_update_chip" on public.semiconductors;
 create policy "semiconductor_update_chip" on public.semiconductors
   for update using (true);
 
