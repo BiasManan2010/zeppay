@@ -6,6 +6,7 @@
 |---|---|
 | `app_users` | One hashed phone per account + timestamps + optional `referral_code` / `referred_by`. |
 | `otp_logins` | E.164 **phone** and **SHA-256 of the OTP** for Twilio login. Consumed or expired. |
+| `app_config` | Admin feature flags (e.g. `donations_enabled`). See `app_config_schema.sql`. |
 
 The raw 6-digit code is never written. The service role key stays on `backend/server.js`.
 

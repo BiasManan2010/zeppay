@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/zep_coin_icon.dart';
 import '../../../data/local/app_store.dart';
+import '../../../data/services/zep_coins_gamification.dart';
 
 class CoinsScreen extends ConsumerWidget {
   const CoinsScreen({super.key});
@@ -13,6 +15,7 @@ class CoinsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStoreProvider);
     final fmt = DateFormat('d MMM, h:mm a');
+    final tier = ZepCoinsGamification.tierLabel(app);
 
     return Scaffold(
       
@@ -43,12 +46,19 @@ class CoinsScreen extends ConsumerWidget {
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${app.zepCoinBalance}',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const ZepCoinIcon(size: 40),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${app.zepCoinBalance}',
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
                 ),
                 const Text(
                   'ZepCoins',
@@ -56,6 +66,11 @@ class CoinsScreen extends ConsumerWidget {
                     color: AppColors.heroSoft,
                     fontWeight: FontWeight.w700,
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$tier tier · ${ZepCoinsGamification.paymentsThisWeek(app)} payments this week',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
@@ -65,7 +80,7 @@ class CoinsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           const ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.payments_outlined, color: AppColors.accent),
+            leading: ZepCoinIcon(size: 28),
             title: Text('Pay offline or online'),
             subtitle: Text('1 coin for every ₹10 spent'),
           ),
@@ -88,6 +103,7 @@ class CoinsScreen extends ConsumerWidget {
               (e) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
+                  leading: const ZepCoinIcon(size: 28),
                   title: Text('+${e.coinsEarned} coins'),
                   subtitle: Text(
                     '₹${(e.amountPaise / 100).toStringAsFixed(0)} payment · ${fmt.format(e.timestamp)}',

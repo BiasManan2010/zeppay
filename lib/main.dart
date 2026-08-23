@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/accessibility/accessibility_provider.dart';
 import 'core/locale/locale_provider.dart';
@@ -10,6 +11,7 @@ import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'data/local/app_store.dart';
+import 'data/services/app_config_service.dart';
 import 'data/services/autopay_scheduler.dart';
 import 'data/services/nfc_deep_link.dart';
 import 'data/services/notification_service.dart';
@@ -36,7 +38,19 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('supabase init failed: $e');
   }
-  runApp(const ProviderScope(child: ZepPayApp()));
+  final prefs = await SharedPreferences.getInstance();
+  final configService = AppConfigService(prefs);
+  runApp(
+    ProviderScope(
+      overrides: [
+        appConfigServiceProvider.overrideWithValue(configService),
+        donationsEnabledProvider.overrideWith(
+          (ref) => configService.cachedDonationsEnabled,
+        ),
+      ],
+      child: const ZepPayApp(),
+    ),
+  );
 }
 
 class ZepPayApp extends ConsumerStatefulWidget {
@@ -48,6 +62,7 @@ class ZepPayApp extends ConsumerStatefulWidget {
 
 class _ZepPayAppState extends ConsumerState<ZepPayApp> {
   NfcDeepLinkListener? _deepLinks;
+  var _configLoaded = false;
 
   @override
   void initState() {
@@ -57,6 +72,12 @@ class _ZepPayAppState extends ConsumerState<ZepPayApp> {
       final router = ref.read(routerProvider);
       _deepLinks = NfcDeepLinkListener(router, ref.read(appLinksProvider));
       await _deepLinks!.init();
+      if (!_configLoaded) {
+        _configLoaded = true;
+        final enabled =
+            await ref.read(appConfigServiceProvider).refreshDonationsEnabled();
+        ref.read(donationsEnabledProvider.notifier).state = enabled;
+      }
       await syncReferralRewards(ref);
     });
   }
