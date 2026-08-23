@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/zep_components.dart';
+import '../../../data/services/app_config_service.dart';
 
-class PaymentServicesHubScreen extends StatelessWidget {
+class PaymentServicesHubScreen extends ConsumerWidget {
   const PaymentServicesHubScreen({super.key, this.embedded = false});
 
   final bool embedded;
 
   @override
-  Widget build(BuildContext context) {
-    final actions = [
+  Widget build(BuildContext context, WidgetRef ref) {
+    final donationsOn = ref.watch(donationsEnabledProvider);
+
+    final actions = <(IconData, String, VoidCallback, Color)>[
       (
         Icons.nfc_rounded,
         'Zep Card',
@@ -48,12 +52,13 @@ class PaymentServicesHubScreen extends StatelessWidget {
         () => context.push('/shop'),
         const Color(0xFFE85D8A),
       ),
-      (
-        Icons.favorite_outline_rounded,
-        'Donate',
-        () => context.push('/pay/upi'),
-        const Color(0xFFC45C4A),
-      ),
+      if (donationsOn)
+        (
+          Icons.favorite_outline_rounded,
+          'Donate',
+          () => context.push('/pay/donate'),
+          const Color(0xFFC45C4A),
+        ),
       (
         Icons.call_received_rounded,
         'Request money',

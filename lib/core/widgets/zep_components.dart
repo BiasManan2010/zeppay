@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
+import 'zep_coin_icon.dart';
 
 /// Reusable Zep Pay UI components (4/8px spacing scale).
 class ZepHeaderBar extends StatefulWidget {
@@ -425,6 +426,76 @@ class ZepOrangeFab extends StatelessWidget {
         ),
         child: const Icon(Icons.qr_code_scanner_rounded,
             color: Colors.white, size: 30),
+      ),
+    );
+  }
+}
+
+/// Persistent ZepCoins balance pill — tap opens Coins screen.
+class ZepCoinBalanceChip extends StatelessWidget {
+  const ZepCoinBalanceChip({
+    super.key,
+    required this.balance,
+    this.subtitle,
+    this.onTap,
+  });
+
+  final int balance;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        color: AppColors.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(28),
+        child: InkWell(
+          onTap: onTap ?? () => context.push('/coins'),
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ZepCoinIcon(size: 28),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$balance ZepCoins',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.forest,
+                          ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.textOnCreamMuted,
+                            ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.accent,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

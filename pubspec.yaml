@@ -38,14 +38,25 @@ dependencies:
   qr_flutter: ^4.1.0
   nfc_manager: ^3.5.0
   app_links: ^6.4.0
+  supabase_flutter: ^2.9.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/logo.jpeg
+  adaptive_icon_background: "#0B1A2E"
+  adaptive_icon_foreground: assets/branding/logo.jpeg
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
   assets:
     - assets/branding/
     - assets/lottie/
+    - assets/sounds/

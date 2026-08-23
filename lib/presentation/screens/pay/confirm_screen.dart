@@ -7,9 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/pay_motion.dart';
+import '../../../core/widgets/zep_coin_icon.dart';
 import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
@@ -24,27 +24,40 @@ class ConfirmScreen extends ConsumerStatefulWidget {
   ConsumerState<ConfirmScreen> createState() => _ConfirmScreenState();
 }
 
-class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
+class _ConfirmScreenState extends ConsumerState<ConfirmScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _coinCtrl;
+  late final Animation<double> _coinScale;
+  var _coinsRevealed = false;
+
   @override
   void initState() {
     super.initState();
+    _coinCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    );
+    _coinScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.18), weight: 55),
+      TweenSequenceItem(tween: Tween(begin: 1.18, end: 1.0), weight: 45),
+    ]).animate(CurvedAnimation(parent: _coinCtrl, curve: Curves.easeOutBack));
+
     Future<void>.delayed(const Duration(milliseconds: 280), () async {
+      if (!mounted) return;
       HapticFeedback.heavyImpact();
-      await SoundCueService().success();
+      await SoundCueService.instance.success();
       final coins = ref.read(lastCoinsEarnedProvider);
       if (coins > 0 && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('+$coins ZepCoins earned'),
-            action: SnackBarAction(
-              label: 'View',
-              onPressed: () => context.push('/coins'),
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        setState(() => _coinsRevealed = true);
+        _coinCtrl.forward(from: 0);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _coinCtrl.dispose();
+    super.dispose();
   }
 
   TxRecord? get _tx {
@@ -161,25 +174,73 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                       ),
                     ),
                     Text(who, style: Theme.of(context).textTheme.titleMedium),
-                    if (coins > 0)
+                    if (coins > 0 && _coinsRevealed)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: InkWell(
-                          onTap: () => context.push('/coins'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '+$coins ZepCoins earned →',
-                              style: const TextStyle(
-                                color: AppColors.accent,
-                                fontWeight: FontWeight.w700,
+                        padding: const EdgeInsets.only(top: 16),
+                        child: ScaleTransition(
+                          scale: _coinScale,
+                          child: InkWell(
+                            onTap: () => context.push('/coins'),
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.accent.withValues(alpha: 0.28),
+                                    AppColors.forest.withValues(alpha: 0.18),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: AppColors.accent.withValues(alpha: 0.55),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accent.withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const ZepCoinIcon(size: 36),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '+$coins',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              color: AppColors.forest,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                                      const Text(
+                                        'ZepCoins earned',
+                                        style: TextStyle(
+                                          color: AppColors.accent,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: AppColors.accent,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -340,11 +401,24 @@ class _PostAction extends StatelessWidget {
   }
 }
 
-class FailedScreen extends ConsumerWidget {
+class FailedScreen extends ConsumerStatefulWidget {
   const FailedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FailedScreen> createState() => _FailedScreenState();
+}
+
+class _FailedScreenState extends ConsumerState<FailedScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SoundCueService.instance.failure();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final draft = ref.watch(paymentDraftProvider);
     final id = ref.watch(pendingTxIdProvider);
     final tx = ref
@@ -404,11 +478,24 @@ class FailedScreen extends ConsumerWidget {
   }
 }
 
-class PendingScreen extends ConsumerWidget {
+class PendingScreen extends ConsumerStatefulWidget {
   const PendingScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PendingScreen> createState() => _PendingScreenState();
+}
+
+class _PendingScreenState extends ConsumerState<PendingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SoundCueService.instance.pending();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final draft = ref.watch(paymentDraftProvider);
     final id = ref.watch(pendingTxIdProvider);
     final tx = ref

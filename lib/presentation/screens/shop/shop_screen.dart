@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/zep_coin_icon.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/partner_shop.dart';
+import '../../../data/services/zep_coins_gamification.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
@@ -14,8 +17,6 @@ class ShopScreen extends ConsumerStatefulWidget {
 }
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
-  PartnerCategory _tab = PartnerCategory.ott;
-
   Future<void> _redeem(PartnerBrand brand) async {
     final balance = ref.read(appStoreProvider).zepCoinBalance;
     if (balance < brand.coinsRequired) {
@@ -60,9 +61,15 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 8),
-            Text(
-              '${brand.coinsRequired} ZepCoins required',
-              style: const TextStyle(color: Colors.white),
+            Row(
+              children: [
+                const ZepCoinIcon(size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  '${brand.coinsRequired} ZepCoins required',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -91,9 +98,13 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(PartnerShop.demoBadge,
-                style: const TextStyle(
-                    color: AppColors.accent, fontWeight: FontWeight.w600)),
+            Text(
+              PartnerShop.demoBadge,
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 8),
             SelectableText(
               redemption.voucherCode,
@@ -119,108 +130,214 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brands = PartnerShop.byCategory(_tab);
+    final app = ref.watch(appStoreProvider);
+    final tier = ZepCoinsGamification.tierLabel(app);
+    final streak = ZepCoinsGamification.paymentsThisWeek(app);
+
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(title: const Text('Zep Shop')),
-      body: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: PartnerCategory.values.map((c) {
-                final selected = _tab == c;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(PartnerShop.categoryLabel(c)),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _tab = c),
-                    selectedColor: AppColors.accent.withValues(alpha: 0.25),
-                    checkmarkColor: AppColors.accent,
-                  ),
-                );
-              }).toList(),
-            ),
+      appBar: AppBar(
+        title: const Text('Zep Shop'),
+        actions: [
+          TextButton(
+            onPressed: () => context.push('/coins'),
+            child: const Text('Coins'),
           ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        children: [
+          _GamificationHeader(
+            balance: app.zepCoinBalance,
+            tier: tier,
+            paymentsThisWeek: streak,
+          ),
+          const SizedBox(height: 16),
+          for (final cat in PartnerCategory.values) ...[
+            _CategorySection(
+              category: cat,
+              brands: PartnerShop.byCategory(cat),
+              onRedeem: _redeem,
+            ),
+            const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GamificationHeader extends StatelessWidget {
+  const _GamificationHeader({
+    required this.balance,
+    required this.tier,
+    required this.paymentsThisWeek,
+  });
+
+  final int balance;
+  final String tier;
+  final int paymentsThisWeek;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.forestCard,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          const ZepCoinIcon(size: 44),
+          const SizedBox(width: 12),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.85,
-              ),
-              itemCount: brands.length,
-              itemBuilder: (context, i) {
-                final b = brands[i];
-                return Card(
-                  child: InkWell(
-                    onTap: () => _redeem(b),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              _iconFor(b.category),
-                              color: AppColors.accent,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            PartnerShop.demoBadge,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppColors.accent,
-                                  fontSize: 9,
-                                ),
-                          ),
-                          Text(
-                            b.name,
-                            style: Theme.of(context).textTheme.titleSmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            b.discountLabel,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            maxLines: 2,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${b.coinsRequired} coins',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.forest,
-                            ),
-                          ),
-                        ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$balance ZepCoins',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ),
-                  ),
-                );
-              },
+                ),
+                Text(
+                  '$tier tier · $paymentsThisWeek payments this week',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  IconData _iconFor(PartnerCategory c) => switch (c) {
-        PartnerCategory.ott => Icons.movie_outlined,
-        PartnerCategory.shopping => Icons.shopping_bag_outlined,
-        PartnerCategory.food => Icons.restaurant_outlined,
-        PartnerCategory.travel => Icons.flight_outlined,
-      };
+class _CategorySection extends StatelessWidget {
+  const _CategorySection({
+    required this.category,
+    required this.brands,
+    required this.onRedeem,
+  });
+
+  final PartnerCategory category;
+  final List<PartnerBrand> brands;
+  final void Function(PartnerBrand) onRedeem;
+
+  @override
+  Widget build(BuildContext context) {
+    final pitch = PartnerShop.categoryPitch(category);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          PartnerShop.categoryLabel(category),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        if (pitch.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            pitch,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.forest,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        ...brands.map(
+          (b) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _PartnerCard(brand: b, onTap: () => onRedeem(b)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PartnerCard extends StatelessWidget {
+  const _PartnerCard({required this.brand, required this.onTap});
+
+  final PartnerBrand brand;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = PartnerShop.brandColor(brand);
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.45)),
+                ),
+                child: Text(
+                  PartnerShop.initials(brand.name),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      PartnerShop.demoBadge,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.accent,
+                            fontSize: 9,
+                          ),
+                    ),
+                    Text(
+                      brand.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    Text(
+                      brand.discountLabel,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const ZepCoinIcon(size: 18),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${brand.coinsRequired}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.forest,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

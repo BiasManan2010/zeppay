@@ -82,10 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 228,
-                      height: 228,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.hero.withValues(alpha: glow),
@@ -94,24 +91,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const BrandMark(size: 228),
+                      child: const BrandMark(size: 220),
                     ).animate().fadeIn(duration: 500.ms).scale(
                           begin: const Offset(0.62, 0.62),
                           end: const Offset(1, 1),
                           curve: Curves.easeOutBack,
                           duration: 900.ms,
                         ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'ZEPPAY',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.white,
-                            letterSpacing: 8,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                    ).animate(delay: 420.ms).fadeIn(duration: 600.ms).slideY(
-                        begin: 0.35, end: 0, curve: Curves.easeOutCubic),
                     const SizedBox(height: 10),
                     Text(
                       'Pay when the internet dies.',
