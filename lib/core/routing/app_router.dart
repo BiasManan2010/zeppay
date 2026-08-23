@@ -39,6 +39,8 @@ import '../../presentation/screens/nfc/zep_card_setup_screen.dart';
 import '../../presentation/screens/zep_card/get_zep_card_screen.dart';
 import '../../presentation/screens/zep_card/zep_card_details_screen.dart';
 import '../../presentation/screens/live_state/live_state_screen.dart';
+import '../../presentation/screens/walkthrough/feature_onboarding_screen.dart';
+import '../../presentation/screens/referral/invite_friends_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -86,6 +88,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       fadeRoute('/verify-setup', () => const SettingsScreen()),
       fadeRoute('/onboarding', () => const OnboardingScreen()),
       fadeRoute('/home', () => const HomeShell()),
+      fadeRoute('/walkthrough', () => const FeatureOnboardingScreen()),
+      fadeRoute('/walkthrough/replay', () => const FeatureOnboardingScreen(replay: true)),
+      fadeRoute('/invite-friends', () => const InviteFriendsScreen()),
       fadeRoute('/scan', () => const ScanScreen()),
       fadeRoute('/face', () => const FaceConfirmScreen()),
       fadeRoute('/connecting', () => const ConnectingScreen()),

@@ -14,8 +14,9 @@ import '../../../core/widgets/zep_components.dart';
 import '../../../data/local/app_store.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/providers.dart';
-import '../../../data/services/receipt_share.dart';
 import '../../../data/services/sound_cue_service.dart';
+import '../../../data/services/receipt_share.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ConfirmScreen extends ConsumerStatefulWidget {
   const ConfirmScreen({super.key});
@@ -145,6 +146,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(paymentDraftProvider);
     final tx = _tx;
     final app = ref.watch(appStoreProvider);
@@ -175,7 +177,7 @@ class _ConfirmScreenState extends ConsumerState<ConfirmScreen> {
                     const PaymentSuccessBurst(),
                     const SizedBox(height: 12),
                     Text(
-                      'Payment Successful',
+                      l10n.paymentSuccess,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: AppColors.success,
                             fontWeight: FontWeight.w800,
@@ -375,6 +377,7 @@ class FailedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(paymentDraftProvider);
     final id = ref.watch(pendingTxIdProvider);
     final tx = ref
@@ -393,7 +396,7 @@ class FailedScreen extends ConsumerWidget {
               const PaymentFailMark(),
               const SizedBox(height: 20),
               Text(
-                'Payment Failed',
+                l10n.paymentFailed,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppColors.danger,
                     ),
@@ -408,8 +411,8 @@ class FailedScreen extends ConsumerWidget {
                 Text('Txn ${tx!.refCode}'),
               ],
               const SizedBox(height: 8),
-              const Text(
-                'Nothing was taken in Zep Pay. Try again when the dialer session is ready.',
+              Text(
+                l10n.paymentFailedHint,
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -439,6 +442,7 @@ class PendingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final draft = ref.watch(paymentDraftProvider);
     final id = ref.watch(pendingTxIdProvider);
     final tx = ref
@@ -457,7 +461,7 @@ class PendingScreen extends ConsumerWidget {
               const PaymentPendingMark(),
               const SizedBox(height: 20),
               Text(
-                'Payment Pending',
+                l10n.paymentPending,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppColors.warning,
                     ),
@@ -467,8 +471,8 @@ class PendingScreen extends ConsumerWidget {
                 '₹${(draft?.amountRupees ?? 0).toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.displayMedium,
               ),
-              const Text(
-                'Check SMS from your bank, or History in a minute.',
+              Text(
+                l10n.paymentPendingHint,
                 textAlign: TextAlign.center,
               ),
               if ((tx?.refCode ?? '').isNotEmpty) ...[

@@ -181,6 +181,16 @@ class AppStore extends Notifier<AppState> {
   }) async {
     final coins = amountPaise ~/ 1000;
     if (coins <= 0) return;
+    await awardBonusCoins(txId: txId, coins: coins, amountPaise: amountPaise);
+  }
+
+  /// Bonus coins (referrals, promos) — same ledger as payment rewards.
+  Future<void> awardBonusCoins({
+    required String txId,
+    required int coins,
+    int amountPaise = 0,
+  }) async {
+    if (coins <= 0) return;
     if (state.zepCoinLedger.any((e) => e.txId == txId)) return;
     final entry = ZepCoinLedgerEntry(
       txId: txId,
@@ -192,10 +202,7 @@ class AppStore extends Notifier<AppState> {
       zepCoinBalance: state.zepCoinBalance + coins,
       zepCoinLedger: [entry, ...state.zepCoinLedger],
     );
-    await _notify(
-      'ZepCoins earned',
-      '+$coins coins for ₹${(amountPaise / 100).toStringAsFixed(0)} payment',
-    );
+    await _notify('ZepCoins earned', '+$coins coins');
     await _persist();
   }
 
