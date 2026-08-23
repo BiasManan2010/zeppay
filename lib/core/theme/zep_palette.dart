@@ -57,6 +57,35 @@ class ZepPalette extends ThemeExtension<ZepPalette> {
     promoSubtext: Color(0xFF4B5563),
   );
 
+  /// Higher contrast variant — stronger text/border separation.
+  static const darkHighContrast = ZepPalette(
+    background: Color(0xFF000000),
+    surface: Color(0xFF0A0A0A),
+    surfaceElevated: Color(0xFF141414),
+    card: Color(0xFF101010),
+    border: Color(0xFFE5E7EB),
+    navBar: Color(0xF0000000),
+    textPrimary: Color(0xFFFFFFFF),
+    textSecondary: Color(0xFFF3F4F6),
+    textMuted: Color(0xFFD1D5DB),
+    promoText: Color(0xFFFFFFFF),
+    promoSubtext: Color(0xFFE5E7EB),
+  );
+
+  static const lightHighContrast = ZepPalette(
+    background: Color(0xFFFFFFFF),
+    surface: Color(0xFFFFFFFF),
+    surfaceElevated: Color(0xFFF9FAFB),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFF111827),
+    navBar: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFF000000),
+    textSecondary: Color(0xFF1F2937),
+    textMuted: Color(0xFF374151),
+    promoText: Color(0xFF000000),
+    promoSubtext: Color(0xFF1F2937),
+  );
+
   @override
   ZepPalette copyWith({
     Color? background,
