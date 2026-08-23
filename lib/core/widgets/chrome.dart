@@ -712,20 +712,20 @@ class ZepPage extends StatelessWidget {
 }
 
 class BrandMark extends StatelessWidget {
-  const BrandMark({super.key, this.size = 140, this.wordmark = false});
+  const BrandMark({super.key, this.size = 140, this.wordmark = true});
 
   final double size;
   final bool wordmark;
 
-  static const markAsset = 'assets/branding/zeppay_mark.png';
-  static const lockupAsset = 'assets/branding/zeppay_logo.png';
+  static const wordmarkAsset = 'assets/branding/zeppay_transparent_bg.png';
+  static const logoAsset = 'assets/branding/logo.jpeg';
 
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      wordmark ? lockupAsset : markAsset,
+      wordmark ? wordmarkAsset : logoAsset,
       width: size,
-      height: size,
+      height: wordmark ? size * 0.42 : size,
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) =>
           Icon(Icons.bolt_rounded, size: size * 0.55, color: AppColors.hero),

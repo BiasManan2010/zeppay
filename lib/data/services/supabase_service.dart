@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Shared Supabase client for census OTP (backend) and semiconductor inventory.
+/// Shared Supabase client for app configuration, semiconductor inventory, and census OTP.
 class SupabaseService {
   SupabaseService._();
   static final instance = SupabaseService._();
@@ -30,7 +30,9 @@ class SupabaseService {
     final url = (prefs.getString(urlPrefsKey) ?? compiledUrl).trim();
     final anon = (prefs.getString(anonKeyPrefsKey) ?? compiledAnonKey).trim();
     if (url.isEmpty || anon.isEmpty) {
-      debugPrint('Supabase: URL/anon key not set — inventory uses cloud when configured.');
+      debugPrint(
+        'Supabase: URL/anon key not set — cloud features use cache when configured.',
+      );
       return;
     }
     if (!Supabase.instance.isInitialized) {
