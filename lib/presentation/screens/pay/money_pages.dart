@@ -746,17 +746,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             anonKey: _supabaseAnon.text,
           );
           await SupabaseService.instance.init();
+          final supaOk = await SupabaseService.instance.testConnection();
           ref.invalidate(zepCardChipProvider);
           ref.invalidate(inventoryOverviewProvider);
           final health = await ref.read(otpServiceProvider).health();
           ref.invalidate(otpLiveProvider);
           final users = health['users'];
           final reachable = health['ok'] == true || health['twilio'] == true;
+          final supaLine = SupabaseService.instance.isReady
+              ? (supaOk
+                    ? ', Supabase connected'
+                    : ', Supabase configured (run full_setup.sql if tables missing)')
+              : '';
           setState(
             () => _status = reachable
                 ? 'Saved. Proxy up'
                       '${health['mode'] != null ? ' (${health['mode']})' : ''}'
-                      '${health['supabase'] == true ? ', Supabase on' : ''}'
+                      '${health['supabase'] == true ? ', backend Supabase on' : ''}'
+                      '$supaLine'
                       '${users is num ? ', $users accounts' : ''}.'
                 : (_url.text.trim().isEmpty
                       ? 'Saved. Dev OTP 123456 until a URL is set.'
