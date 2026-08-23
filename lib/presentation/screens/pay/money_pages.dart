@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
+import '../../../core/accessibility/accessibility_provider.dart';
+import '../../../core/locale/locale_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/motion/app_motion.dart';
@@ -744,6 +747,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Language'),
+            subtitle: Text(
+              ref.watch(localeProvider).languageCode == 'hi'
+                  ? 'हिंदी'
+                  : 'English',
+            ),
+            secondary: const Icon(Icons.translate_rounded),
+            value: ref.watch(localeProvider).languageCode == 'hi',
+            activeThumbColor: AppColors.hero,
+            onChanged: (_) => ref.read(localeProvider.notifier).toggleEnHi(),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.school_outlined, color: AppColors.hero),
+            title: const Text('Replay tutorial'),
+            subtitle: const Text('Walk through Zep Pay features again'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/walkthrough/replay'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.group_add_outlined, color: AppColors.hero),
+            title: const Text('Invite Friends'),
+            subtitle: const Text('Share your referral code'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/invite-friends'),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Accessibility',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Larger text'),
+            subtitle: const Text('Increase text size across the app'),
+            value: ref.watch(largerTextProvider),
+            activeThumbColor: AppColors.hero,
+            onChanged: (v) =>
+                ref.read(largerTextProvider.notifier).setEnabled(v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('High contrast mode'),
+            subtitle: const Text('Stronger text and border contrast'),
+            value: ref.watch(highContrastProvider),
+            activeThumbColor: AppColors.hero,
+            onChanged: (v) =>
+                ref.read(highContrastProvider.notifier).setEnabled(v),
           ),
           const SizedBox(height: 12),
           SwitchListTile(

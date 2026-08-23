@@ -6,9 +6,11 @@ import 'app_typography.dart';
 import 'zep_palette.dart';
 
 abstract final class AppTheme {
-  static ThemeData dark() => _build(Brightness.dark, ZepPalette.dark);
+  static ThemeData dark({bool highContrast = false}) =>
+      _build(Brightness.dark, highContrast ? ZepPalette.darkHighContrast : ZepPalette.dark);
 
-  static ThemeData light() => _build(Brightness.light, ZepPalette.light);
+  static ThemeData light({bool highContrast = false}) =>
+      _build(Brightness.light, highContrast ? ZepPalette.lightHighContrast : ZepPalette.light);
 
   static ThemeData _build(Brightness brightness, ZepPalette palette) {
     final isDark = brightness == Brightness.dark;

@@ -8,6 +8,7 @@ import '../../core/widgets/chrome.dart';
 import '../../core/platform.dart';
 import '../../core/ios_web_redirect.dart';
 import '../../data/local/app_store.dart';
+import '../../data/local/ux_prefs.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -36,7 +37,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
-  void _go() {
+  Future<void> _go() async {
     if (!mounted) return;
     if (isIosWeb) {
       redirectIosToPaySite();
@@ -44,7 +45,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     final app = ref.read(appStoreProvider);
     if (app.sessionPhone != null && app.profile?.onboarded == true) {
-      context.go('/home');
+      final seen = await UxPrefs.hasSeenOnboarding();
+      if (!mounted) return;
+      if (!seen) {
+        context.go('/walkthrough');
+      } else {
+        context.go('/home');
+      }
     } else if (app.sessionPhone != null) {
       context.go('/onboarding');
     } else {
