@@ -49,6 +49,23 @@ class NfcCardService {
     return null;
   }
 
+  /// Reads a semiconductor batch tag id from NDEF (Challenge 2).
+  Future<String?> readChipNfcId(NfcTag tag) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) return null;
+    try {
+      final message = await ndef.read();
+      for (final record in message.records) {
+        final uri = _uriFromRecord(record);
+        final nfcId = ChipTagCodec.parseUri(uri);
+        if (nfcId != null) return nfcId;
+      }
+    } catch (e) {
+      debugPrint('NFC chip read failed: $e');
+    }
+    return null;
+  }
+
   Uri? _uriFromRecord(NdefRecord record) {
     if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
         record.type.isNotEmpty &&
@@ -65,30 +82,14 @@ class NfcCardService {
     final payload = record.payload;
     if (payload.isEmpty) return null;
     final text = utf8.decode(payload, allowMalformed: true);
-    if (text.contains('zeppay://') || text.contains('/zeppay/profile') ||
+    if (text.contains('zeppay://') ||
+        text.contains('/zeppay/profile') ||
         text.contains('/zeppay/chip')) {
       final start = text.contains('zeppay://')
           ? text.indexOf('zeppay://')
           : text.indexOf('https://');
       final slice = text.substring(start).split('\u0000').first.trim();
       return Uri.tryParse(slice);
-    }
-    return null;
-  }
-
-  /// Reads a semiconductor batch tag id from NDEF (Challenge 2).
-  Future<String?> readChipNfcId(NfcTag tag) async {
-    final ndef = Ndef.from(tag);
-    if (ndef == null) return null;
-    try {
-      final message = await ndef.read();
-      for (final record in message.records) {
-        final uri = _uriFromRecord(record);
-        final nfcId = ChipTagCodec.parseUri(uri);
-        if (nfcId != null) return nfcId;
-      }
-    } catch (e) {
-      debugPrint('NFC chip read failed: $e');
     }
     return null;
   }
@@ -197,6 +198,56 @@ class NfcCardService {
     );
 
     onStatus?.call('Hold your Zep Card to the back of this phone…');
+    return completer.future.timeout(
+      const Duration(seconds: 45),
+      onTimeout: () {
+        NfcManager.instance.stopSession();
+        throw TimeoutException('No tag detected — try again');
+      },
+    );
+  }
+
+  /// Write a semiconductor batch id to a blank NTAG (Challenge 2).
+  Future<void> writeChipTag({
+    required String nfcId,
+    void Function(String message)? onStatus,
+  }) async {
+    if (!isAndroidDevice) {
+      throw UnsupportedError('Chip tag writing is Android-only');
+    }
+    final ok = await isAvailable();
+    if (!ok) throw StateError('NFC not available');
+
+    final completer = Completer<void>();
+
+    await NfcManager.instance.startSession(
+      pollingOptions: _polling,
+      onDiscovered: (tag) async {
+        try {
+          onStatus?.call('Tag found — writing…');
+          final ndef = Ndef.from(tag);
+          if (ndef == null) {
+            throw StateError('Tag is not NDEF-compatible');
+          }
+          if (!ndef.isWritable) {
+            throw StateError('Tag is read-only');
+          }
+          final message = NdefMessage([
+            NdefRecord.createUri(ChipTagCodec.appUri(nfcId: nfcId)),
+            NdefRecord.createUri(ChipTagCodec.webUri(nfcId: nfcId)),
+          ]);
+          await ndef.write(message);
+          onStatus?.call('Chip batch tag programmed');
+          if (!completer.isCompleted) completer.complete();
+        } catch (e) {
+          if (!completer.isCompleted) completer.completeError(e);
+        } finally {
+          await NfcManager.instance.stopSession();
+        }
+      },
+    );
+
+    onStatus?.call('Hold the NFC tag to the back of this phone…');
     return completer.future.timeout(
       const Duration(seconds: 45),
       onTimeout: () {

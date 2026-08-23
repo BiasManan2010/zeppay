@@ -10,7 +10,11 @@ import '../../../core/widgets/chrome.dart';
 import '../../../core/widgets/illustrations.dart';
 import '../../../core/widgets/ux.dart';
 import '../../../data/local/app_store.dart';
+import '../../../data/local/ux_prefs.dart';
+import '../../../core/locale/locale_provider.dart';
+import '../../../core/accessibility/accessibility_provider.dart';
 import '../../../data/services/providers.dart';
+import '../../../data/services/referral_flow.dart';
 import '../../../data/services/security_audit.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -22,6 +26,7 @@ class OtpScreen extends ConsumerStatefulWidget {
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _code = TextEditingController();
+  final _referral = TextEditingController();
   final _focus = FocusNode();
   var _busy = false;
   String? _error;
@@ -41,6 +46,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   void dispose() {
     _code.dispose();
+    _referral.dispose();
     _focus.dispose();
     super.dispose();
   }
@@ -61,9 +67,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       return;
     }
     await ref.read(appStoreProvider.notifier).login(phone);
+    ref.read(pendingReferralCodeProvider.notifier).state =
+        _referral.text.trim().toUpperCase();
+    await completeReferralSignup(ref, phone);
     final audit = await ref.read(securityAuditProvider.future);
     await audit.onOtpVerified(phone);
-    if (mounted) context.go('/home');
+    if (mounted) {
+      final seen = await UxPrefs.hasSeenOnboarding();
+      if (!seen) {
+        context.go('/walkthrough');
+      } else {
+        context.go('/home');
+      }
+    }
   }
 
   @override
@@ -102,7 +118,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               title: 'Almost in',
               body: 'Six digits. Then you set your name and QR — no fake balance.',
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _referral,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Referral code (optional)',
+                hintText: 'Friend\'s 6-letter code',
+              ),
+            ),
+            const SizedBox(height: 12),
             GestureDetector(
               onTap: () => _focus.requestFocus(),
               child: Row(

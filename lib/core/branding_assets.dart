@@ -1,4 +1,4 @@
-/// Central paths for Zep Pay branding assets (registered in pubspec.yaml).
+/// Branding asset paths used across the app.
 abstract final class BrandingAssets {
   static const logo = 'assets/branding/logo.jpeg';
   static const wordmark = 'assets/branding/zeppay_transparent_bg.png';

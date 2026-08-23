@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/locale/locale_provider.dart';
+import '../../../l10n/app_localizations.dart';
+
 import '../../../core/motion/app_motion.dart';
 import '../../../core/platform.dart';
 import '../../../core/theme/app_colors.dart';
@@ -67,6 +70,7 @@ class _DockedNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final zep = context.zep;
     return SizedBox(
       height: 92 + MediaQuery.paddingOf(context).bottom,
@@ -98,26 +102,26 @@ class _DockedNav extends StatelessWidget {
                   children: [
                     _NavItem(
                       icon: Icons.home_rounded,
-                      label: 'Home',
+                      label: l10n.navHome,
                       selected: tab == 0,
                       onTap: () => onTab(0),
                     ),
                     _NavItem(
                       icon: Icons.grid_view_rounded,
-                      label: 'Pay',
+                      label: l10n.navPay,
                       selected: tab == 1,
                       onTap: () => onTab(1),
                     ),
                     const SizedBox(width: 72),
                     _NavItem(
                       icon: Icons.history_rounded,
-                      label: 'History',
+                      label: l10n.navHistory,
                       selected: tab == 2,
                       onTap: () => onTab(2),
                     ),
                     _NavItem(
                       icon: Icons.person_rounded,
-                      label: 'Profile',
+                      label: l10n.navProfile,
                       selected: tab == 3,
                       onTap: () => onTab(3),
                     ),
@@ -197,6 +201,7 @@ class _HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final app = ref.watch(appStoreProvider);
     final track = ref.watch(paymentSessionProvider).value?.track;
     if (track?.needsConfirmation == true &&
@@ -243,25 +248,25 @@ class _HomeTab extends ConsumerWidget {
                 children: [
                   ZepQuickAction(
                     icon: Icons.qr_code_scanner_rounded,
-                    label: 'Scan',
+                    label: l10n.homeScan,
                     tint: AppColors.hero,
                     onTap: () => context.push('/scan'),
                   ),
                   ZepQuickAction(
                     icon: Icons.send_rounded,
-                    label: 'Send',
+                    label: l10n.homeSend,
                     tint: const Color(0xFF5B8DEF),
                     onTap: () => onOpenTab(1),
                   ),
                   ZepQuickAction(
                     icon: Icons.call_split_rounded,
-                    label: 'Split',
+                    label: l10n.homeSplit,
                     tint: const Color(0xFF2D8A5E),
                     onTap: () => context.push('/split'),
                   ),
                   ZepQuickAction(
                     icon: Icons.credit_card_rounded,
-                    label: 'My Card',
+                    label: l10n.homeMyCard,
                     tint: const Color(0xFF3BA3FF),
                     onTap: () => openMyZepCard(context, ref),
                   ),
@@ -397,10 +402,25 @@ class _HomeTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             ZepPromoBanner(
+              headline: 'Chip shortage tracker',
+              subtext:
+                  'Tap NFC batch tags — live stock math from usage (Challenge 2)',
+              chip: 'Inventory',
+              onTap: () => context.push('/inventory-overview'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
               headline: 'ZepCoins & Shop',
               subtext: 'Earn coins on every payment — redeem demo offers',
               chip: '${app.zepCoinBalance} coins',
               onTap: () => context.push('/coins'),
+            ),
+            const SizedBox(height: 12),
+            ZepPromoBanner(
+              headline: l10n.homeInviteFriends,
+              subtext: 'Share your code — you both earn ZepCoins',
+              chip: 'Invite',
+              onTap: () => context.push('/invite-friends'),
             ),
             const SizedBox(height: 16),
             if (isWebApp)
@@ -523,8 +543,24 @@ class _HomeTab extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 22),
             ],
+            const SizedBox(height: 22),
+            SectionHeader(title: 'Supply chain'),
+            ActionTileRow(
+              tiles: [
+                ActionTile(
+                  icon: Icons.memory_rounded,
+                  label: 'Chip inventory',
+                  onTap: () => context.push('/inventory-overview'),
+                ),
+                ActionTile(
+                  icon: Icons.nfc_rounded,
+                  label: 'Batch tags',
+                  onTap: () => context.push('/chip-tag-setup'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
             SectionHeader(title: 'Quick Access', onAction: () => onOpenTab(3)),
             ActionTileRow(
               tiles: [
