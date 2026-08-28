@@ -1,8 +1,8 @@
 # Zep Pay
 
-Offline-first UPI payments for India: scan a QR code, confirm with biometrics, and pay through carrier rails or UPI apps. Zep Pay layers everyday money features—history, requests, splits, ZepCoins, shop, NFC Zep Cards, and semiconductor inventory tracking—on top of a local-first Flutter client.
+Offline-first UPI payments for India: scan a QR code, confirm with biometrics, and pay through carrier rails or UPI apps. Everyday money features — history, requests, splits, ZepCoins, shop, NFC Zep Cards, and semiconductor inventory tracking — sit on a local-first Flutter client.
 
----
+Live / artifacts: [GitHub Pages PWA](https://biasmanan2010.github.io/zeppay/) · [Releases](https://github.com/BiasManan2010/zeppay/releases)
 
 ## Table of contents
 
@@ -17,16 +17,13 @@ Offline-first UPI payments for India: scan a QR code, confirm with biometrics, a
 9. [Backend deployment](#backend-deployment)
 10. [Platform support](#platform-support)
 11. [Builds and releases](#builds-and-releases)
-12. [Cloud Agent development](#cloud-agent-development)
-13. [Design system](#design-system)
-14. [Testing](#testing)
-15. [Security](#security)
-
----
+12. [Design system](#design-system)
+13. [Testing](#testing)
+14. [Security](#security)
 
 ## Overview
 
-Zep Pay is built for hackathon demos and real-world UPI workflows:
+Zep Pay targets hackathon demos and real UPI workflows:
 
 - **Android (APK):** Scan a merchant QR, enter an amount, authenticate, then auto-dial `*99#` or **UPI 123PAY** so the user only enters their UPI PIN.
 - **Web / PWA:** Flutter web for Android browsers; a separate React site for iPhone (Safari → Add to Home Screen).
@@ -34,8 +31,6 @@ Zep Pay is built for hackathon demos and real-world UPI workflows:
 - **Data:** Transactions and profile data stay on-device in a JSON store. Only hashed phones and admin-controlled cloud tables sync to Supabase.
 
 Development OTP defaults to **`123456`** when Twilio is not configured.
-
----
 
 ## Features
 
@@ -51,8 +46,6 @@ Development OTP defaults to **`123456`** when Twilio is not configured.
 | **Live State** | Compliance-oriented audit hub |
 | **Onboarding** | 4-slide walkthrough, English/Hindi, accessibility toggles |
 | **Referrals** | Share codes; local coin rewards backed by Supabase identity |
-
----
 
 ## Architecture
 
@@ -88,8 +81,6 @@ flowchart LR
 | Android native | Kotlin telephony bridge, USSD accessibility, NFC |
 | iOS / web | PWA handoff to UPI apps; web QR via jsQR overlay |
 
----
-
 ## Repository layout
 
 ```
@@ -106,11 +97,8 @@ zeppay/
 ├── server/                 # Legacy Dart OTP stub (local dev fallback)
 ├── supabase/               # SQL schemas and full_setup.sql
 ├── zeppay-pwa/             # React iPhone website
-├── .cursor/                # Cloud Agent environment (Dockerfile, scripts)
 └── .github/workflows/      # APK, PWA, and iOS web CI
 ```
-
----
 
 ## Prerequisites
 
@@ -121,8 +109,6 @@ zeppay/
 | Android Studio / Xcode | For device builds |
 | Supabase project | Optional; required for cloud features |
 | Twilio account | Optional; dev OTP `123456` without it |
-
----
 
 ## Quick start
 
@@ -167,8 +153,6 @@ flutter run --dart-define=TWILIO_VERIFY_URL=http://127.0.0.1:8787
 
 Or set **Settings → OTP PROXY URL** inside the app.
 
----
-
 ## Configuration
 
 ### Flutter build defines
@@ -209,8 +193,6 @@ curl https://your-service.onrender.com/health
 # { "ok": true, "supabase": true, "users": 12, ... }
 ```
 
----
-
 ## Supabase
 
 Cloud tables power user census, OTP hashing, referrals, semiconductor inventory, Zep Card claims, and remote feature flags (e.g. donations).
@@ -218,8 +200,7 @@ Cloud tables power user census, OTP hashing, referrals, semiconductor inventory,
 ### Setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor** → paste [`supabase/full_setup.sql`](supabase/full_setup.sql) → **Run**.  
-   The script is idempotent and safe to re-run.
+2. Open **SQL Editor** → paste [`supabase/full_setup.sql`](supabase/full_setup.sql) → **Run**. The script is idempotent.
 3. Copy **Project URL**, **anon** key (Flutter), and **service_role** key (backend) from **Settings → API**.
 
 See [`supabase/README.md`](supabase/README.md) for table reference and RPC details.
@@ -233,8 +214,6 @@ See [`supabase/README.md`](supabase/README.md) for table reference and RPC detai
 | Semiconductor inventory | Yes (read/write via anon RLS) |
 | UPI IDs, balances, bank details | **No** — local device only |
 | Payment amounts and payee names | **No** — local ledger only |
-
----
 
 ## Backend deployment
 
@@ -255,8 +234,6 @@ After deploy:
 
 > Free Render instances sleep when idle. The first request after sleep may take ~30 seconds.
 
----
-
 ## Platform support
 
 | Platform | Delivery | Payment path |
@@ -274,8 +251,6 @@ Declared in `AndroidManifest.xml`: `CALL_PHONE`, `CAMERA`, `USE_BIOMETRIC`, `REA
 
 Opening the Flutter web URL on iPhone redirects to `/zeppay/ios/` automatically.
 
----
-
 ## Builds and releases
 
 GitHub Actions ([`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml)) runs on push to `main`:
@@ -287,24 +262,6 @@ GitHub Actions ([`.github/workflows/android-apk.yml`](.github/workflows/android-
 | `zeppay-ios-web` | React site for iPhone |
 
 Enable **GitHub Pages** (Settings → Pages → branch `gh-pages`) for hosted web builds.
-
----
-
-## Cloud Agent development
-
-This repository includes a [Cursor Cloud Agent](https://cursor.com/docs/cloud-agent) environment:
-
-| File | Purpose |
-| --- | --- |
-| [`.cursor/environment.json`](.cursor/environment.json) | Dev terminals and ports |
-| [`.cursor/Dockerfile`](.cursor/Dockerfile) | Flutter toolchain image |
-| [`.cursor/install.sh`](.cursor/install.sh) | `flutter pub get`, backend `npm ci` |
-| [`.cursor/run-api-server.sh`](.cursor/run-api-server.sh) | Node backend on `:8787` |
-| [`.cursor/run-flutter-web.sh`](.cursor/run-flutter-web.sh) | Flutter web on `:8080` with dart-defines |
-
-Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as environment secrets in the Cursor dashboard. The run scripts load them automatically.
-
----
 
 ## Design system
 
@@ -319,8 +276,6 @@ All colors are defined in [`lib/core/theme/app_colors.dart`](lib/core/theme/app_
 
 Light mode, dark mode, and high-contrast variants are available in **Settings**.
 
----
-
 ## Testing
 
 ```bash
@@ -329,8 +284,6 @@ flutter test
 
 The suite covers QR parsing, split math, USSD routing, Zep Card codecs, and semiconductor inventory engine logic.
 
----
-
 ## Security
 
 - **Never** commit Twilio auth tokens, Supabase service-role keys, or real `.env` files.
@@ -338,8 +291,8 @@ The suite covers QR parsing, split math, USSD routing, Zep Card codecs, and semi
 - Raw OTP digits are never written to Supabase; only SHA-256 hashes are stored until consumed or expired.
 - Payment and PII beyond a hashed phone remain on the device.
 
----
+## Author
 
-## License
+**Manan Bharti** ([@BiasManan2010](https://github.com/BiasManan2010))
 
-See repository defaults. Built for demonstration and hackathon use.
+Built for demonstration and hackathon use.
